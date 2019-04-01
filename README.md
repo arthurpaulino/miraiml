@@ -70,4 +70,4 @@ methods.
 - `request_score`: queries the score of the best model (or ensemble);
 
 - `request_predictions`: queries the predictions of the best model (or ensemble)
-  for the test data
+  for the test data.
