@@ -20,7 +20,7 @@ class MiraiLayout:
         parameters = {}
         for parameter in self.parameters_values:
             parameters[parameter] = choice(self.parameters_values[parameter])
-        parameters = self.parameters_rules(parameters)
+        self.parameters_rules(parameters)
         features = sample(all_features, max(1, ceil(random()*len(all_features))))
         return MiraiModel(model_class, parameters, features)
 
@@ -41,10 +41,14 @@ class MiraiML:
         self.is_running = False
         self.must_interrupt = False
 
+    def send_interrupt_signal(self):
+        self.must_interrupt = True
+
     def interrupt(self):
+        # Thread(target=lambda: self.send_interrupt_signal()).start()
         self.must_interrupt = True
         while self.is_running:
-            sleep(.1)
+            sleep(.5)
         self.must_interrupt = False
 
     def update_data(self, train_data, test_data, target, restart=False):
@@ -76,6 +80,7 @@ class MiraiML:
         self.scores = {}
         self.best_score = None
         self.best_id = None
+        self.weights = {}
         for mirai_layout in self.config.mirai_layouts:
             if self.must_interrupt:
                 break
@@ -116,7 +121,7 @@ class MiraiML:
 
         if self.config.report:
             self.report()
-        while True:
+        while not self.must_interrupt:
             for mirai_layout in self.config.mirai_layouts:
                 if self.must_interrupt:
                     break

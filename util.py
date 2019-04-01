@@ -4,7 +4,7 @@ from threading import Thread
 import numpy as np
 import pickle
 
-LOCAL_DIR = 'miraiml_local/'
+LOCAL_DIR = 'mirai_ml_local/'
 MODELS_DIR = 'models/'
 
 def load(path):
