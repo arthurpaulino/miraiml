@@ -16,9 +16,12 @@ This is where we define the search hyperspace for each base statistical model.
 In order to instantiate a `MiraiLayout`, we need:
 
 - A statistical model class;
+
 - An id;
+
 - A dictionary containing a list of values to be tested for each hyperparameter
   (optional);
+
 - A function to modify hyperparameters if there are constraints that prohibits
   two or more hyperparameter values from being used at the same time (optional).
   [For instance](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html):
@@ -33,12 +36,19 @@ In order to instantiate a `MiraiLayout`, we need:
 It defines the general behavior of the engine. Its attributes are:
 
 - The number of folds for the cross-validation;
+
 - The problem type (classification or regression);
+
 - Whether the folds should be stratified or not;
+
 - The scoring function;
+
 - A list of `MiraiLayouts`;
+
 - An id for the ensemble;
+
 - The number of cycles to attempt improvements on the ensemble;
+
 - A flag that tells whether we want the engine to print improvements or not.
 
 ## `MiraiML`
