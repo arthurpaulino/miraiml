@@ -1,10 +1,122 @@
-from random import choice, uniform
+from random import triangular, choices, random, sample, choice, uniform
+from sklearn.model_selection import StratifiedKFold, KFold
 from threading import Thread
 from time import sleep
+from math import ceil
 import pandas as pd
+import numpy as np
+import pickle
 import os
 
-from util import *
+LOCAL_DIR = 'mirai_ml_local/'
+MODELS_DIR = 'models/'
+
+def load(path):
+    return pickle.load(open(path, 'rb'))
+
+def dump(obj, path):
+    while True:
+        try:
+            pickle.dump(obj, open(path, 'wb'))
+            return
+        except:
+            sleep(.1)
+
+def par_dump(obj, path):
+    Thread(target=lambda: dump(obj, path)).start()
+
+def sample_random_len(lst):
+    return sample(lst, max(1, ceil(random()*len(lst))))
+
+class MiraiModel:
+    def __init__(self, model_class, parameters, features):
+        self.model_class = model_class
+        self.parameters = parameters
+        self.features = features
+
+    def predict(self, X_train, y_train, X_test, config):
+        X_train, X_test = X_train[self.features], X_test[self.features]
+        train_predictions = np.zeros(X_train.shape[0])
+        test_predictions = np.zeros(X_test.shape[0])
+        if config.problem_type == 'classification' and config.stratified:
+            fold = StratifiedKFold(n_splits=config.n_folds, shuffle=False)
+        elif config.problem_type == 'regression' or not config.stratified:
+            fold = KFold(n_splits=config.n_folds, shuffle=False)
+        for big_part, small_part in fold.split(X_train, y_train):
+            X_train_big, X_train_small = X_train.values[big_part], X_train.values[small_part]
+            y_train_big = y_train.values[big_part]
+
+            model = self.model_class(**self.parameters)
+
+            model.fit(X_train_big, y_train_big)
+            if config.problem_type == 'classification':
+                train_predictions[small_part] = model.predict_proba(X_train_small)[:,1]
+                test_predictions += model.predict_proba(X_test)[:,1]
+            elif config.problem_type == 'regression':
+                train_predictions[small_part] = model.predict(X_train_small)
+                test_predictions += model.predict(X_test)
+
+        test_predictions /= config.n_folds
+        return (train_predictions, test_predictions, config.score_function(y_train,
+            train_predictions))
+
+class MiraiSeeker:
+    # Implements a smart way of seeking for parameters and feature sets.
+    def __init__(self, ids, all_features):
+        self.ids = ids
+        self.all_features = all_features
+        self.history_path = LOCAL_DIR + 'history'
+
+        if os.path.exists(self.history_path):
+            self.history = load(self.history_path)
+        else:
+            self.reset()
+
+    def reset(self):
+        self.history = {}
+        for id in self.ids:
+            self.history[id] = pd.DataFrame()
+        par_dump(self.history, self.history_path)
+
+    def register_mirai_model(self, id, mirai_model, score):
+        event = {'score':score}
+        for parameter in mirai_model.parameters:
+            event[parameter+'(parameter)'] = mirai_model.parameters[parameter]
+        for feature in self.all_features:
+            event[feature+'(feature)'] = feature in mirai_model.features
+
+        self.history[id] = pd.concat([self.history[id],
+            pd.DataFrame([event])]).drop_duplicates()
+        par_dump(self.history, self.history_path)
+
+    def is_ready(self, id):
+        return self.history[id].shape[0] > 1
+
+    def gen_parameters_features(self, id):
+        # The magic happens here. For each parameter and feature, its value
+        # (True or False for features) is chosen stochastically depending on the
+        # mean score of the validations in which the value was chosen before.
+        # Better parameters and features have higher chances of being chosen.
+        history = self.history[id]
+        parameters = {}
+        features = []
+        for column in history.columns:
+            if column == 'score':
+                continue
+            dist = history[[column, 'score']].groupby(column).mean().reset_index()
+            chosen_value = choices(dist[column].values,
+                cum_weights=dist['score'].cumsum().values)[0]
+            if column.endswith('(parameter)'):
+                parameter = column.split('(')[0]
+                parameters[parameter] = chosen_value
+            elif column.endswith('(feature)'):
+                feature = column.split('(')[0]
+                if chosen_value:
+                    features.append(feature)
+        if len(features) == 0:
+            features = sample_random_len(self.all_features)
+        return (parameters, features)
+
 
 class MiraiLayout:
     def __init__(self, model_class, id, parameters_values={},
@@ -113,12 +225,11 @@ class MiraiML:
         if os.path.exists(weights_path):
             self.weights = load(weights_path)
         else:
-            self.weights = gen_weights(self.scores, self.mirai_models_ids)
+            self.weights = self.gen_weights()
             par_dump(self.weights, weights_path)
 
         self.train_predictions_dict[ensemble_id], self.test_predictions_dict[ensemble_id],\
-            self.scores[ensemble_id] = ensemble(self.train_predictions_dict,
-                self.test_predictions_dict, self.weights, self.y_train, self.config)
+            self.scores[ensemble_id] = self.ensemble(self.weights)
 
         if self.scores[ensemble_id] > self.best_score:
             self.best_score = self.scores[ensemble_id]
@@ -156,9 +267,8 @@ class MiraiML:
                         self.best_score = score
                         self.best_id = id
                     self.train_predictions_dict[ensemble_id],\
-                        self.test_predictions_dict[ensemble_id], self.scores[ensemble_id] = \
-                        ensemble(self.train_predictions_dict, self.test_predictions_dict,
-                            self.weights, self.y_train, self.config)
+                        self.test_predictions_dict[ensemble_id],\
+                        self.scores[ensemble_id] = self.ensemble(self.weights)
                     if self.scores[ensemble_id] > self.best_score:
                         self.best_score = self.scores[ensemble_id]
                         self.best_id = ensemble_id
@@ -170,15 +280,25 @@ class MiraiML:
 
         self.is_running = False
 
+    def gen_weights(self):
+        weights = {}
+        min_score, max_score = np.inf, -np.inf
+        for id in self.mirai_models_ids:
+            score = self.scores[id]
+            min_score = min(min_score, score)
+            max_score = max(max_score, score)
+        diff_score = max_score - min_score
+        for id in self.mirai_models_ids:
+            weights[id] = triangular(0, 1, (self.scores[id]-min_score)/diff_score)
+        return weights
+
     def search_weights(self):
         ensemble_id = self.config.ensemble_id
         for _ in range(self.config.n_ensemble_cycles):
             if self.must_interrupt:
                 break
-            weights = gen_weights(self.scores, self.mirai_models_ids)
-            train_predictions, test_predictions, score = \
-                ensemble(self.train_predictions_dict, self.test_predictions_dict,
-                    weights, self.y_train, self.config)
+            weights = self.gen_weights()
+            train_predictions, test_predictions, score = self.ensemble(weights)
             if score > self.scores[ensemble_id]:
                 self.scores[ensemble_id] = score
                 self.weights = weights
@@ -190,6 +310,21 @@ class MiraiML:
                 par_dump(weights, LOCAL_DIR + MODELS_DIR + ensemble_id)
                 if self.config.report:
                     self.report()
+
+    def ensemble(self, weights):
+        ids = sorted(weights)
+        id = ids[0]
+        train_predictions = weights[id]*self.train_predictions_dict[id]
+        test_predictions = weights[id]*self.test_predictions_dict[id]
+        weights_sum = weights[id]
+        for id in ids[1:]:
+            train_predictions += weights[id]*self.train_predictions_dict[id]
+            test_predictions += weights[id]*self.test_predictions_dict[id]
+            weights_sum += weights[id]
+        train_predictions /= weights_sum
+        test_predictions /= weights_sum
+        return (train_predictions, test_predictions,
+            self.config.score_function(self.y_train, train_predictions))
 
     def request_score(self):
         if len(self.scores) > 0:
