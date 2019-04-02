@@ -1,8 +1,12 @@
 from sklearn.model_selection import StratifiedKFold, KFold
-from random import triangular
+from random import triangular, choices, random, sample
 from threading import Thread
+from time import sleep
+from math import ceil
+import pandas as pd
 import numpy as np
 import pickle
+import os
 
 LOCAL_DIR = 'mirai_ml_local/'
 MODELS_DIR = 'models/'
@@ -10,8 +14,19 @@ MODELS_DIR = 'models/'
 def load(path):
     return pickle.load(open(path, 'rb'))
 
+def dump(obj, path):
+    while True:
+        try:
+            pickle.dump(obj, open(path, 'wb'))
+            return
+        except:
+            sleep(.1)
+
 def par_dump(obj, path):
-    Thread(target=lambda: pickle.dump(obj, open(path, 'wb'))).start()
+    Thread(target=lambda: dump(obj, path)).start()
+
+def sample_random_len(lst):
+    return sample(lst, max(1, ceil(random()*len(lst))))
 
 class MiraiModel:
     def __init__(self, model_class, parameters, features):
@@ -45,9 +60,8 @@ class MiraiModel:
         return (train_predictions, test_predictions, config.score_function(y_train,
             train_predictions))
 
-def gen_weights(scores, ensemble_id):
+def gen_weights(scores, ids):
     weights = {}
-    ids = [id for id in scores if id != ensemble_id]
     min_score, max_score = np.inf, -np.inf
     for id in ids:
         score = scores[id]
@@ -73,3 +87,64 @@ def ensemble(train_predictions_dict, test_predictions_dict, weights, y_train,
     test_predictions /= weights_sum
     return (train_predictions, test_predictions, config.score_function(y_train,
         train_predictions))
+
+class MiraiSeeker:
+    # Implements a smart way of seeking for parameters and feature sets.
+    def __init__(self, ids, all_features):
+        self.ids = ids
+        self.all_features = all_features
+        self.history_path = LOCAL_DIR + 'history'
+
+        if os.path.exists(self.history_path):
+            self.history = load(self.history_path)
+        else:
+            self.reset()
+
+    def reset(self):
+        self.history = {}
+        for id in self.ids:
+            self.history[id] = pd.DataFrame()
+        par_dump(self.history, self.history_path)
+
+    def register_mirai_model(self, id, mirai_model, score):
+        event = {
+            'model_class': mirai_model.model_class,
+            'score':score
+        }
+        for parameter in mirai_model.parameters:
+            event[parameter+'(parameter)'] = mirai_model.parameters[parameter]
+        for feature in self.all_features:
+            event[feature+'(feature)'] = feature in mirai_model.features
+
+        self.history[id] = pd.concat([self.history[id],
+            pd.DataFrame([event])]).drop_duplicates()
+        par_dump(self.history, self.history_path)
+
+    def is_ready(self, id):
+        return self.history[id].shape[0] > 1
+
+    def gen_mirai_model(self, id):
+        # The magic happens here. For each parameter and feature, its value
+        # (True or False for features) is chosen stochastically depending on the
+        # mean score of the validations in which the value was chosen before.
+        # Better parameters and features have higher chances of being chosen.
+        history = self.history[id]
+        model_class = history['model_class'].values[0]
+        parameters = {}
+        features = []
+        for column in history.columns:
+            if column in ['score', 'model_class']:
+                continue
+            dist = history[[column, 'score']].groupby(column).mean().reset_index()
+            chosen_value = choices(dist[column].values,
+                cum_weights=dist['score'].cumsum().values)[0]
+            if column.endswith('(parameter)'):
+                parameter = column.split('(')[0]
+                parameters[parameter] = chosen_value
+            elif column.endswith('(feature)'):
+                feature = column.split('(')[0]
+                if chosen_value:
+                    features.append(feature)
+        if len(features) == 0:
+            features = sample_random_len(self.all_features)
+        return MiraiModel(model_class, parameters, features)

@@ -1,7 +1,6 @@
-from random import choice, random, sample
+from random import choice, uniform
 from threading import Thread
 from time import sleep
-from math import ceil
 import pandas as pd
 import os
 
@@ -21,7 +20,7 @@ class MiraiLayout:
         for parameter in self.parameters_values:
             parameters[parameter] = choice(self.parameters_values[parameter])
         self.parameters_rules(parameters)
-        features = sample(all_features, max(1, ceil(random()*len(all_features))))
+        features = sample_random_len(all_features)
         return MiraiModel(model_class, parameters, features)
 
 class MiraiConfig:
@@ -31,6 +30,7 @@ class MiraiConfig:
         self.stratified = parameters['stratified']
         self.score_function = parameters['score_function']
         self.mirai_layouts = parameters['mirai_layouts']
+        self.mirai_exploration_ratio = parameters['mirai_exploration_ratio']
         self.ensemble_id = parameters['ensemble_id']
         self.n_ensemble_cycles = parameters['n_ensemble_cycles']
         self.report = parameters['report']
@@ -40,15 +40,12 @@ class MiraiML:
         self.config = config
         self.is_running = False
         self.must_interrupt = False
-
-    def send_interrupt_signal(self):
-        self.must_interrupt = True
+        self.mirai_seeker = None
 
     def interrupt(self):
-        # Thread(target=lambda: self.send_interrupt_signal()).start()
         self.must_interrupt = True
         while self.is_running:
-            sleep(.5)
+            sleep(.1)
         self.must_interrupt = False
 
     def update_data(self, train_data, test_data, target, restart=False):
@@ -57,12 +54,16 @@ class MiraiML:
         self.all_features = list(self.X_train.columns)
         self.y_train = train_data[target]
         self.X_test = test_data
+        if not self.mirai_seeker is None:
+            self.mirai_seeker.reset()
         if restart:
             self.restart()
 
     def reconfig(self, config, restart=False):
         self.interrupt()
         self.config = config
+        if not self.mirai_seeker is None:
+            self.mirai_seeker.reset()
         if restart:
             self.restart()
 
@@ -75,16 +76,19 @@ class MiraiML:
         if not os.path.exists(LOCAL_DIR + MODELS_DIR):
             os.makedirs(LOCAL_DIR + MODELS_DIR)
         self.mirai_models = {}
+        self.mirai_models_ids = []
         self.train_predictions_dict = {}
         self.test_predictions_dict = {}
         self.scores = {}
         self.best_score = None
         self.best_id = None
         self.weights = {}
+
         for mirai_layout in self.config.mirai_layouts:
             if self.must_interrupt:
                 break
             id = mirai_layout.id
+            self.mirai_models_ids.append(id)
             mirai_model_path = LOCAL_DIR + MODELS_DIR + id
             if os.path.exists(mirai_model_path):
                 mirai_model = load(mirai_model_path)
@@ -101,12 +105,14 @@ class MiraiML:
                 self.best_score = self.scores[id]
                 self.best_id = id
 
+        self.mirai_seeker = MiraiSeeker(self.mirai_models_ids, self.all_features)
+
         ensemble_id = self.config.ensemble_id
         weights_path = LOCAL_DIR + MODELS_DIR + ensemble_id
         if os.path.exists(weights_path):
             self.weights = load(weights_path)
         else:
-            self.weights = gen_weights(self.scores, ensemble_id)
+            self.weights = gen_weights(self.scores, self.mirai_models_ids)
             par_dump(self.weights, weights_path)
 
         self.train_predictions_dict[ensemble_id], self.test_predictions_dict[ensemble_id],\
@@ -126,10 +132,19 @@ class MiraiML:
                 if self.must_interrupt:
                     break
                 id = mirai_layout.id
-                mirai_model = mirai_layout.gen_mirai_model(self.all_features)
+
+                if self.mirai_seeker.is_ready(id) and\
+                    uniform(0, 1) < self.config.mirai_exploration_ratio:
+                    mirai_model = self.mirai_seeker.gen_mirai_model(id)
+                else:
+                    mirai_model = mirai_layout.gen_mirai_model(self.all_features)
+
                 train_predictions, test_predictions, score = mirai_model.\
                     predict(self.X_train, self.y_train, self.X_test,
                         self.config)
+
+                self.mirai_seeker.register_mirai_model(id, mirai_model, score)
+
                 if score > self.scores[id]:
                     self.scores[id] = score
                     self.train_predictions_dict[id] = train_predictions
@@ -137,9 +152,16 @@ class MiraiML:
                     if score > self.best_score:
                         self.best_score = score
                         self.best_id = id
-                    par_dump(mirai_model, LOCAL_DIR + MODELS_DIR + id)
+                    self.train_predictions_dict[ensemble_id],\
+                        self.test_predictions_dict[ensemble_id], self.scores[ensemble_id] = \
+                        ensemble(self.train_predictions_dict, self.test_predictions_dict,
+                            self.weights, self.y_train, self.config)
+                    if self.scores[ensemble_id] > self.best_score:
+                        self.best_score = self.scores[ensemble_id]
+                        self.best_id = ensemble_id
                     if self.config.report:
                         self.report()
+                    par_dump(mirai_model, LOCAL_DIR + MODELS_DIR + id)
 
             self.search_weights()
 
@@ -150,7 +172,7 @@ class MiraiML:
         for _ in range(self.config.n_ensemble_cycles):
             if self.must_interrupt:
                 break
-            weights = gen_weights(self.scores, ensemble_id)
+            weights = gen_weights(self.scores, self.mirai_models_ids)
             train_predictions, test_predictions, score = \
                 ensemble(self.train_predictions_dict, self.test_predictions_dict,
                     weights, self.y_train, self.config)
