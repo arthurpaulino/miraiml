@@ -14,14 +14,13 @@ class MiraiLayout:
         self.parameters_values = parameters_values
         self.parameters_rules = parameters_rules
 
-    def gen_mirai_model(self, all_features):
+    def gen_parameters_features(self, all_features):
         model_class = self.model_class
         parameters = {}
         for parameter in self.parameters_values:
             parameters[parameter] = choice(self.parameters_values[parameter])
-        self.parameters_rules(parameters)
         features = sample_random_len(all_features)
-        return MiraiModel(model_class, parameters, features)
+        return (parameters, features)
 
 class MiraiConfig:
     def __init__(self, parameters):
@@ -93,7 +92,9 @@ class MiraiML:
             if os.path.exists(mirai_model_path):
                 mirai_model = load(mirai_model_path)
             else:
-                mirai_model = mirai_layout.gen_mirai_model(self.all_features)
+                parameters, features = mirai_layout.gen_parameters_features(self.all_features)
+                mirai_layout.parameters_rules(parameters)
+                mirai_model = MiraiModel(mirai_layout.model_class, parameters, features)
                 par_dump(mirai_model, mirai_model_path)
             self.mirai_models[id] = mirai_model
 
@@ -135,9 +136,11 @@ class MiraiML:
 
                 if self.mirai_seeker.is_ready(id) and\
                     uniform(0, 1) < self.config.mirai_exploration_ratio:
-                    mirai_model = self.mirai_seeker.gen_mirai_model(id)
+                    parameters, features = self.mirai_seeker.gen_parameters_features(id)
                 else:
-                    mirai_model = mirai_layout.gen_mirai_model(self.all_features)
+                    parameters, features = mirai_layout.gen_parameters_features(self.all_features)
+                mirai_layout.parameters_rules(parameters)
+                mirai_model = MiraiModel(mirai_layout.model_class, parameters, features)
 
                 train_predictions, test_predictions, score = mirai_model.\
                     predict(self.X_train, self.y_train, self.X_test,

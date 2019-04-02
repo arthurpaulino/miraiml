@@ -107,10 +107,7 @@ class MiraiSeeker:
         par_dump(self.history, self.history_path)
 
     def register_mirai_model(self, id, mirai_model, score):
-        event = {
-            'model_class': mirai_model.model_class,
-            'score':score
-        }
+        event = {'score':score}
         for parameter in mirai_model.parameters:
             event[parameter+'(parameter)'] = mirai_model.parameters[parameter]
         for feature in self.all_features:
@@ -123,17 +120,16 @@ class MiraiSeeker:
     def is_ready(self, id):
         return self.history[id].shape[0] > 1
 
-    def gen_mirai_model(self, id):
+    def gen_parameters_features(self, id):
         # The magic happens here. For each parameter and feature, its value
         # (True or False for features) is chosen stochastically depending on the
         # mean score of the validations in which the value was chosen before.
         # Better parameters and features have higher chances of being chosen.
         history = self.history[id]
-        model_class = history['model_class'].values[0]
         parameters = {}
         features = []
         for column in history.columns:
-            if column in ['score', 'model_class']:
+            if column == 'score':
                 continue
             dist = history[[column, 'score']].groupby(column).mean().reset_index()
             chosen_value = choices(dist[column].values,
@@ -147,4 +143,4 @@ class MiraiSeeker:
                     features.append(feature)
         if len(features) == 0:
             features = sample_random_len(self.all_features)
-        return MiraiModel(model_class, parameters, features)
+        return (parameters, features)
