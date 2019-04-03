@@ -12,9 +12,29 @@ LOCAL_DIR = 'mirai_ml_local/'
 MODELS_DIR = 'models/'
 
 def load(path):
+    """
+    A clean `pickle.load` wrapper for binary files.
+
+    Parameters
+    ----------
+    path : string
+        The path of the binary file to be loaded.
+    """
     return pickle.load(open(path, 'rb'))
 
 def dump(obj, path):
+    """
+    A clean `pickle.dump` wrapper for binary files with a small difference: it
+    loops if writing the file fails.
+
+    Parameters
+    ----------
+    obj : any Python object
+        The object to be dumped to the binary file.
+
+    path : string
+        The path of the binary file to be written.
+    """
     while True:
         try:
             pickle.dump(obj, open(path, 'wb'))
@@ -23,18 +43,72 @@ def dump(obj, path):
             sleep(.1)
 
 def par_dump(obj, path):
+    """
+    Optimizes the process of writing objects on disc by triggering a thread.
+
+    Parameters
+    ----------
+    obj : any Python variable
+        The object to be dumped to the binary file.
+
+    path : string
+        The path of the binary file to be written.
+    """
     Thread(target=lambda: dump(obj, path)).start()
 
 def sample_random_len(lst):
+    """
+    Returns a sample of random size from the list `lst`. The minimum length of
+    the returned list is 1.
+
+    Parameters
+    ----------
+    lst : list
+        A list containing the elements to be sampled.
+    """
+    if len(lst) == 0:
+        return []
     return sample(lst, max(1, ceil(random()*len(lst))))
 
 class MiraiModel:
+    """
+    Represents the "clothes" of a statistical model, linking a set of parameters
+    to a set of features. This is the basic brick for the optimizations.
+
+    Intended for internal usage, only.
+
+    Parameters
+    ----------
+    model_class : A statistical model class that must implement the methods `fit`
+        and `predict` for regression or `predict_proba` classification problems.
+
+    parameters : dict
+        The parameters that will be used to instantiate objects of `model_class`.
+
+    features : list
+        The list of features that will be used to train the statistical model.
+    """
     def __init__(self, model_class, parameters, features):
         self.model_class = model_class
         self.parameters = parameters
         self.features = features
 
     def predict(self, X_train, y_train, X_test, config):
+        """
+        Performs the predictions for the training and testing datasets and also
+        provides the score of the model.
+
+        For each fold of the training dataset, the model trains on the bigger
+        part and then make predictions for the smaller part and for the testing
+        dataset. After iterating over all folds, the predictions for the training
+        dataset will be complete and there will be `n_folds` sets of predictions
+        for the testing dataset. The final set of predictions for the testing
+        dataset is the mean of the `n_folds` predictions.
+
+        This mechanic may produce more stable predictions for the testing dataset
+        than for the training dataset, resulting in slightly better accuracies
+        than expected.
+        """
         X_train, X_test = X_train[self.features], X_test[self.features]
         train_predictions = np.zeros(X_train.shape[0])
         test_predictions = np.zeros(X_test.shape[0])
@@ -59,6 +133,37 @@ class MiraiModel:
         test_predictions /= config.n_folds
         return (train_predictions, test_predictions, config.score_function(y_train,
             train_predictions))
+
+class MiraiLayout:
+    """
+    This class represents the search hyperspace for a base statistical model.
+    """
+    def __init__(self, model_class, id, parameters_values={},
+            parameters_rules=lambda x: x):
+        self.model_class = model_class
+        self.id = id
+        self.parameters_values = parameters_values
+        self.parameters_rules = parameters_rules
+
+    def gen_parameters_features(self, all_features):
+        model_class = self.model_class
+        parameters = {}
+        for parameter in self.parameters_values:
+            parameters[parameter] = choice(self.parameters_values[parameter])
+        features = sample_random_len(all_features)
+        return (parameters, features)
+
+class MiraiConfig:
+    def __init__(self, parameters):
+        self.n_folds = parameters['n_folds']
+        self.problem_type = parameters['problem_type']
+        self.stratified = parameters['stratified']
+        self.score_function = parameters['score_function']
+        self.mirai_layouts = parameters['mirai_layouts']
+        self.mirai_exploration_ratio = parameters['mirai_exploration_ratio']
+        self.ensemble_id = parameters['ensemble_id']
+        self.n_ensemble_cycles = parameters['n_ensemble_cycles']
+        self.report = parameters['report']
 
 class MiraiSeeker:
     # Implements a smart way of seeking for parameters and feature sets.
@@ -117,35 +222,6 @@ class MiraiSeeker:
             features = sample_random_len(self.all_features)
         return (parameters, features)
 
-
-class MiraiLayout:
-    def __init__(self, model_class, id, parameters_values={},
-            parameters_rules=lambda x: x):
-        self.model_class = model_class
-        self.id = id
-        self.parameters_values = parameters_values
-        self.parameters_rules = parameters_rules
-
-    def gen_parameters_features(self, all_features):
-        model_class = self.model_class
-        parameters = {}
-        for parameter in self.parameters_values:
-            parameters[parameter] = choice(self.parameters_values[parameter])
-        features = sample_random_len(all_features)
-        return (parameters, features)
-
-class MiraiConfig:
-    def __init__(self, parameters):
-        self.n_folds = parameters['n_folds']
-        self.problem_type = parameters['problem_type']
-        self.stratified = parameters['stratified']
-        self.score_function = parameters['score_function']
-        self.mirai_layouts = parameters['mirai_layouts']
-        self.mirai_exploration_ratio = parameters['mirai_exploration_ratio']
-        self.ensemble_id = parameters['ensemble_id']
-        self.n_ensemble_cycles = parameters['n_ensemble_cycles']
-        self.report = parameters['report']
-
 class MiraiML:
     def __init__(self, config):
         self.config = config
@@ -170,7 +246,7 @@ class MiraiML:
         if restart:
             self.restart()
 
-    def reconfig(self, config, restart=False):
+    def reconfigure(self, config, restart=False):
         self.interrupt()
         self.config = config
         if not self.mirai_seeker is None:
