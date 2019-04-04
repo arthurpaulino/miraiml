@@ -1,9 +1,6 @@
 miraiml package
 ===============
 
-Submodules
-----------
-
 miraiml.core module
 -------------------
 
