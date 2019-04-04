@@ -19,12 +19,3 @@ miraiml.util module
     :members:
     :undoc-members:
     :show-inheritance:
-
-
-Module contents
----------------
-
-.. automodule:: miraiml
-    :members:
-    :undoc-members:
-    :show-inheritance:
