@@ -1,4 +1,5 @@
 .ipynb_checkpoints
 miraiml_local
 __pycache__
+docs/_*
 *.csv
