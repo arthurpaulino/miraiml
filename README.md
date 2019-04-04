@@ -18,10 +18,9 @@ A step-by-step tutorial can be found on the [example notebook](example.ipynb).
 
 ## To do
 
+- Stacking
 - Provide a way for the user to design his own exploration strategies
 - Provide rich visualizations for the optimization process
 - Provide an `on_improvement` function for the engine
 - Provide support for multi-class classification problems
-- Generate documentation programmatically
-- Improve repo structure
 - Create unit tests
