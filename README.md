@@ -10,6 +10,9 @@ and sets of features to feed statistical models.
 
 A step-by-step tutorial can be found on the [example notebook](example.ipynb).
 
+Or [read the docs](https://miraiml.readthedocs.io/en/latest/) for further
+understanding.
+
 ## Requirements
 
 - pandas
