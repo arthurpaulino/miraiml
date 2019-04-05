@@ -20,7 +20,7 @@ Even though the engine is autonomous, it offers (and requires) a certain degree
 of configuration, in a way that the user has good control over what's happening
 behind the scenes.
 
-A step-by-step tutorial can be found on the `example notebook <example.ipynb>`_.
+A step-by-step tutorial can be found on the `example notebook <example.md>`_.
 Or `read the docs <https://miraiml.readthedocs.io/en/latest/>`_ for further
 understanding.
 
