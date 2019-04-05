@@ -1,3 +1,7 @@
+"""
+This module is meant for internal usage.
+"""
+
 from random import random, sample
 from threading import Thread
 from math import ceil

@@ -1,3 +1,7 @@
+"""
+This module is meant for internal usage.
+"""
+
 __all__ = ['BaseModel', 'MiraiSeeker']
 
 from sklearn.model_selection import StratifiedKFold, KFold
