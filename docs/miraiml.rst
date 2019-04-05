@@ -1,6 +1,14 @@
 miraiml package
 ===============
 
+Content
+-------
+
+.. automodule:: miraiml
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 miraiml.core module
 -------------------
 
