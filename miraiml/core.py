@@ -23,7 +23,8 @@ class BaseModel:
     This is the basic brick for the optimizations.
 
     :param model_class: A statistical model class that must implement the methods
-        `fit` and `predict` for regression or `predict_proba` classification problems.
+        ``fit`` and ``predict`` for regression or ``predict_proba`` classification
+        problems.
     :type model_class: type
 
     :param parameters: The parameters that will be used to instantiate objects of
@@ -47,9 +48,9 @@ class BaseModel:
         For each fold of the training dataset, the model trains on the bigger
         part and then make predictions for the smaller part and for the testing
         dataset. After iterating over all folds, the predictions for the training
-        dataset will be complete and there will be `n_folds` sets of predictions
+        dataset will be complete and there will be ``n_folds`` sets of predictions
         for the testing dataset. The final set of predictions for the testing
-        dataset is the mean of the `n_folds` predictions.
+        dataset is the mean of the ``n_folds`` predictions.
 
         This mechanic may produce more stable predictions for the testing dataset
         than for the training dataset, resulting in slightly better accuracies
@@ -392,6 +393,19 @@ class Engine:
     def update_data(self, train_data, test_data, target, restart=False):
         """
         Interrupts the engine and loads a new pair of train/test datasets.
+
+        :param train_data: The training data.
+        :type train_data: pandas.DataFrame
+
+        :param test_data: The testing data.
+        :type test_data: pandas.DataFrame
+
+        :param target: The label of the target column.
+        :type target: str
+
+        :param restart: Optional, ``default=False``. Whether to restart the engine
+            after updating data or not.
+        :type restart: bool
         """
         self.interrupt()
         self.X_train = train_data.drop(columns=target)
@@ -406,6 +420,10 @@ class Engine:
     def shuffle_train_data(self, restart=False):
         """
         Interrupts the engine and shuffles the training data.
+
+        :param restart: Optional, ``default=False``. Whether to restart the engine
+            after shuffling data or not.
+        :type restart: bool
 
         .. note::
             It's a good practice to shuffle the training data periodically to avoid
@@ -422,6 +440,13 @@ class Engine:
     def reconfigure(self, config, restart=False):
         """
         Interrupts the engine and loads a new configuration.
+
+        :param config: The configurations for the behavior of the engine.
+        :type config: miraiml.Config
+
+        :param restart: Optional, ``default=False``. Whether to restart the engine
+            after reconfiguring the engine or not.
+        :type restart: bool
         """
         self.interrupt()
         self.config = config
@@ -432,14 +457,14 @@ class Engine:
 
     def restart(self):
         """
-        Interrupts the engine and starts a new thread to run `main_loop`.
+        Interrupts the engine and starts a new thread to run ``main_loop``.
         """
         self.interrupt()
         Thread(target=lambda: self.main_loop()).start()
 
     def main_loop(self):
         """
-        Main optimization loop. Use `restart` to trigger it, instead.
+        Main optimization loop. Use ``restart`` to trigger it, instead.
         """
         self.is_running = True
         if not os.path.exists(self.models_dir):

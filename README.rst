@@ -37,6 +37,7 @@ Usage
 To do
 -----
 
+- Explicit internal attributes and methods
 - Modularize an Ensembler
 - Create a Stacker
 - Provide rich visualizations for the optimization process
