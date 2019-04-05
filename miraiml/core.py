@@ -1,3 +1,5 @@
+__all__ = ['BaseModel', 'MiraiSeeker']
+
 from sklearn.model_selection import StratifiedKFold, KFold
 from random import triangular, choice, choices, uniform
 from threading import Thread
@@ -16,16 +18,17 @@ class BaseModel:
 
     This is the basic brick for the optimizations.
 
-    Parameters
-    ----------
-    model_class : A statistical model class that must implement the methods `fit`
-        and `predict` for regression or `predict_proba` classification problems.
+    :param model_class: A statistical model class that must implement the methods
+        `fit` and `predict` for regression or `predict_proba` classification problems.
+    :type model_class: type
 
-    parameters : dict
-        The parameters that will be used to instantiate objects of `model_class`.
+    :param parameters: The parameters that will be used to instantiate objects of
+        ``model_class``.
+    :type parameters: dict
 
-    features : list
-        The list of features that will be used to train the statistical model.
+    :param features: The list of features that will be used to train the statistical
+        model.
+    :type features: list
     """
     def __init__(self, model_class, parameters, features):
         self.model_class = model_class
