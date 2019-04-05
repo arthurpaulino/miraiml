@@ -51,30 +51,25 @@ class BaseModel:
         than for the training dataset, resulting in slightly better accuracies
         than expected.
 
-        Parameters
-        ----------
-        X_train : pandas.DataFrame
-            The dataframe that contains the training inputs for the model.
+        :param X_train: The dataframe that contains the training inputs for the
+            model.
+        :type X_train: pandas.DataFrame
 
-        y_train : pandas.Series
-            The series of training targets for the model.
+        :param y_train: The series of training targets for the model.
+        :type y_train: pandas.Series
 
-        X_test : pandas.DataFrame
-            The dataframe that contains the testing inputs for the model.
+        :param X_test: The dataframe that contains the testing inputs for the model.
+        :type X_test: pandas.DataFrame
 
-        config : miraiml.Config
-            The configuration of the engine.
+        :param config: The configuration of the engine.
+        :type config: miraiml.Config
 
-        Returns
-        -------
-        train_predictions : numpy.array
-            The predictions for the training dataset.
+        :rtype: tuple
+        :return: ``(train_predictions, test_predictions, score)``
 
-        test_predictions : numpy.array
-            The predictions for the testing dataset.
-
-        score : float
-            The score of the model on the training dataset.
+            * ``train_predictions``: The predictions for the training dataset
+            * ``test_predictions``: The predictions for the testing dataset
+            * ``score``: The score of the model on the training dataset
         """
         X_train, X_test = X_train[self.features], X_test[self.features]
         train_predictions = np.zeros(X_train.shape[0])
@@ -106,16 +101,14 @@ class MiraiSeeker:
     This class implements a smarter way of searching good parameters and sets of
     features.
 
-    Parameters
-    ----------
-    ids : list
-        A list of miraiml.BaseModels ids to keep track of.
+    :param ids: A list of miraiml.BaseModels ids to keep track of.
+    :type ids: list
 
-    all_features : list
-        A list containing all available features.
+    :param all_features: A list containing all available features.
+    :type all_features: list
 
-    config : miraiml.Config
-        The configuration of the engine.
+    :param config: The configuration of the engine.
+    :type config: miraiml.Config
     """
     def __init__(self, ids, all_features, config):
         self.ids = ids
@@ -140,16 +133,14 @@ class MiraiSeeker:
         """
         Registers the performance of a base model and its characteristics.
 
-        Parameters
-        ----------
-        id : int or string
-            The id of the model layout that represents the base model.
+        :param id: The id of the model layout that represents the base model.
+        :type id: str
 
-        base_model : miraiml.internal.core.BaseModel
-            The base model being registered.
+        :param base_model: The base model being registered.
+        :type base_model: miraiml.core.BaseModel
 
-        score : float
-            The score of `base_model`.
+        :param score: The score of ``base_model``.
+        :type score: float
         """
         event = {'score':score}
         for parameter in base_model.parameters:
@@ -165,16 +156,12 @@ class MiraiSeeker:
         """
         Tells whether it's ready to work for an id or not.
 
-        Parameters
-        ----------
-        id : int or string
-            The id to be inspected.
+        :param id: The id to be inspected.
+        :type id: str
 
-        Returns
-        -------
-        ready : bool
-            A boolean that tells whether an id can be used to generate parameters
-            and features lists or not.
+        :rtype: bool
+        :returns: Whether ``id`` can be used to generate parameters and features
+            lists or not.
         """
         return self.history[id].shape[0] > 1
 
@@ -185,14 +172,12 @@ class MiraiSeeker:
         registered entries in which the value was chosen before. Better
         parameters and features have higher chances of being chosen.
 
-        Parameters
-        ----------
-        id : int or string
-            The id for which we want a new set of parameters and features.
+        :param id: The id for which we want a new set of parameters and features.
+        :type id: str
 
-        Returns
-        -------
-        (parameters, features) : (dict, list)
+        :rtype: tuple
+        :return: ``(parameters, features)``
+
             Respectively, the set of parameters and the list of features that can
             be used to generate a new base model.
         """
@@ -225,38 +210,42 @@ class BaseLayout:
     ----------
     model_class : class
         Any class that represents a statistical model. It must implement the
-        methods `fit` as well as `predict` for regression or `predict_proba` for
-        classification problems.
+        methods ``fit`` as well as ``predict`` for regression or ``predict_proba``
+        for classification problems.
 
-    id : int or string
+    id : str
         An id to be associated with this layout.
 
     parameters_values : dict, optional (default={})
         A dictionary containing a list of values to be tested as parameters to
-        instantiate objects of `model_class`.
+        instantiate objects of ``model_class``.
 
     parameters_rules : function, optional (default=lambda x: None)
         A function that constraints certain parameters because of the values
         assumed by others.
 
-    Examples
-    --------
-    >>> from sklearn.linear_model import LogisticRegression
-    >>> from miraiml import BaseLayout
+    :Example:
+    ::
 
-    >>> def logistic_regression_parameters_rules(parameters):
-    ...     if parameters['solver'] in ['newton-cg', 'sag', 'lbfgs']:
-    ...         parameters['penalty'] = 'l2'
+        from sklearn.linear_model import LogisticRegression
+        from miraiml import BaseLayout
 
-    >>> base_layout = BaseLayout(LogisticRegression, 'Logistic Regression', {
-    ...         'penalty': ['l1', 'l2'],
-    ...         'C': np.arange(0.1, 2, 0.1),
-    ...         'max_iter': np.arange(50, 300),
-    ...         'solver': ['newton-cg', 'lbfgs', 'liblinear', 'sag', 'saga'],
-    ...         'random_state': [0]
-    ...     },
-    ...     parameters_rules=logistic_regression_parameters_rules
-    ... )
+        def logistic_regression_parameters_rules(parameters):
+        if parameters['solver'] in ['newton-cg', 'sag', 'lbfgs']:
+            parameters['penalty'] = 'l2'
+
+        base_layout = BaseLayout(LogisticRegression, 'Logistic Regression', {
+                'penalty': ['l1', 'l2'], # may assume values 'l1' or 'l2'
+                'C': np.arange(0.1, 2, 0.1), # may assume values .1, .2, ... or 1.9
+                'max_iter': np.arange(50, 300),
+                'solver': ['newton-cg', 'lbfgs', 'liblinear', 'sag', 'saga'],
+                'random_state': [0]
+            },
+            parameters_rules=logistic_regression_parameters_rules
+        )
+
+    .. warning::
+        It's a good practice not to allow ``random_state`` assume multiple values.
     """
     def __init__(self, model_class, id, parameters_values={},
             parameters_rules=lambda x: None):
@@ -292,10 +281,10 @@ class Config:
 
     Parameters
     ----------
-    local_dir : string
+    local_dir : str
         The path for the engine to save its checkpoints.
 
-    problem_type : string, 'classification' or 'regression'
+    problem_type : str, 'classification' or 'regression'
         The problem type. multi-class classification problems are not supprted
         yet.
 
@@ -317,7 +306,7 @@ class Config:
         The proportion of attempts in which the engine will explore the search
         space by using an instance of MiraiSeeker.
 
-    ensemble_id : int or string
+    ensemble_id : str
         The id for the ensemble.
 
     n_ensemble_cycles : int
@@ -328,23 +317,23 @@ class Config:
         Whether the engine should output the models' scores after improvements
         or not.
 
-    Examples
-    --------
-    >>> from sklearn.metrics import roc_auc_score
-    >>> from miraiml import Config
+    :Example:
+    ::
 
-    >>> config = Config(
-    ...     local_dir = 'miraiml_local',
-    ...     problem_type = 'classification',
-    ...     base_layouts = base_layouts,
-    ...     n_folds = 5,
-    ...     stratified = True,
-    ...     score_function = roc_auc_score,
-    ...     mirai_exploration_ratio = 0.5,
-    ...     ensemble_id = 'Ensemble',
-    ...     n_ensemble_cycles = 1000,
-    ...     report = False
-    ... )
+        from sklearn.metrics import roc_auc_score
+        from miraiml import Config
+        config = Config(
+            local_dir = 'miraiml_local',
+            problem_type = 'classification',
+            base_layouts = base_layouts,
+            n_folds = 5,
+            stratified = True,
+            score_function = roc_auc_score,
+            mirai_exploration_ratio = 0.5,
+            ensemble_id = 'Ensemble',
+            n_ensemble_cycles = 1000,
+            report = False
+        )
     """
     def __init__(self, local_dir, problem_type, base_layouts, n_folds, stratified,
             score_function, mirai_exploration_ratio, ensemble_id, n_ensemble_cycles,
@@ -371,11 +360,11 @@ class Engine:
     config : miraiml.Config
         The configurations for the behavior of the engine.
 
-    Examples
-    --------
-    >>> from miraiml import Engine
+    :Example:
+    ::
 
-    >>> engine = Engine(config)
+        from miraiml import Engine
+        engine = Engine(config)
     """
     def __init__(self, config):
         self.config = config
