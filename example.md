@@ -19,19 +19,6 @@ data.head()
 
 
 <div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
 <table border="1" class="dataframe">
   <thead>
     <tr style="text-align: right;">
@@ -133,7 +120,7 @@ data.info()
     target_class                                     17898 non-null int64
     dtypes: float64(8), int64(1)
     memory usage: 1.2 MB
-    
+
 
 It's a pretty clean and simple dataset related to a classification problem and the target column is called `target_class`. Let's suppose that we have a training dataset (labeled) and a testing dataset, for which we don't have labels.
 
@@ -307,7 +294,7 @@ for _ in range(3):
 engine.interrupt()
 ```
 
-    
+
                         id     score    weight
     0  Logistic Regression  0.974392  0.995657
     1             Ensemble  0.968524       NaN
@@ -316,7 +303,7 @@ engine.interrupt()
     4    Gradient Boosting  0.949128  0.711959
     5                 K-NN  0.939656  0.226841
     6        Random Forest  0.916895  0.062783
-    
+
                         id     score    weight
     0  Logistic Regression  0.974392  0.980699
     1             Ensemble  0.969277       NaN
@@ -325,7 +312,7 @@ engine.interrupt()
     4    Gradient Boosting  0.949128  0.413303
     5        Random Forest  0.942440  0.017965
     6                 K-NN  0.939656  0.037094
-    
+
                         id     score    weight
     0             Ensemble  0.974481       NaN
     1  Logistic Regression  0.974392  0.909078
@@ -334,7 +321,7 @@ engine.interrupt()
     4          Gaussian NB  0.957497  0.086895
     5                 K-NN  0.945346  0.149539
     6        Random Forest  0.942440  0.438359
-    
+
 
 We can also request the predictions for the testing data anytime we want:
 
