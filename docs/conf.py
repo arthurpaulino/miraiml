@@ -12,7 +12,10 @@
 
 import os
 import sys
+import warnings
 sys.path.insert(0, '..')
+
+warnings.filterwarnings("ignore")
 
 
 # -- Project information -----------------------------------------------------
