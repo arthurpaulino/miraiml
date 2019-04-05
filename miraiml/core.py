@@ -3,7 +3,7 @@ __all__ = ['BaseModel', 'MiraiSeeker']
 from sklearn.model_selection import StratifiedKFold, KFold
 from random import triangular, choice, choices, uniform
 from threading import Thread
-from time import sleep
+from time import sleep, time
 import pandas as pd
 import numpy as np
 import os
@@ -178,8 +178,8 @@ class MiraiSeeker:
         :rtype: tuple
         :return: ``(parameters, features)``
 
-            Respectively, the set of parameters and the list of features that can
-            be used to generate a new base model.
+            Respectively, the dictionary of parameters and the list of features
+            that can be used to generate a new base model.
         """
         history = self.history[id]
         parameters = {}
@@ -206,25 +206,25 @@ class BaseLayout:
     This class represents the search hyperspace for a base statistical model. As
     an analogy, it represents all possible sets of clothes that someone can use.
 
-    Parameters
-    ----------
-    model_class : class
-        Any class that represents a statistical model. It must implement the
-        methods ``fit`` as well as ``predict`` for regression or ``predict_proba``
-        for classification problems.
+    :param model_class: Any class that represents a statistical model. It must
+        implement the methods ``fit`` as well as ``predict`` for regression or
+        ``predict_proba`` for classification problems.
+    :type model_class: type
 
-    id : str
-        An id to be associated with this layout.
+    :param id: An id to be associated with this layout.
+    :type id: str
 
-    parameters_values : dict, optional (default={})
-        A dictionary containing a list of values to be tested as parameters to
-        instantiate objects of ``model_class``.
+    :type parameters_values: dict
+    :param parameters_values: optional, ``default={}``. A dictionary containing
+        a list of values to be tested as parameters to instantiate objects of
+        ``model_class``.
 
-    parameters_rules : function, optional (default=lambda x: None)
-        A function that constraints certain parameters because of the values
-        assumed by others.
+    :type parameters_rules: function
+    :param parameters_rules: optional, ``default=lambda x: None``. A function that
+        constrains certain parameters because of the values assumed by others.
 
     :Example:
+
     ::
 
         from sklearn.linear_model import LogisticRegression
@@ -239,13 +239,19 @@ class BaseLayout:
                 'C': np.arange(0.1, 2, 0.1), # may assume values .1, .2, ... or 1.9
                 'max_iter': np.arange(50, 300),
                 'solver': ['newton-cg', 'lbfgs', 'liblinear', 'sag', 'saga'],
-                'random_state': [0]
+                'random_state': [0] # IMPORTANT
             },
             parameters_rules=logistic_regression_parameters_rules
         )
 
     .. warning::
-        It's a good practice not to allow ``random_state`` assume multiple values.
+        **Do not** allow ``random_state`` assume multiple values. If ``model_class``
+        has a ``random_state`` parameter, force ``BaseLayout`` to always choose
+        the same value by providing a list with a single element.
+
+        Allowing ``random_state`` to assume multiple values will confuse the engine
+        because the scores will be unstable even with the same choice of
+        hyperparameters and features.
     """
     def __init__(self, model_class, id, parameters_values={},
             parameters_rules=lambda x: None):
@@ -258,16 +264,14 @@ class BaseLayout:
         """
         Generates completely random parameters and features set.
 
-        Parameters
-        ----------
-        all_features : list
-            The list of available features.
+        :param all_features: The list of available features.
+        :type all_features: list
 
-        Returns
-        -------
-        (parameters, features) : (dict, list)
-            Respectively, the set of parameters and the list of features that can
-            be used to generate a new base model.
+        :rtype: tuple
+        :return: ``(parameters, features)``
+
+            Respectively, the dictionary of parameters and the list of features
+            that can be used to generate a new base model.
         """
         parameters = {}
         for parameter in self.parameters_values:
@@ -279,24 +283,22 @@ class Config:
     """
     This class defines the general behavior of the engine.
 
-    Parameters
-    ----------
-    local_dir : str
-        The path for the engine to save its checkpoints.
+    :param local_dir: The path for the engine to save its checkpoints.
+    :type local_dir: str
 
-    problem_type : str, 'classification' or 'regression'
-        The problem type. multi-class classification problems are not supprted
-        yet.
+    :type problem_type: str
+    :param problem_type: ``'classification'`` or ``'regression'``. The problem
+        type. Multi-class classification problems are not supported yet.
 
-    base_layouts : list
-        The list of miraiml.BaseLayout objects to optimize.
+    :param base_layouts: The list of miraiml.BaseLayout objects to optimize.
+    :type base_layouts: list
 
-    n_folds : int
-        The number of folds for cross-validations.
+    :param n_folds: The number of folds for cross-validations.
+    :type n_folds: int
 
-    stratified : bool
-        Whether to stratify folds on target or not. Only used when the problem
-        type is 'classification'.
+    :param stratified: Whether to stratify folds on target or not. Only used if
+        ``problem_type == 'classification'``.
+    :type stratified: bool
 
     score_function : function
         A function that receives the "truth" and the predictions (in this order)
@@ -318,6 +320,7 @@ class Config:
         or not.
 
     :Example:
+
     ::
 
         from sklearn.metrics import roc_auc_score
@@ -355,12 +358,11 @@ class Engine:
     """
     This class offers the controls for the engine.
 
-    Parameters
-    ----------
-    config : miraiml.Config
-        The configurations for the behavior of the engine.
+    :param config: The configurations for the behavior of the engine.
+    :type config: miraiml.Config
 
     :Example:
+
     ::
 
         from miraiml import Engine
@@ -372,6 +374,7 @@ class Engine:
         self.must_interrupt = False
         self.mirai_seeker = None
         self.models_dir = config.local_dir + 'models/'
+        self.X_train = None
 
     def interrupt(self):
         """
@@ -393,6 +396,22 @@ class Engine:
         self.X_test = test_data
         if not self.mirai_seeker is None:
             self.mirai_seeker.reset()
+        if restart:
+            self.restart()
+
+    def shuffle_train_data(self, restart=False):
+        """
+        Interrupts the engine and shuffles the training data.
+
+        .. note::
+            It's a good practice to shuffle the training data periodically to avoid
+            overfitting on a certain folding pattern.
+        """
+        self.interrupt()
+        if not self.X_train is None:
+            seed = int(time())
+            self.X_train = self.X_train.sample(frac=1, random_state=seed)
+            self.y_train = self.y_train.sample(frac=1, random_state=seed)
         if restart:
             self.restart()
 
