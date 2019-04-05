@@ -69,7 +69,7 @@ class BaseModel:
         :type config: miraiml.Config
 
         :rtype: tuple
-        :return: ``(train_predictions, test_predictions, score)``
+        :returns: ``(train_predictions, test_predictions, score)``
 
             * ``train_predictions``: The predictions for the training dataset
             * ``test_predictions``: The predictions for the testing dataset
@@ -180,7 +180,7 @@ class MiraiSeeker:
         :type id: str
 
         :rtype: tuple
-        :return: ``(parameters, features)``
+        :returns: ``(parameters, features)``
 
             Respectively, the dictionary of parameters and the list of features
             that can be used to generate a new base model.
@@ -272,7 +272,7 @@ class BaseLayout:
         :type all_features: list
 
         :rtype: tuple
-        :return: ``(parameters, features)``
+        :returns: ``(parameters, features)``
 
             Respectively, the dictionary of parameters and the list of features
             that can be used to generate a new base model.
@@ -304,24 +304,24 @@ class Config:
         ``problem_type == 'classification'``.
     :type stratified: bool
 
-    score_function : function
-        A function that receives the "truth" and the predictions (in this order)
-        and returns the score. Bigger scores mean better models.
+    :param score_function: A function that receives the "truth" and the predictions
+        (in this order) and returns the score. Bigger scores must mean better models.
+    :type score_function: function
 
-    mirai_exploration_ratio : float in [0, 1]
-        The proportion of attempts in which the engine will explore the search
-        space by using an instance of MiraiSeeker.
+    :param mirai_exploration_ratio: The proportion of attempts in which the engine
+        will explore the search space by using an instance of ``MiraiSeeker``.
+    :type mirai_exploration_ratio: float
 
-    ensemble_id : str
-        The id for the ensemble.
+    :param ensemble_id: The id for the ensemble.
+    :type ensemble_id: str
 
-    n_ensemble_cycles : int
-        The number of times that the engine will attempt to improve the ensemble
-        weights in each loop after optimizing all base models.
+    :param n_ensemble_cycles: The number of times that the engine will attempt to
+        improve the ensemble weights in each loop after optimizing all base models.
+    :type n_ensemble_cycles: int
 
-    report : bool
-        Whether the engine should output the models' scores after improvements
-        or not.
+    :param report: Whether the engine should output the models' scores after
+        improvements or not.
+    :type report: bool
 
     :Example:
 
@@ -557,7 +557,7 @@ class Engine:
 
     def attempt_new_weights(self):
         """
-        Performs `config.n_ensemble_cycles` attempts to improve ensemble weights.
+        Performs ``config.n_ensemble_cycles`` attempts to improve ensemble weights.
         """
         ensemble_id = self.config.ensemble_id
         for _ in range(self.config.n_ensemble_cycles):
@@ -581,22 +581,16 @@ class Engine:
         """
         Performs the ensemble of the current predictions of each base model.
 
-        Parameters
-        ----------
-        weights : dict
-            A dictionary containing the weights related to the id of each base
-            mosel.
+        :param weights: A dictionary containing the weights related to the id of
+            each base model.
+        :type weights: dict
 
-        Returns
-        -------
-        train_predictions : numpy.array
-            The ensemble predictions for the training dataset.
+        :rtype: tuple
+        :returns: ``(train_predictions, test_predictions, score)``
 
-        test_predictions : numpy.array
-            The ensemble predictions for the testing dataset.
-
-        score : float
-            The score of the ensemble on the training dataset.
+            * ``train_predictions``: The ensemble predictions for the training dataset
+            * ``test_predictions``: The ensemble predictions for the testing dataset
+            * ``score``: The score of the ensemble on the training dataset
         """
         ids = sorted(weights)
         id = ids[0]
@@ -616,10 +610,8 @@ class Engine:
         """
         Queries the score of the best model (or ensemble).
 
-        Returns
-        -------
-        score : float
-            The score of the best model.
+        :rtype: float
+        :returns: The score of the best model.
         """
         if len(self.scores) > 0:
             return self.scores[self.best_id]
@@ -630,10 +622,9 @@ class Engine:
         Queries the predictions of the best model (or ensemble) for the testing
         data.
 
-        Returns
-        -------
-        predictions : numpy.array
-            The predictions of the best model (or ensemble) for the testing data.
+        :rtype: numpy.ndarray
+        :returns: The predictions of the best model (or ensemble) for the testing
+            data.
         """
         if len(self.test_predictions_dict) > 0:
             return self.test_predictions_dict[self.best_id]
