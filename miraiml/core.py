@@ -2,8 +2,7 @@
 This module is meant for internal usage.
 """
 
-__all__ = ['BaseModel', 'MiraiSeeker']
-# __all__ = ['BaseModel', 'MiraiSeeker', 'Ensembler']
+__all__ = ['BaseModel', 'MiraiSeeker', 'Ensembler']
 
 from sklearn.model_selection import StratifiedKFold, KFold
 from random import triangular, choice, choices, uniform
@@ -49,9 +48,9 @@ class BaseModel:
         For each fold of the training dataset, the model trains on the bigger
         part and then make predictions for the smaller part and for the testing
         dataset. After iterating over all folds, the predictions for the training
-        dataset will be complete and there will be ``n_folds`` sets of predictions
-        for the testing dataset. The final set of predictions for the testing
-        dataset is the mean of the ``n_folds`` predictions.
+        dataset will be complete and there will be ``config.n_folds`` sets of
+        predictions for the testing dataset. The final set of predictions for the
+        testing dataset is the mean of the ``config.n_folds`` predictions.
 
         This mechanic may produce more stable predictions for the testing dataset
         than for the training dataset, resulting in slightly better accuracies
@@ -61,8 +60,8 @@ class BaseModel:
             model.
         :type X_train: pandas.DataFrame
 
-        :param y_train: The series of training targets for the model.
-        :type y_train: pandas.Series
+        :param y_train: The training targets for the model.
+        :type y_train: pandas.Series or numpy.ndarray
 
         :param X_test: The dataframe that contains the testing inputs for the model.
         :type X_test: pandas.DataFrame
@@ -107,7 +106,7 @@ class MiraiSeeker:
     This class implements a smarter way of searching good parameters and sets of
     features.
 
-    :param ids: A list of miraiml.BaseModels ids to keep track of.
+    :param ids: The list of base models' ids to keep track of.
     :type ids: list
 
     :param all_features: A list containing all available features.
@@ -207,65 +206,101 @@ class MiraiSeeker:
             features = sample_random_len(self.all_features)
         return (parameters, features)
 
-# class Ensembler:
-#     """
-#     Performs the ensemble of the base models.
-#     """
-#     def __init__(self, y_train, ids, train_predictions_dict, test_predictions_dict,
-#             scores, config):
-#         self.y_train = y_train
-#         self.ids = ids
-#         self.train_predictions_dict = train_predictions_dict
-#         self.test_predictions_dict = test_predictions_dict
-#         self.scores = scores
-#         self.config = config
-#
-#     def update(self):
-#         return self.ensemble(self.weights)
-#
-#     def gen_weights(self):
-#         """
-#         Generates the ensemble weights according to the score of each base model.
-#         Higher scores have higher chances of generating higher weights.
-#         """
-#         weights = {}
-#         min_score, max_score = np.inf, -np.inf
-#         for id in self.ids:
-#             score = self.scores[id]
-#             min_score = min(min_score, score)
-#             max_score = max(max_score, score)
-#         diff_score = max_score - min_score
-#         for id in self.ids:
-#             weights[id] = triangular(0, 1, (self.scores[id]-min_score)/diff_score)
-#         return weights
-#
-#     def ensemble(self, weights):
-#         """
-#         Performs the ensemble of the current predictions of each base model.
-#
-#         :param weights: A dictionary containing the weights related to the id of
-#             each base model.
-#         :type weights: dict
-#
-#         :rtype: tuple
-#         :returns: ``(train_predictions, test_predictions, score)``
-#
-#             * ``train_predictions``: The ensemble predictions for the training dataset
-#             * ``test_predictions``: The ensemble predictions for the testing dataset
-#             * ``score``: The score of the ensemble on the training dataset
-#         """
-#         id = self.ids[0]
-#         train_predictions = weights[id]*self.train_predictions_dict[id]
-#         test_predictions = weights[id]*self.test_predictions_dict[id]
-#         weights_sum = weights[id]
-#         for id in self.ids[1:]:
-#             train_predictions += weights[id]*self.train_predictions_dict[id]
-#             test_predictions += weights[id]*self.test_predictions_dict[id]
-#             weights_sum += weights[id]
-#         train_predictions /= weights_sum
-#         test_predictions /= weights_sum
-#         return (train_predictions, test_predictions,
-#             self.config.score_function(self.y_train, train_predictions))
+class Ensembler:
+    """
+    Performs the ensemble of the base models.
+    """
+    def __init__(self, y_train, ids, train_predictions_dict, test_predictions_dict,
+            scores, config):
+        self.y_train = y_train
+        self.ids = ids
+        self.train_predictions_dict = train_predictions_dict
+        self.test_predictions_dict = test_predictions_dict
+        self.scores = scores
+        self.config = config
+        self.must_interrupt = False
+
+        self.id = config.ensemble_id
+        self.weights_path = config.local_dir + 'models/' + self.id
+
+        if os.path.exists(self.weights_path):
+            self.weights = load(self.weights_path)
+        else:
+            self.weights = self.gen_weights()
+            par_dump(self.weights, self.weights_path)
+
+    def interrupt(self):
+        self.must_interrupt = True
+
+    def update(self):
+        train_predictions, test_predictions, score = self.ensemble(self.weights)
+        self.train_predictions_dict[self.id] = train_predictions
+        self.test_predictions_dict[self.id] = test_predictions
+        self.scores[self.id] = score
+        return (train_predictions, test_predictions, score)
+
+    def gen_weights(self):
+        """
+        Generates the ensemble weights according to the score of each base model.
+        Higher scores have higher chances of generating higher weights.
+        """
+        weights = {}
+        min_score, max_score = np.inf, -np.inf
+        for id in self.ids:
+            score = self.scores[id]
+            min_score = min(min_score, score)
+            max_score = max(max_score, score)
+        diff_score = max_score - min_score
+        for id in self.ids:
+            weights[id] = triangular(0, 1, (self.scores[id]-min_score)/diff_score)
+        return weights
+
+    def ensemble(self, weights):
+        """
+        Performs the ensemble of the current predictions of each base model.
+
+        :param weights: A dictionary containing the weights related to the id of
+            each base model.
+        :type weights: dict
+
+        :rtype: tuple
+        :returns: ``(train_predictions, test_predictions, score)``
+
+            * ``train_predictions``: The ensemble predictions for the training dataset
+            * ``test_predictions``: The ensemble predictions for the testing dataset
+            * ``score``: The score of the ensemble on the training dataset
+        """
+        id = self.ids[0]
+        train_predictions = weights[id]*self.train_predictions_dict[id]
+        test_predictions = weights[id]*self.test_predictions_dict[id]
+        weights_sum = weights[id]
+        for id in self.ids[1:]:
+            train_predictions += weights[id]*self.train_predictions_dict[id]
+            test_predictions += weights[id]*self.test_predictions_dict[id]
+            weights_sum += weights[id]
+        train_predictions /= weights_sum
+        test_predictions /= weights_sum
+        return (train_predictions, test_predictions,
+            self.config.score_function(self.y_train, train_predictions))
+
+    def optimize(self):
+        """
+        Performs ``config.n_ensemble_cycles`` attempts to improve ensemble weights.
+        """
+        optimized = False
+        for _ in range(self.config.n_ensemble_cycles):
+            if self.must_interrupt:
+                break
+            weights = self.gen_weights()
+            train_predictions, test_predictions, score = self.ensemble(weights)
+            if self.id not in self.scores or score > self.scores[self.id]:
+                self.scores[self.id] = score
+                self.weights = weights
+                self.train_predictions_dict[self.id] = train_predictions
+                self.test_predictions_dict[self.id] = test_predictions
+                par_dump(self.weights, self.weights_path)
+                optimized = True
+        return optimized
 
 class BaseLayout:
     """
@@ -349,14 +384,15 @@ class Config:
     """
     This class defines the general behavior of the engine.
 
-    :param local_dir: The path for the engine to save its checkpoints.
+    :param local_dir: The path for the engine to save its internal files. If the
+        directory doesn't exist, it will be created automatically.
     :type local_dir: str
 
     :type problem_type: str
     :param problem_type: ``'classification'`` or ``'regression'``. The problem
-        type. Multi-class classification problems are not supported yet.
+        type. Multi-class classification problems are not supported.
 
-    :param base_layouts: The list of miraiml.BaseLayout objects to optimize.
+    :param base_layouts: The list of :class:`miraiml.BaseLayout` objects to optimize.
     :type base_layouts: list
 
     :param n_folds: The number of folds for cross-validations.
@@ -371,7 +407,8 @@ class Config:
     :type score_function: function
 
     :param mirai_exploration_ratio: The proportion of attempts in which the engine
-        will explore the search space by using an instance of ``MiraiSeeker``.
+        will explore the search space by using an instance of
+        :class:`miraiml.core.MiraiSeeker`.
     :type mirai_exploration_ratio: float
 
     :param ensemble_id: The id for the ensemble.
@@ -441,12 +478,24 @@ class Engine:
         self.mirai_seeker = None
         self.models_dir = config.local_dir + 'models/'
         self.X_train = None
+        self.ensembler = None
+
+    def is_running(self):
+        """
+        Tells whether the engine is running or not.
+
+        :rtype: bool
+        :returns: ``True`` if the engine is running and ``False`` otherwise.
+        """
+        return self.is_running
 
     def interrupt(self):
         """
         Sets a flag to make the engine stop on the first opportunity.
         """
         self.must_interrupt = True
+        if not self.ensembler is None:
+            self.ensembler.interrupt()
         while self.is_running:
             sleep(.1)
         self.must_interrupt = False
@@ -518,7 +567,7 @@ class Engine:
 
     def restart(self):
         """
-        Interrupts the engine and starts a new thread to run ``main_loop``.
+        Interrupts the engine and starts again from last checkpoint (if any).
         """
         self.interrupt()
         Thread(target=lambda: self.main_loop()).start()
@@ -537,7 +586,8 @@ class Engine:
         self.scores = {}
         self.best_score = None
         self.best_id = None
-        self.weights = {}
+
+        ensemble_id = self.config.ensemble_id
 
         for base_layout in self.config.base_layouts:
             if self.must_interrupt:
@@ -565,22 +615,15 @@ class Engine:
         self.mirai_seeker = MiraiSeeker(self.base_models_ids, self.all_features,
             self.config)
 
-        ensemble_id = self.config.ensemble_id
-        weights_path = self.models_dir + ensemble_id
-        if os.path.exists(weights_path):
-            self.weights = load(weights_path)
-        else:
-            self.weights = self.gen_weights()
-            par_dump(self.weights, weights_path)
+        self.ensembler = Ensembler(self.y_train, self.base_models_ids,
+            self.train_predictions_dict, self.test_predictions_dict, self.scores,
+            self.config)
 
-        self.train_predictions_dict[ensemble_id], self.test_predictions_dict[ensemble_id],\
-            self.scores[ensemble_id] = self.ensemble(self.weights)
-
-        if self.scores[ensemble_id] > self.best_score:
-            self.best_score = self.scores[ensemble_id]
-            self.best_id = ensemble_id
-
-        self.attempt_new_weights()
+        if self.ensembler.optimize():
+            score = self.scores[ensemble_id]
+            if score > self.best_score:
+                self.best_score = score
+                self.best_id = ensemble_id
 
         if self.config.report:
             self.report()
@@ -611,9 +654,10 @@ class Engine:
                     if score > self.best_score:
                         self.best_score = score
                         self.best_id = id
+
                     self.train_predictions_dict[ensemble_id],\
                         self.test_predictions_dict[ensemble_id],\
-                        self.scores[ensemble_id] = self.ensemble(self.weights)
+                        self.scores[ensemble_id] = self.ensembler.update()
                     if self.scores[ensemble_id] > self.best_score:
                         self.best_score = self.scores[ensemble_id]
                         self.best_id = ensemble_id
@@ -621,76 +665,15 @@ class Engine:
                         self.report()
                     par_dump(base_model, self.models_dir + id)
 
-            self.attempt_new_weights()
-
-        self.is_running = False
-
-    def gen_weights(self):
-        """
-        Generates the ensemble weights according to the score of each base model.
-        Higher scores have higher chances of generating higher weights.
-        """
-        weights = {}
-        min_score, max_score = np.inf, -np.inf
-        for id in self.base_models_ids:
-            score = self.scores[id]
-            min_score = min(min_score, score)
-            max_score = max(max_score, score)
-        diff_score = max_score - min_score
-        for id in self.base_models_ids:
-            weights[id] = triangular(0, 1, (self.scores[id]-min_score)/diff_score)
-        return weights
-
-    def attempt_new_weights(self):
-        """
-        Performs ``config.n_ensemble_cycles`` attempts to improve ensemble weights.
-        """
-        ensemble_id = self.config.ensemble_id
-        for _ in range(self.config.n_ensemble_cycles):
-            if self.must_interrupt:
-                break
-            weights = self.gen_weights()
-            train_predictions, test_predictions, score = self.ensemble(weights)
-            if score > self.scores[ensemble_id]:
-                self.scores[ensemble_id] = score
-                self.weights = weights
-                self.train_predictions_dict[ensemble_id] = train_predictions
-                self.test_predictions_dict[ensemble_id] = test_predictions
+            if self.ensembler.optimize():
+                score = self.scores[ensemble_id]
                 if score > self.best_score:
                     self.best_score = score
                     self.best_id = ensemble_id
-                par_dump(weights, self.models_dir + ensemble_id)
                 if self.config.report:
                     self.report()
 
-    def ensemble(self, weights):
-        """
-        Performs the ensemble of the current predictions of each base model.
-
-        :param weights: A dictionary containing the weights related to the id of
-            each base model.
-        :type weights: dict
-
-        :rtype: tuple
-        :returns: ``(train_predictions, test_predictions, score)``
-
-            * ``train_predictions``: The ensemble predictions for the training dataset
-            * ``test_predictions``: The ensemble predictions for the testing dataset
-            * ``score``: The score of the ensemble on the training dataset
-        """
-        ids = sorted(weights)
-        id = ids[0]
-        train_predictions = weights[id]*self.train_predictions_dict[id]
-        test_predictions = weights[id]*self.test_predictions_dict[id]
-        weights_sum = weights[id]
-        for id in ids[1:]:
-            train_predictions += weights[id]*self.train_predictions_dict[id]
-            test_predictions += weights[id]*self.test_predictions_dict[id]
-            weights_sum += weights[id]
-        train_predictions /= weights_sum
-        test_predictions /= weights_sum
-        return (train_predictions, test_predictions,
-            self.config.score_function(self.y_train, train_predictions))
+        self.is_running = False
 
     def request_score(self):
         """
@@ -718,7 +701,7 @@ class Engine:
 
     def report(self):
         """
-        Prints out the score of each base model as well as the ensemble's score.
+        Prints the score for each id.
         """
         status = []
         for id in self.scores:

@@ -37,10 +37,5 @@ Usage
 To do
 -----
 
-- Explicit internal attributes and methods
-- Modularize an Ensembler
-- Create a Stacker
-- Provide rich visualizations for the optimization process
-- Provide an ``on_improvement`` function for the user
-- Provide support for multi-class classification problems
+- Provide rich visualizations
 - Create unit tests

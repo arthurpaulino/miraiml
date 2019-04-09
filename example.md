@@ -1,10 +1,8 @@
-
 # MiraiML usage example
 
 ## The dataset
 
 Let's use the csv file `pulsar_stars.csv` to explore MiraiML functionalities. It's a dataset downloaded from Kaggle ([Predicting a Pulsar Star](https://www.kaggle.com/pavanraj159/predicting-a-pulsar-star)).
-
 
 ```python
 import pandas as pd
@@ -14,9 +12,6 @@ warnings.filterwarnings('ignore')
 data = pd.read_csv('pulsar_stars.csv')
 data.head()
 ```
-
-
-
 
 <div>
 <table border="1" class="dataframe">
@@ -99,9 +94,6 @@ data.head()
 </table>
 </div>
 
-
-
-
 ```python
 data.info()
 ```
@@ -121,9 +113,7 @@ data.info()
     dtypes: float64(8), int64(1)
     memory usage: 1.2 MB
 
-
 It's a pretty clean and simple dataset related to a classification problem and the target column is called `target_class`. Let's suppose that we have a training dataset (labeled) and a testing dataset, for which we don't have labels.
-
 
 ```python
 from sklearn.model_selection import train_test_split
@@ -137,7 +127,6 @@ train_data, test_data = train_test_split(data, stratify=data['target_class'], te
 
 First, let's define our list of `BaseLayout`s.
 
-
 ```python
 from miraiml import BaseLayout
 import numpy as np
@@ -148,7 +137,6 @@ base_layouts = []
 #### Random Forest and Extra Trees
 
 Let's use the same search space for both of them.
-
 
 ```python
 from sklearn.ensemble import RandomForestClassifier, ExtraTreesClassifier
@@ -171,7 +159,6 @@ base_layouts += [
 
 Let's use similar parameters.
 
-
 ```python
 from sklearn.ensemble import GradientBoostingClassifier
 
@@ -190,7 +177,6 @@ base_layouts.append(BaseLayout(
 #### Logistic Regression
 
 Let's try something new here. Let's constrain a parameter.
-
 
 ```python
 from sklearn.linear_model import LogisticRegression
@@ -214,7 +200,6 @@ base_layouts.append(BaseLayout(LogisticRegression, 'Logistic Regression', {
 
 No parameters here. The engine will just search for an interesting set of features.
 
-
 ```python
 from sklearn.naive_bayes import GaussianNB
 
@@ -222,7 +207,6 @@ base_layouts.append(BaseLayout(GaussianNB, 'Gaussian NB'))
 ```
 
 #### K-Nearest Neighbors
-
 
 ```python
 from sklearn.neighbors import KNeighborsClassifier
@@ -239,7 +223,6 @@ Alright. Good enough for now.
 ### `Config`
 
 Now we define the general behavior of the engine.
-
 
 ```python
 from sklearn.metrics import roc_auc_score
@@ -265,7 +248,6 @@ Ok, that was easy.
 
 Let's see it running.
 
-
 ```python
 from miraiml import Engine
 
@@ -274,13 +256,11 @@ engine = Engine(config)
 
 Let's load the training and testing datasets.
 
-
 ```python
 engine.update_data(train_data, test_data, target='target_class')
 ```
 
 Ready to roll. In order to keep this notebook clean, let's show the scores every 20 seconds three times and then interrupt the engine.
-
 
 ```python
 from time import sleep
@@ -293,7 +273,6 @@ for _ in range(3):
 
 engine.interrupt()
 ```
-
 
                         id     score    weight
     0  Logistic Regression  0.974392  0.995657
@@ -322,35 +301,22 @@ engine.interrupt()
     5                 K-NN  0.945346  0.149539
     6        Random Forest  0.942440  0.438359
 
-
 We can also request the predictions for the testing data anytime we want:
-
 
 ```python
 test_predictions = engine.request_predictions()
 test_predictions
 ```
 
-
-
-
     array([0.83163376, 0.00570235, 0.01726076, ..., 0.02851306, 0.00362415,
            0.00400597])
 
-
-
 For the sake of curiosity, let's see how we were able to perform.
-
 
 ```python
 roc_auc_score(test_data['target_class'], test_predictions)
 ```
 
-
-
-
     0.9749966249662496
-
-
 
 That's it for now. There's more to come!
