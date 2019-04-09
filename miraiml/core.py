@@ -3,6 +3,7 @@ This module is meant for internal usage.
 """
 
 __all__ = ['BaseModel', 'MiraiSeeker']
+# __all__ = ['BaseModel', 'MiraiSeeker', 'Ensembler']
 
 from sklearn.model_selection import StratifiedKFold, KFold
 from random import triangular, choice, choices, uniform
@@ -205,6 +206,66 @@ class MiraiSeeker:
         if len(features) == 0:
             features = sample_random_len(self.all_features)
         return (parameters, features)
+
+# class Ensembler:
+#     """
+#     Performs the ensemble of the base models.
+#     """
+#     def __init__(self, y_train, ids, train_predictions_dict, test_predictions_dict,
+#             scores, config):
+#         self.y_train = y_train
+#         self.ids = ids
+#         self.train_predictions_dict = train_predictions_dict
+#         self.test_predictions_dict = test_predictions_dict
+#         self.scores = scores
+#         self.config = config
+#
+#     def update(self):
+#         return self.ensemble(self.weights)
+#
+#     def gen_weights(self):
+#         """
+#         Generates the ensemble weights according to the score of each base model.
+#         Higher scores have higher chances of generating higher weights.
+#         """
+#         weights = {}
+#         min_score, max_score = np.inf, -np.inf
+#         for id in self.ids:
+#             score = self.scores[id]
+#             min_score = min(min_score, score)
+#             max_score = max(max_score, score)
+#         diff_score = max_score - min_score
+#         for id in self.ids:
+#             weights[id] = triangular(0, 1, (self.scores[id]-min_score)/diff_score)
+#         return weights
+#
+#     def ensemble(self, weights):
+#         """
+#         Performs the ensemble of the current predictions of each base model.
+#
+#         :param weights: A dictionary containing the weights related to the id of
+#             each base model.
+#         :type weights: dict
+#
+#         :rtype: tuple
+#         :returns: ``(train_predictions, test_predictions, score)``
+#
+#             * ``train_predictions``: The ensemble predictions for the training dataset
+#             * ``test_predictions``: The ensemble predictions for the testing dataset
+#             * ``score``: The score of the ensemble on the training dataset
+#         """
+#         id = self.ids[0]
+#         train_predictions = weights[id]*self.train_predictions_dict[id]
+#         test_predictions = weights[id]*self.test_predictions_dict[id]
+#         weights_sum = weights[id]
+#         for id in self.ids[1:]:
+#             train_predictions += weights[id]*self.train_predictions_dict[id]
+#             test_predictions += weights[id]*self.test_predictions_dict[id]
+#             weights_sum += weights[id]
+#         train_predictions /= weights_sum
+#         test_predictions /= weights_sum
+#         return (train_predictions, test_predictions,
+#             self.config.score_function(self.y_train, train_predictions))
 
 class BaseLayout:
     """
@@ -663,8 +724,7 @@ class Engine:
         for id in self.scores:
             status.append({
                 'id': id,
-                'score': self.scores[id],
-                'weight': self.weights[id] if id in self.weights else np.nan
+                'score': self.scores[id]
             })
         print()
         print(pd.DataFrame(status).sort_values('score',
