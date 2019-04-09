@@ -22,7 +22,7 @@ behind the scenes.
 
 A step-by-step tutorial can be found on the `example notebook <example.md>`_.
 Or `read the docs <https://miraiml.readthedocs.io/en/latest/>`_ for further
-understanding.
+understanding of MiraiML's potential.
 
 Usage
 -----
@@ -33,9 +33,3 @@ Usage
 4. Inside a Python environment, import the main classes:
 
 >>> from miraiml import BaseLayout, Config, Engine
-
-To do
------
-
-- Provide rich visualizations
-- Create unit tests

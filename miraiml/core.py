@@ -127,7 +127,7 @@ class MiraiSeeker:
 
     def reset(self):
         """
-        Cleans all base models registries.
+        Deletes all base models registries.
         """
         self.history = {}
         for id in self.ids:
@@ -209,6 +209,26 @@ class MiraiSeeker:
 class Ensembler:
     """
     Performs the ensemble of the base models.
+
+    :param y_train: The target column.
+    :type y_train: pandas.Series or numpy.ndarray
+
+    :param ids: The list of base models' ids to keep track of.
+    :type ids: list
+
+    :param train_predictions_dict: The dictionary of predictions for the training
+        dataset.
+    :type train_predictions_dict: dict
+
+    :param test_predictions_dict: The dictionary of predictions for the testing
+        dataset.
+    :type test_predictions_dict: dict
+
+    :param scores: The dictionary of scores.
+    :type scores: dict
+
+    :param config: The configuration of the engine.
+    :type config: miraiml.Config
     """
     def __init__(self, y_train, ids, train_predictions_dict, test_predictions_dict,
             scores, config):
@@ -230,9 +250,24 @@ class Ensembler:
             par_dump(self.weights, self.weights_path)
 
     def interrupt(self):
+        """
+        Sets an internal flag to interrupt the optimization process on the first
+        opportunity.
+        """
         self.must_interrupt = True
 
     def update(self):
+        """
+        Updates the ensemble with the newest predictions from the base models.
+
+        :rtype: tuple
+        :returns: ``(train_predictions, test_predictions, score)``: Updated
+            predictions and score.
+
+            * ``train_predictions``: The ensemble predictions for the training dataset
+            * ``test_predictions``: The ensemble predictions for the testing dataset
+            * ``score``: The score of the ensemble on the training dataset
+        """
         train_predictions, test_predictions, score = self.ensemble(self.weights)
         self.train_predictions_dict[self.id] = train_predictions
         self.test_predictions_dict[self.id] = test_predictions
@@ -491,7 +526,7 @@ class Engine:
 
     def interrupt(self):
         """
-        Sets a flag to make the engine stop on the first opportunity.
+        Sets an internal flag to make the engine stop on the first opportunity.
         """
         self.must_interrupt = True
         if not self.ensembler is None:
