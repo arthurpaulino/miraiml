@@ -41,3 +41,5 @@ To do
 - Infer ``MiraiSeeker`` scores
 - Document an `User Guide`
 - Create more examples
+- Validate constructors' parameters
+- Protect engine from trying to save files with invalid characters from ids

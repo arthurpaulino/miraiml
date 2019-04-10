@@ -276,19 +276,23 @@ class Ensembler:
         Higher scores have higher chances of generating higher weights.
         """
         weights = {}
-        min_score, max_score = np.inf, -np.inf
-        for id in self.base_models_ids:
-            score = self.scores[id]
-            min_score = min(min_score, score)
-            max_score = max(max_score, score)
-        diff_score = max_score - min_score
-        for id in self.base_models_ids:
-            if self.scores[id] == max_score:
-                weights[id] = triangular(0, 1, 1)
-            else:
-                normalized_score = (self.scores[id]-min_score)/diff_score
-                range = triangular(0, 1, normalized_score)
-                weights[id] = triangular(0, range, 0)
+        if len(self.scores) > 0:
+            min_score, max_score = np.inf, -np.inf
+            for id in self.base_models_ids:
+                score = self.scores[id]
+                min_score = min(min_score, score)
+                max_score = max(max_score, score)
+            diff_score = max_score - min_score
+            for id in self.base_models_ids:
+                if self.scores[id] == max_score:
+                    weights[id] = triangular(0, 1, 1)
+                else:
+                    normalized_score = (self.scores[id]-min_score)/diff_score
+                    range = triangular(0, 1, normalized_score)
+                    weights[id] = triangular(0, range, 0)
+        else:
+            for id in self.base_models_ids:
+                weights[id] = 1
         return weights
 
     def ensemble(self, weights):
@@ -311,9 +315,10 @@ class Ensembler:
         test_predictions = weights[id]*self.test_predictions_dict[id]
         weights_sum = weights[id]
         for id in self.base_models_ids[1:]:
-            train_predictions += weights[id]*self.train_predictions_dict[id]
-            test_predictions += weights[id]*self.test_predictions_dict[id]
-            weights_sum += weights[id]
+            if id in self.train_predictions_dict:
+                train_predictions += weights[id]*self.train_predictions_dict[id]
+                test_predictions += weights[id]*self.test_predictions_dict[id]
+                weights_sum += weights[id]
         train_predictions /= weights_sum
         test_predictions /= weights_sum
         return (train_predictions, test_predictions,
@@ -640,14 +645,6 @@ class Engine:
                 par_dump(base_model, base_model_path)
             self.base_models[id] = base_model
 
-            self.train_predictions_dict[id], self.test_predictions_dict[id],\
-                self.scores[id] = self.base_models[id].predict(self.X_train,
-                    self.y_train, self.X_test, self.config)
-
-            if self.best_score is None or self.scores[id] > self.best_score:
-                self.best_score = self.scores[id]
-                self.best_id = id
-
         self.mirai_seeker = MiraiSeeker(self.base_models_ids, self.all_features,
             self.config)
 
@@ -655,14 +652,6 @@ class Engine:
             self.train_predictions_dict, self.test_predictions_dict, self.scores,
             self.config)
 
-        if self.ensembler.optimize():
-            score = self.scores[ensemble_id]
-            if score > self.best_score:
-                self.best_score = score
-                self.best_id = ensemble_id
-
-        if self.config.report:
-            self.report()
         while not self.must_interrupt:
             for base_layout in self.config.base_layouts:
                 if self.must_interrupt:
@@ -683,11 +672,11 @@ class Engine:
 
                 self.mirai_seeker.register_base_model(id, base_model, score)
 
-                if score > self.scores[id]:
+                if id not in self.scores or score > self.scores[id]:
                     self.scores[id] = score
                     self.train_predictions_dict[id] = train_predictions
                     self.test_predictions_dict[id] = test_predictions
-                    if score > self.best_score:
+                    if self.best_score is None or score > self.best_score:
                         self.best_score = score
                         self.best_id = id
 
@@ -716,7 +705,8 @@ class Engine:
         Queries the score of the best id on the training data.
 
         :rtype: float
-        :returns: The score of the best model.
+        :returns: The score of the best model. If no score has been computed yet,
+            returns ``None``.
         """
         if len(self.scores) > 0:
             return self.scores[self.best_id]
@@ -729,7 +719,7 @@ class Engine:
 
         :rtype: numpy.ndarray
         :returns: The predictions of the best model (or ensemble) for the testing
-            data.
+            data. If no predictions has been computed yet, returns ``None``.
         """
         if len(self.test_predictions_dict) > 0:
             return self.test_predictions_dict[self.best_id]
