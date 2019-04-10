@@ -1,8 +1,8 @@
-miraiml package
+Package Content
 ===============
 
-Module content
---------------
+Main Module
+-----------
 
 .. automodule:: miraiml
     :members:
