@@ -356,7 +356,7 @@ class Engine:
         """
         Queries the score of the best id on the training data.
 
-        :rtype: float
+        :rtype: float or None
         :returns: The score of the best model. If no score has been computed yet,
             returns ``None``.
         """
@@ -369,7 +369,7 @@ class Engine:
         Queries the predictions of the best id for the testing
         data.
 
-        :rtype: numpy.ndarray
+        :rtype: numpy.ndarray or None
         :returns: The predictions of the best model (or ensemble) for the testing
             data. If no predictions has been computed yet, returns ``None``.
         """
@@ -379,7 +379,11 @@ class Engine:
 
     def request_scores(self):
         """
-        Prints the score for each id.
+        Returns the score for each id in a ``pandas.DataFrame``.
+
+        :rtype: pandas.DataFrame
+        :returns: The score for each id in a ``pandas.DataFrame`` with the columns
+            ``'id'`` and ``'score'``, in a descending order (sorted by ``'score'``).
         """
         status = []
         for id in self.scores:

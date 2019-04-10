@@ -184,7 +184,7 @@ class MiraiSeeker:
         try:
             base_layout.parameters_rules(parameters)
         except:
-            print('Error on parameters rules for the id', id)
+            print('Error on parameters rules for the id \'{}\'.'.format(id))
         model_class = base_layout.model_class
 
         return BaseModel(model_class, parameters, features)
@@ -317,6 +317,9 @@ class Ensembler:
         """
         Generates the ensemble weights according to the score of each base model.
         Higher scores have higher chances of generating higher weights.
+
+        :rtype: dict
+        :returns: A dictionary containing the weights for each base model id.
         """
         weights = {}
         if len(self.scores) > 0:
@@ -370,6 +373,10 @@ class Ensembler:
     def optimize(self):
         """
         Performs ``config.n_ensemble_cycles`` attempts to improve ensemble weights.
+
+        :rtype: bool
+        :returns: ``True`` if a better set of weights was found and ``False``
+            otherwise.
         """
         optimized = False
         for _ in range(self.config.n_ensemble_cycles):
