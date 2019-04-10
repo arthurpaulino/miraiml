@@ -30,7 +30,7 @@ the Docs][docs_url] for a better understanding of MiraiML's potential.
 
 ## Contributing
 
-Please, follow the `guidelines <CONTRIBUTING.md>`_ if you want to be part of this
+Please, follow the [guidelines](CONTRIBUTING.md) if you want to be part of this
 project.
 
 [docs_img]: https://readthedocs.org/projects/miraiml/badge/?version=latest
