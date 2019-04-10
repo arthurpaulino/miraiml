@@ -37,8 +37,9 @@ Usage
 To do
 -----
 
+- Add a collaboration tutorial
 - Autogenerate html reports
-- Infer ``MiraiSeeker`` scores
+- Infer ``MiraiSeeker`` scores for smarter guesses
 - Document an `User Guide`
 - Create more examples
 - Validate constructors' parameters
