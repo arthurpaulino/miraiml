@@ -269,8 +269,6 @@ class Engine:
         self.best_score = None
         self.best_id = None
 
-        ensemble_id = self.config.ensemble_id
-
         self.mirai_seeker = MiraiSeeker(self.config.base_layouts, self.all_features,
             self.config)
 
@@ -286,7 +284,17 @@ class Engine:
                 par_dump(base_model, base_model_path)
             self.base_models[id] = base_model
 
-        will_ensemble = len(self.base_models) > 1\
+            self.train_predictions_dict[id], self.test_predictions_dict[id],\
+                self.scores[id] = base_model.predict(self.X_train, self.y_train,
+                    self.X_test, self.config)
+
+            if self.best_score is None or self.scores[id] > self.best_score:
+                self.best_score = self.scores[id]
+                self.best_id = id
+
+        base_models_ids = list(self.base_models)
+
+        will_ensemble = len(base_models_ids) > 1\
             and not self.config.ensemble_id is None\
             and not self.config.n_ensemble_cycles is None
 
@@ -294,6 +302,14 @@ class Engine:
             self.ensembler = Ensembler(base_models_ids, self.y_train,
                 self.train_predictions_dict, self.test_predictions_dict,
                 self.scores, self.config)
+
+            ensemble_id = self.config.ensemble_id
+
+            if self.ensembler.optimize():
+                score = self.scores[ensemble_id]
+                if score > self.best_score:
+                    self.best_score = score
+                    self.best_id = ensemble_id
 
         while not self.must_interrupt:
             for base_layout in self.config.base_layouts:
@@ -309,11 +325,11 @@ class Engine:
 
                 self.mirai_seeker.register_base_model(id, base_model, score)
 
-                if id not in self.scores or score > self.scores[id]:
+                if score > self.scores[id]:
                     self.scores[id] = score
                     self.train_predictions_dict[id] = train_predictions
                     self.test_predictions_dict[id] = test_predictions
-                    if self.best_score is None or score > self.best_score:
+                    if score > self.best_score:
                         self.best_score = score
                         self.best_id = id
 
@@ -361,7 +377,7 @@ class Engine:
             return self.test_predictions_dict[self.best_id]
         return None
 
-    def report(self):
+    def request_scores(self):
         """
         Prints the score for each id.
         """
@@ -369,9 +385,6 @@ class Engine:
         for id in self.scores:
             status.append({'id': id, 'score': self.scores[id]})
 
-        print(
-            pd.DataFrame(status).\
-                sort_values('score', ascending=False).\
-                reset_index(drop=True).\
-                to_string()
-        )
+        return pd.DataFrame(status).\
+            sort_values('score', ascending=False).\
+            reset_index(drop=True)

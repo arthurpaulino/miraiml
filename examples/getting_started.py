@@ -20,11 +20,13 @@ train_data, test_data = train_test_split(data, stratify=data['target_class'],
 # to work with a single Gaussian Naive Bayes classifier for this example. There
 # is no hyperparameter search in this case, but the engine still searches for a
 # good set of features to use.
-base_layouts = [ BaseLayout(GaussianNB, 'Gaussian NB') ]
+base_layouts = [
+    BaseLayout(model_class=GaussianNB, id='Gaussian NB')
+]
 
 # Now we configure the behavior of the engine.
 config = Config(
-    local_dir = 'miraiml_local',
+    local_dir = 'miraiml_local_getting_started',
     problem_type = 'classification',
     base_layouts = base_layouts,
     score_function = roc_auc_score

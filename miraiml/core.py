@@ -181,7 +181,10 @@ class MiraiSeeker:
             parameters, features = self.random_search(id)
 
         base_layout = self.base_layouts_dict[id]
-        base_layout.parameters_rules(parameters)
+        try:
+            base_layout.parameters_rules(parameters)
+        except:
+            print('Error on parameters rules for the id', id)
         model_class = base_layout.model_class
 
         return BaseModel(model_class, parameters, features)
