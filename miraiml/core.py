@@ -111,9 +111,12 @@ class MiraiSeeker:
     :param config: The configuration of the engine.
     :type config: miraiml.Config
     """
-    def __init__(self, base_models_ids, all_features, config):
-        self.base_models_ids = base_models_ids
+    def __init__(self, base_layouts, all_features, config):
+        self.base_layouts_dict = {}
+        for base_layout in base_layouts:
+            self.base_layouts_dict[base_layout.id] = base_layout
         self.all_features = all_features
+        self.config = config
         self.history_path = config.local_dir + 'history'
 
         if os.path.exists(self.history_path):
@@ -126,7 +129,7 @@ class MiraiSeeker:
         Deletes all base models registries.
         """
         self.history = {}
-        for id in self.base_models_ids:
+        for id in self.base_layouts_dict:
             self.history[id] = pd.DataFrame()
         par_dump(self.history, self.history_path)
 
@@ -166,7 +169,48 @@ class MiraiSeeker:
         """
         return self.history[id].shape[0] > 1
 
-    def gen_parameters_features(self, id):
+    def seek(self, id):
+        """
+        Manages the search strategy throughout the optimization hyperspace.
+
+        :param id: The id for which a new base model is required.
+        :type id: str
+
+        :rtype: miraiml.core.BaseModel
+        :returns: The next base model for exploration.
+        """
+        if self.is_ready(id) and uniform(0, 1) < self.config.mirai_exploration_ratio:
+            parameters, features = self.naive_search(id)
+        else:
+            parameters, features = self.random_search(id)
+
+        base_layout = self.base_layouts_dict[id]
+        base_layout.parameters_rules(parameters)
+        model_class = base_layout.model_class
+
+        return BaseModel(model_class, parameters, features)
+
+    def random_search(self, id):
+        """
+        Generates a completely random instance of :class:`miraiml.core.BaseModel`.
+
+        :param all_features: The list of available features.
+        :type all_features: list
+
+        :rtype: tuple
+        :returns: ``(parameters, features)``
+            Respectively, the dictionary of parameters and the list of features
+            that can be used to generate a new base model.
+        """
+        base_layout = self.base_layouts_dict[id]
+        model_class = base_layout.model_class
+        parameters = {}
+        for parameter in base_layout.parameters_values:
+            parameters[parameter] = choice(base_layout.parameters_values[parameter])
+        features = sample_random_len(self.all_features)
+        return (parameters, features)
+
+    def naive_search(self, id):
         """
         For each hyperparameter and feature, its value (True or False for
         features) is chosen stochastically depending on the mean score of the
@@ -178,10 +222,10 @@ class MiraiSeeker:
 
         :rtype: tuple
         :returns: ``(parameters, features)``
-
             Respectively, the dictionary of parameters and the list of features
             that can be used to generate a new base model.
         """
+        model_class = self.base_layouts_dict[id].model_class
         history = self.history[id]
         parameters = {}
         features = []
@@ -402,25 +446,6 @@ class BaseLayout:
         self.parameters_values = parameters_values
         self.parameters_rules = parameters_rules
 
-    def gen_parameters_features(self, all_features):
-        """
-        Generates completely random parameters and features set.
-
-        :param all_features: The list of available features.
-        :type all_features: list
-
-        :rtype: tuple
-        :returns: ``(parameters, features)``
-
-            Respectively, the dictionary of parameters and the list of features
-            that can be used to generate a new base model.
-        """
-        parameters = {}
-        for parameter in self.parameters_values:
-            parameters[parameter] = choice(self.parameters_values[parameter])
-        features = sample_random_len(all_features)
-        return (parameters, features)
-
 class Config:
     """
     This class defines the general behavior of the engine.
@@ -630,6 +655,9 @@ class Engine:
 
         ensemble_id = self.config.ensemble_id
 
+        self.mirai_seeker = MiraiSeeker(self.config.base_layouts, self.all_features,
+            self.config)
+
         for base_layout in self.config.base_layouts:
             if self.must_interrupt:
                 break
@@ -639,14 +667,9 @@ class Engine:
             if os.path.exists(base_model_path):
                 base_model = load(base_model_path)
             else:
-                parameters, features = base_layout.gen_parameters_features(self.all_features)
-                base_layout.parameters_rules(parameters)
-                base_model = BaseModel(base_layout.model_class, parameters, features)
+                base_model = self.mirai_seeker.seek(base_layout.id)
                 par_dump(base_model, base_model_path)
             self.base_models[id] = base_model
-
-        self.mirai_seeker = MiraiSeeker(self.base_models_ids, self.all_features,
-            self.config)
 
         self.ensembler = Ensembler(self.base_models_ids, self.y_train,
             self.train_predictions_dict, self.test_predictions_dict, self.scores,
@@ -658,13 +681,7 @@ class Engine:
                     break
                 id = base_layout.id
 
-                if self.mirai_seeker.is_ready(id) and\
-                    uniform(0, 1) < self.config.mirai_exploration_ratio:
-                    parameters, features = self.mirai_seeker.gen_parameters_features(id)
-                else:
-                    parameters, features = base_layout.gen_parameters_features(self.all_features)
-                base_layout.parameters_rules(parameters)
-                base_model = BaseModel(base_layout.model_class, parameters, features)
+                base_model = self.mirai_seeker.seek(id)
 
                 train_predictions, test_predictions, score = base_model.\
                     predict(self.X_train, self.y_train, self.X_test,
