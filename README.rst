@@ -34,13 +34,8 @@ Usage
 
 >>> from miraiml import BaseLayout, Config, Engine
 
-To do
------
+Contributing
+------------
 
-- Add a collaboration tutorial
-- Autogenerate html reports
-- Infer ``MiraiSeeker`` scores for smarter guesses
-- Document an `User Guide`
-- Create more examples
-- Validate constructors' parameters
-- Protect engine from trying to save files with invalid characters from ids
+Please, follow the `guidelines <CONTRIBUTING.md>`_ if you want to be part of this
+project.
