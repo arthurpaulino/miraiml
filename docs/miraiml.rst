@@ -9,8 +9,11 @@ Module content
     :undoc-members:
     :show-inheritance:
 
+Internal modules
+----------------
+
 miraiml.core module
--------------------
++++++++++++++++++++
 
 .. automodule:: miraiml.core
     :members:
@@ -18,7 +21,7 @@ miraiml.core module
     :show-inheritance:
 
 miraiml.util module
--------------------
++++++++++++++++++++
 
 .. automodule:: miraiml.util
     :members:

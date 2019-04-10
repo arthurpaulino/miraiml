@@ -1,5 +1,5 @@
 """
-This module contains everything you need to make use of MiraiML.
+Import the main classes with
 
 ::
 
