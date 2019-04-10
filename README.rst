@@ -20,7 +20,7 @@ Even though the engine is autonomous, it offers (and requires) a certain degree
 of configuration, in a way that the user has good control over what's happening
 behind the scenes.
 
-A step-by-step tutorial can be found on the `example notebook <example.md>`_.
+A step-by-step tutorial can be found on the `example notebook <example.ipynb>`_.
 Or `read the docs <https://miraiml.readthedocs.io/en/latest/>`_ for further
 understanding of MiraiML's potential.
 
@@ -33,3 +33,11 @@ Usage
 4. Inside a Python environment, import the main classes:
 
 >>> from miraiml import BaseLayout, Config, Engine
+
+To do
+-----
+
+- Autogenerate html reports
+- Infer ``MiraiSeeker`` scores
+- Document an `User Guide`
+- Create more examples

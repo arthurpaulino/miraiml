@@ -106,8 +106,8 @@ class MiraiSeeker:
     This class implements a smarter way of searching good parameters and sets of
     features.
 
-    :param ids: The list of base models' ids to keep track of.
-    :type ids: list
+    :param base_models_ids: The list of base models' ids to keep track of.
+    :type base_models_ids: list
 
     :param all_features: A list containing all available features.
     :type all_features: list
@@ -115,8 +115,8 @@ class MiraiSeeker:
     :param config: The configuration of the engine.
     :type config: miraiml.Config
     """
-    def __init__(self, ids, all_features, config):
-        self.ids = ids
+    def __init__(self, base_models_ids, all_features, config):
+        self.base_models_ids = base_models_ids
         self.all_features = all_features
         self.history_path = config.local_dir + 'history'
 
@@ -130,7 +130,7 @@ class MiraiSeeker:
         Deletes all base models registries.
         """
         self.history = {}
-        for id in self.ids:
+        for id in self.base_models_ids:
             self.history[id] = pd.DataFrame()
         par_dump(self.history, self.history_path)
 
@@ -213,8 +213,8 @@ class Ensembler:
     :param y_train: The target column.
     :type y_train: pandas.Series or numpy.ndarray
 
-    :param ids: The list of base models' ids to keep track of.
-    :type ids: list
+    :param base_models_ids: The list of base models' ids to keep track of.
+    :type base_models_ids: list
 
     :param train_predictions_dict: The dictionary of predictions for the training
         dataset.
@@ -230,10 +230,10 @@ class Ensembler:
     :param config: The configuration of the engine.
     :type config: miraiml.Config
     """
-    def __init__(self, y_train, ids, train_predictions_dict, test_predictions_dict,
-            scores, config):
+    def __init__(self, base_models_ids, y_train, train_predictions_dict,
+            test_predictions_dict, scores, config):
         self.y_train = y_train
-        self.ids = ids
+        self.base_models_ids = base_models_ids
         self.train_predictions_dict = train_predictions_dict
         self.test_predictions_dict = test_predictions_dict
         self.scores = scores
@@ -281,13 +281,18 @@ class Ensembler:
         """
         weights = {}
         min_score, max_score = np.inf, -np.inf
-        for id in self.ids:
+        for id in self.base_models_ids:
             score = self.scores[id]
             min_score = min(min_score, score)
             max_score = max(max_score, score)
         diff_score = max_score - min_score
-        for id in self.ids:
-            weights[id] = triangular(0, 1, (self.scores[id]-min_score)/diff_score)
+        for id in self.base_models_ids:
+            if self.scores[id] == max_score:
+                weights[id] = triangular(0, 1, 1)
+            else:
+                normalized_score = (self.scores[id]-min_score)/diff_score
+                range = triangular(0, 1, normalized_score)
+                weights[id] = triangular(0, range, 0)
         return weights
 
     def ensemble(self, weights):
@@ -305,11 +310,11 @@ class Ensembler:
             * ``test_predictions``: The ensemble predictions for the testing dataset
             * ``score``: The score of the ensemble on the training dataset
         """
-        id = self.ids[0]
+        id = self.base_models_ids[0]
         train_predictions = weights[id]*self.train_predictions_dict[id]
         test_predictions = weights[id]*self.test_predictions_dict[id]
         weights_sum = weights[id]
-        for id in self.ids[1:]:
+        for id in self.base_models_ids[1:]:
             train_predictions += weights[id]*self.train_predictions_dict[id]
             test_predictions += weights[id]*self.test_predictions_dict[id]
             weights_sum += weights[id]
@@ -590,7 +595,7 @@ class Engine:
         :type config: miraiml.Config
 
         :param restart: Optional, ``default=False``. Whether to restart the engine
-            after reconfiguring the engine or not.
+            after reconfiguring it or not.
         :type restart: bool
         """
         self.interrupt()
@@ -605,11 +610,11 @@ class Engine:
         Interrupts the engine and starts again from last checkpoint (if any).
         """
         self.interrupt()
-        Thread(target=lambda: self.main_loop()).start()
+        Thread(target=lambda: self.__main_loop__()).start()
 
-    def main_loop(self):
+    def __main_loop__(self):
         """
-        Main optimization loop. Use ``restart`` to trigger it, instead.
+        Main optimization loop.
         """
         self.is_running = True
         if not os.path.exists(self.models_dir):
@@ -650,7 +655,7 @@ class Engine:
         self.mirai_seeker = MiraiSeeker(self.base_models_ids, self.all_features,
             self.config)
 
-        self.ensembler = Ensembler(self.y_train, self.base_models_ids,
+        self.ensembler = Ensembler(self.base_models_ids, self.y_train,
             self.train_predictions_dict, self.test_predictions_dict, self.scores,
             self.config)
 
@@ -712,7 +717,7 @@ class Engine:
 
     def request_score(self):
         """
-        Queries the score of the best model (or ensemble).
+        Queries the score of the best id on the training data.
 
         :rtype: float
         :returns: The score of the best model.
@@ -723,7 +728,7 @@ class Engine:
 
     def request_predictions(self):
         """
-        Queries the predictions of the best model (or ensemble) for the testing
+        Queries the predictions of the best id for the testing
         data.
 
         :rtype: numpy.ndarray
