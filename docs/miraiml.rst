@@ -1,7 +1,7 @@
 Package Content
 ===============
 
-Main Module
+Main module
 -----------
 
 .. automodule:: miraiml
