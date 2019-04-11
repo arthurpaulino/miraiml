@@ -1,5 +1,5 @@
 """
-Provides the classes to use MiraiML.
+:mod:`miraiml` provides the classes to use MiraiML.
 
 - :class:`miraiml.SearchSpace` represents the search space for the optimization
 - :class:`miraiml.Config` defines the general behavior of
