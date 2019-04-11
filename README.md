@@ -18,7 +18,7 @@ built for real-time usage.
 >>> from miraiml import SearchSpace, Config, Engine
 ```
 
-Some didactic tutorials can be found in the [example](example) directory. Or
+Some didactic tutorials can be found in the [example](examples) directory. Or
 [Read the Docs][docs_url] for a better understanding of MiraiML's potential.
 
 ## Contributing

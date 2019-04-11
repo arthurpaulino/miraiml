@@ -1,22 +1,38 @@
 # Contributing
 
-If you have got an idea you want to share or found a bug you want to report, feel
-free to open an [issue][issues] with an appropriate label and we shall discuss it.
-
-If you want to open a [pull request][pulls], make sure there is an issue for it
-where we've talked about the changes you want to make. For organization purposes,
-insert the link to the issue on your pull request comment and then post the link
-to your pull request on the respective issue.
-
-Note we have a code of conduct, please follow it so we can all get along more
-easily.
-
 ## Code of Conduct
 
 1. Be polite, kind and respectful towards everyone
 2. Welcome diversities and divergences of viewpoints
-3. Be professional and do your best, at least for your own good
-4. Do not go offtopic
+4. Do not go offtopic when commenting on issues
+3. Be professional and do your best
 
-[pulls]: [https://github.com/arthurpaulino/miraiml/pulls]
-[issues]: [https://github.com/arthurpaulino/miraiml/issues]
+## Contributing with issues
+
+You can contribute with [issues][issues] by:
+
+* Proposing/requesting a `new feature`
+* Reporting a `bug`
+* Pointing out typos or errors on the `documentation`
+* Asking a `question`
+* Presenting a better way to do something with a `better code`
+* Giving tips for better project `management` practices
+
+I've highlighted the labels that should be used in each case.
+
+## Contributing with code
+
+Code contributions can only be made if there is an **open issue** related to the
+changes you want to make, where we've discussed and agreed upon it.
+
+Before commiting your changes, remember to increment the [version][version]
+according to the [Semantic Versioning][semver] specification.
+
+After opening a [pull request][pulls], insert the link to the issue on your pull
+request comment and then post the link to your pull request on the respective
+issue.
+
+[issues]: https://github.com/arthurpaulino/miraiml/issues
+[version]: miraiml/__init__.py#L18
+[semver]: https://semver.org/
+[pulls]: https://github.com/arthurpaulino/miraiml/pulls

@@ -1,8 +1,9 @@
 from distutils.core import setup
+from miraiml import __version__
 
 setup(
     name = "MiraiML",
-    version = "1.0",
+    version = __version__,
     packages = ["miraiml"],
     author = "Arthur Paulino",
     author_email = "arthurleonardo.ap@gmail.com.com",

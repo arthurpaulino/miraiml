@@ -1,5 +1,5 @@
 """
-:mod:`miraiml` provides the classes to use MiraiML.
+:mod:`miraiml` provides the following classes:
 
 - :class:`miraiml.SearchSpace` represents the search space for the optimization
 - :class:`miraiml.Config` defines the general behavior of
@@ -14,3 +14,5 @@ You can import them by doing
 from .main import SearchSpace, Config, Engine
 
 __all__ = ['SearchSpace', 'Config', 'Engine']
+
+__version__ = '0.0.1'
