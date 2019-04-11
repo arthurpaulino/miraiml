@@ -28,12 +28,12 @@ class SearchSpace:
     :type parameters_rules: function
     :param parameters_rules: Optional, ``default=lambda x: None``. A function that
         constrains certain parameters because of the values assumed by others. It
-        must receive a dictionary as input and work on it.
+        must receive a dictionary as input and doesn't need to return anything.
 
         .. warning::
              Make sure that the parameters accessed in ``parameters_rules`` exist
              in the set of parameters defined on ``parameters_values``, otherwise
-             the engine will scream some error messages to let us know that we
+             the engine will print some error messages to let us know that we
              told it to access invalid keys on the dictionary.
 
     :Example:
@@ -124,6 +124,7 @@ class Config:
 
         from sklearn.metrics import roc_auc_score
         from miraiml import Config
+
         config = Config(
             local_dir = 'miraiml_local',
             problem_type = 'classification',
@@ -163,6 +164,7 @@ class Engine:
     ::
 
         from miraiml import Engine
+
         engine = Engine(config)
     """
     def __init__(self, config):
@@ -336,7 +338,8 @@ class Engine:
 
                 self.mirai_seeker.register_base_model(id, base_model, score)
 
-                if score > self.scores[id]:
+                if score > self.scores[id] or (score == self.scores[id] and\
+                        len(base_model.features) < len(self.base_models[id].features)):
                     self.scores[id] = score
                     self.train_predictions_dict[id] = train_predictions
                     self.test_predictions_dict[id] = test_predictions
