@@ -27,7 +27,14 @@ class SearchSpace:
 
     :type parameters_rules: function
     :param parameters_rules: Optional, ``default=lambda x: None``. A function that
-        constrains certain parameters because of the values assumed by others.
+        constrains certain parameters because of the values assumed by others. It
+        must receive a dictionary as input and work on it.
+
+        .. warning::
+             Make sure that the parameters accessed in ``parameters_rules`` exist
+             in the set of parameters defined on ``parameters_values``, otherwise
+             the engine will scream some error messages to let us know that we
+             told it to access invalid keys on the dictionary.
 
     :Example:
 
