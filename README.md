@@ -19,7 +19,7 @@ built for real-time usage.
 ```
 
 Some didactic tutorials can be found in the [example](examples) directory. Or
-[Read the Docs][docs_url] for a better understanding of MiraiML's potential.
+[Read the Docs][docs_url] for a better understanding of MiraiML.
 
 ## Contributing
 
