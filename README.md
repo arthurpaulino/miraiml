@@ -2,7 +2,7 @@
 
 # MiraiML
 
-> Mirai: `future` in japanese.
+> Mirai: _future_ in japanese.
 
 MiraiML is an asynchronous engine for autonomous & continuous machine learning,
 built for real-time usage.
