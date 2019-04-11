@@ -1,5 +1,15 @@
+"""
+:mod:`miraiml.core` contains the basic bricks for the optimization process.
+
+- :class:`miraiml.core.BaseModel` represents a solution
+- :class:`miraiml.core.MiraiSeeker` implements the strategies to search for good
+  solutions
+- :class:`miraiml.core.Ensembler` searches for smart ways of combining the current
+  solutions o generate a better one
+"""
+
 from sklearn.model_selection import StratifiedKFold, KFold
-from random import triangular, choice, choices, uniform
+import random as rnd
 import pandas as pd
 import numpy as np
 import os
@@ -8,11 +18,10 @@ from .util import load, par_dump, sample_random_len
 
 class BaseModel:
     """
-    Represents an element from the search hyperspace of an object of BaseLayout,
-    linking a set of parameters to a set of features. As an analogy, it
-    represents a particular choice of clothes that someone can make.
-
-    This is the basic brick for the optimizations.
+    Represents an element from the search hyperspace defined by a
+    :class:`miraiml.SearchSpace`, linking a set of parameters to a set of features.
+    As an analogy, it represents a particular choice of clothes that someone can
+    make.
 
     :param model_class: A statistical model class that must implement the methods
         ``fit`` and ``predict`` for regression or ``predict_proba`` classification
@@ -107,10 +116,10 @@ class MiraiSeeker:
     :param config: The configuration of the engine.
     :type config: miraiml.Config
     """
-    def __init__(self, base_layouts, all_features, config):
-        self.base_layouts_dict = {}
-        for base_layout in base_layouts:
-            self.base_layouts_dict[base_layout.id] = base_layout
+    def __init__(self, search_spaces, all_features, config):
+        self.search_spaces_dict = {}
+        for search_space in search_spaces:
+            self.search_spaces_dict[search_space.id] = search_space
         self.all_features = all_features
         self.config = config
         self.history_path = config.local_dir + 'history'
@@ -125,7 +134,7 @@ class MiraiSeeker:
         Deletes all base models registries.
         """
         self.history = {}
-        for id in self.base_layouts_dict:
+        for id in self.search_spaces_dict:
             self.history[id] = pd.DataFrame()
         par_dump(self.history, self.history_path)
 
@@ -133,7 +142,7 @@ class MiraiSeeker:
         """
         Registers the performance of a base model and its characteristics.
 
-        :param id: The id of the model layout that represents the base model.
+        :param id: The id associated with the base model.
         :type id: str
 
         :param base_model: The base model being registered.
@@ -175,17 +184,17 @@ class MiraiSeeker:
         :rtype: miraiml.core.BaseModel
         :returns: The next base model for exploration.
         """
-        if self.is_ready(id) and uniform(0, 1) > self.config.random_exploration_ratio:
+        if self.is_ready(id) and rnd.uniform(0, 1) > self.config.random_exploration_ratio:
             parameters, features = self.naive_search(id)
         else:
             parameters, features = self.random_search(id)
 
-        base_layout = self.base_layouts_dict[id]
+        search_space = self.search_spaces_dict[id]
         try:
-            base_layout.parameters_rules(parameters)
+            search_space.parameters_rules(parameters)
         except:
             print('Error on parameters rules for the id \'{}\'.'.format(id))
-        model_class = base_layout.model_class
+        model_class = search_space.model_class
 
         return BaseModel(model_class, parameters, features)
 
@@ -201,11 +210,11 @@ class MiraiSeeker:
             Respectively, the dictionary of parameters and the list of features
             that can be used to generate a new base model.
         """
-        base_layout = self.base_layouts_dict[id]
-        model_class = base_layout.model_class
+        search_space = self.search_spaces_dict[id]
+        model_class = search_space.model_class
         parameters = {}
-        for parameter in base_layout.parameters_values:
-            parameters[parameter] = choice(base_layout.parameters_values[parameter])
+        for parameter in search_space.parameters_values:
+            parameters[parameter] = rnd.choice(search_space.parameters_values[parameter])
         features = sample_random_len(self.all_features)
         return (parameters, features)
 
@@ -224,7 +233,7 @@ class MiraiSeeker:
             Respectively, the dictionary of parameters and the list of features
             that can be used to generate a new base model.
         """
-        model_class = self.base_layouts_dict[id].model_class
+        model_class = self.search_spaces_dict[id].model_class
         history = self.history[id]
         parameters = {}
         features = []
@@ -232,7 +241,7 @@ class MiraiSeeker:
             if column == 'score':
                 continue
             dist = history[[column, 'score']].groupby(column).mean().reset_index()
-            chosen_value = choices(dist[column].values,
+            chosen_value = rnd.choices(dist[column].values,
                 cum_weights=dist['score'].cumsum().values)[0]
             if column.endswith('(parameter)'):
                 parameter = column.split('(')[0]
@@ -331,11 +340,11 @@ class Ensembler:
             diff_score = max_score - min_score
             for id in self.base_models_ids:
                 if self.scores[id] == max_score:
-                    weights[id] = triangular(0, 1, 1)
+                    weights[id] = rnd.triangular(0, 1, 1)
                 else:
                     normalized_score = (self.scores[id]-min_score)/diff_score
-                    range = triangular(0, 1, normalized_score)
-                    weights[id] = triangular(0, range, 0)
+                    range = rnd.triangular(0, 1, normalized_score)
+                    weights[id] = rnd.triangular(0, range, 0)
         else:
             for id in self.base_models_ids:
                 weights[id] = 1

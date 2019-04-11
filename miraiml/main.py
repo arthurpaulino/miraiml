@@ -1,12 +1,12 @@
 from threading import Thread
-from time import sleep, time
 import pandas as pd
+import time
 import os
 
 from .core import MiraiSeeker, Ensembler
 from .util import load, par_dump
 
-class BaseLayout:
+class SearchSpace:
     """
     This class represents the search hyperspace for a base statistical model. As
     an analogy, it represents all possible sets of clothes that someone can use.
@@ -16,7 +16,8 @@ class BaseLayout:
         ``predict_proba`` for classification problems.
     :type model_class: type
 
-    :param id: An id to be associated with this layout.
+    :param id: The id that will be associated with the models generated within
+        this search space.
     :type id: str
 
     :type parameters_values: dict
@@ -33,13 +34,13 @@ class BaseLayout:
     ::
 
         from sklearn.linear_model import LogisticRegression
-        from miraiml import BaseLayout
+        from miraiml import SearchSpace
 
         def logistic_regression_parameters_rules(parameters):
         if parameters['solver'] in ['newton-cg', 'sag', 'lbfgs']:
             parameters['penalty'] = 'l2'
 
-        base_layout = BaseLayout(LogisticRegression, 'Logistic Regression', {
+        search_space = SearchSpace(LogisticRegression, 'Logistic Regression', {
                 'penalty': ['l1', 'l2'], # may assume values 'l1' or 'l2'
                 'C': np.arange(0.1, 2, 0.1), # may assume values .1, .2, ... or 1.9
                 'max_iter': np.arange(50, 300),
@@ -51,7 +52,7 @@ class BaseLayout:
 
     .. warning::
         **Do not** allow ``random_state`` assume multiple values. If ``model_class``
-        has a ``random_state`` parameter, force ``BaseLayout`` to always choose
+        has a ``random_state`` parameter, force ``SearchSpace`` to always choose
         the same value by providing a list with a single element.
 
         Allowing ``random_state`` to assume multiple values will confuse the engine
@@ -77,9 +78,9 @@ class Config:
     :param problem_type: ``'classification'`` or ``'regression'``. The problem
         type. Multi-class classification problems are not supported.
 
-    :param base_layouts: The list of :class:`miraiml.BaseLayout` objects to optimize.
-        If ``base_layouts`` has length 1, the engine will not run ensemble cycles.
-    :type base_layouts: list
+    :param search_spaces: The list of :class:`miraiml.SearchSpace` objects to optimize.
+        If ``search_spaces`` has length 1, the engine will not run ensemble cycles.
+    :type search_spaces: list
 
     :param score_function: A function that receives the "truth" and the predictions
         (in this order) and returns the score. Bigger scores must mean better models.
@@ -116,7 +117,7 @@ class Config:
         config = Config(
             local_dir = 'miraiml_local',
             problem_type = 'classification',
-            base_layouts = base_layouts,
+            search_spaces = search_spaces,
             score_function = roc_auc_score,
             n_folds = 5,
             stratified = True,
@@ -125,14 +126,14 @@ class Config:
             n_ensemble_cycles = 1000
         )
     """
-    def __init__(self, local_dir, problem_type, base_layouts, score_function,
+    def __init__(self, local_dir, problem_type, search_spaces, score_function,
             n_folds=5, stratified=True, random_exploration_ratio=0.5,
             ensemble_id=None, n_ensemble_cycles=None):
         self.local_dir = local_dir
         if self.local_dir[-1] != '/':
             self.local_dir += '/'
         self.problem_type = problem_type
-        self.base_layouts = base_layouts
+        self.search_spaces = search_spaces
         self.score_function = score_function
         self.n_folds = n_folds
         self.stratified = stratified
@@ -180,7 +181,7 @@ class Engine:
         if not self.ensembler is None:
             self.ensembler.interrupt()
         while self.__is_running__:
-            sleep(.1)
+            time.sleep(.1)
         self.must_interrupt = False
 
     def update_data(self, train_data, test_data, target, restart=False):
@@ -224,7 +225,7 @@ class Engine:
         """
         self.interrupt()
         if not self.X_train is None:
-            seed = int(time())
+            seed = int(time.time())
             self.X_train = self.X_train.sample(frac=1, random_state=seed)
             self.y_train = self.y_train.sample(frac=1, random_state=seed)
         if restart:
@@ -269,18 +270,18 @@ class Engine:
         self.best_score = None
         self.best_id = None
 
-        self.mirai_seeker = MiraiSeeker(self.config.base_layouts, self.all_features,
+        self.mirai_seeker = MiraiSeeker(self.config.search_spaces, self.all_features,
             self.config)
 
-        for base_layout in self.config.base_layouts:
+        for search_space in self.config.search_spaces:
             if self.must_interrupt:
                 break
-            id = base_layout.id
+            id = search_space.id
             base_model_path = self.models_dir + id
             if os.path.exists(base_model_path):
                 base_model = load(base_model_path)
             else:
-                base_model = self.mirai_seeker.seek(base_layout.id)
+                base_model = self.mirai_seeker.seek(search_space.id)
                 par_dump(base_model, base_model_path)
             self.base_models[id] = base_model
 
@@ -312,10 +313,10 @@ class Engine:
                     self.best_id = ensemble_id
 
         while not self.must_interrupt:
-            for base_layout in self.config.base_layouts:
+            for search_space in self.config.search_spaces:
                 if self.must_interrupt:
                     break
-                id = base_layout.id
+                id = search_space.id
 
                 base_model = self.mirai_seeker.seek(id)
 

@@ -7,8 +7,8 @@ without null values. The target column is called `target_class` and contains onl
 0's and 1's (it's a classification problem).
 
 1. [Getting started](getting_started.py)
-2. [Constraining a hyperparameter](hyperparameter_constraining.py)
-3. [Ensembling](ensembling.py)
+2. [Implementing parameters rules](parameters_rules.py)
+3. [Ensembling models](ensembling.py)
 4. Wrapping a LightGBM model (to do)
 
 [pulsar]: https://www.kaggle.com/pavanraj159/predicting-a-pulsar-star

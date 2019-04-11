@@ -1,7 +1,12 @@
-from random import random, sample
+"""
+:mod:`miraiml.util` provides utility functions that are used by higher level
+modules.
+"""
+
 from threading import Thread
-from math import ceil
+import random as rnd
 import pickle
+import math
 
 def load(path):
     """
@@ -58,4 +63,4 @@ def sample_random_len(lst):
     """
     if len(lst) == 0:
         return []
-    return sample(lst, max(1, ceil(random()*len(lst))))
+    return rnd.sample(lst, max(1, math.ceil(rnd.random()*len(lst))))

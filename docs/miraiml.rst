@@ -12,16 +12,16 @@ Main module
 Internal modules
 ----------------
 
-miraiml.core module
-+++++++++++++++++++
+miraiml.core
+++++++++++++
 
 .. automodule:: miraiml.core
     :members:
     :undoc-members:
     :show-inheritance:
 
-miraiml.util module
-+++++++++++++++++++
+miraiml.util
+++++++++++++
 
 .. automodule:: miraiml.util
     :members:

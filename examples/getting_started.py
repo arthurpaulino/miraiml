@@ -1,5 +1,5 @@
 from sklearn.model_selection import train_test_split
-from miraiml import BaseLayout, Config, Engine
+from miraiml import SearchSpace, Config, Engine
 from sklearn.naive_bayes import GaussianNB
 from sklearn.metrics import roc_auc_score
 from time import sleep
@@ -16,19 +16,19 @@ data = pd.read_csv('pulsar_stars.csv')
 train_data, test_data = train_test_split(data, stratify=data['target_class'],
     test_size=0.2, random_state=0)
 
-# First, let's define our list of BaseLayouts. We're going to allow the engine
+# First, let's define our list of SearchSpaces. We're going to allow the engine
 # to work with a single Gaussian Naive Bayes classifier for this example. There
 # is no hyperparameter search in this case, but the engine still searches for a
 # good set of features to use.
-base_layouts = [
-    BaseLayout(model_class=GaussianNB, id='Gaussian NB')
+search_spaces = [
+    SearchSpace(model_class=GaussianNB, id='Gaussian NB')
 ]
 
 # Now we configure the behavior of the engine.
 config = Config(
     local_dir = 'miraiml_local_getting_started',
     problem_type = 'classification',
-    base_layouts = base_layouts,
+    search_spaces = search_spaces,
     score_function = roc_auc_score
 )
 

@@ -1,6 +1,6 @@
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
-from miraiml import BaseLayout, Config, Engine
+from miraiml import SearchSpace, Config, Engine
 from sklearn.naive_bayes import GaussianNB
 from sklearn.metrics import roc_auc_score
 from time import sleep
@@ -11,9 +11,9 @@ import warnings
 warnings.filterwarnings('ignore')
 
 # We're going to ensemble a Naive Bayes classifier and a K-NN classifier.
-base_layouts = [
-    BaseLayout(model_class=GaussianNB, id='Gaussian NB'),
-    BaseLayout(model_class=KNeighborsClassifier, id='K-NN', parameters_values= {
+search_spaces = [
+    SearchSpace(model_class=GaussianNB, id='Gaussian NB'),
+    SearchSpace(model_class=KNeighborsClassifier, id='K-NN', parameters_values= {
         'n_neighbors': np.arange(1, 15),
         'weights': ['uniform', 'distance'],
         'p': np.arange(1, 5)
@@ -25,7 +25,7 @@ base_layouts = [
 config = Config(
     local_dir = 'miraiml_local_ensembling',
     problem_type = 'classification',
-    base_layouts = base_layouts,
+    search_spaces = search_spaces,
     score_function = roc_auc_score,
     ensemble_id = 'Ensemble',
     n_ensemble_cycles = 1000
