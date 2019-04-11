@@ -9,6 +9,7 @@ without null values. The target column is called `target_class` and contains onl
 1. [Getting started](getting_started.py)
 2. [Implementing parameters rules](parameters_rules.py)
 3. [Ensembling models](ensembling.py)
-4. Wrapping a LightGBM model (to do)
+4. [Wrapping a LightGBM model](lightgbm_wrapper.py) (requires [lightgbm][lightgbm])
 
 [pulsar]: https://www.kaggle.com/pavanraj159/predicting-a-pulsar-star
+[lightgbm]: https://pypi.org/project/lightgbm/
