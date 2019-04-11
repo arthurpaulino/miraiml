@@ -1,8 +1,7 @@
 """
 Provides the classes to use MiraiML.
 
-- :class:`miraiml.SearchSpace` represents the search space for instances of
-  :class:`miraiml.core.BaseModel`
+- :class:`miraiml.SearchSpace` represents the search space for the optimization
 - :class:`miraiml.Config` defines the general behavior of
   :class:`miraiml.Engine`
 - :class:`miraiml.Engine` manages the optimization process
