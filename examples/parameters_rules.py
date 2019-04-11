@@ -29,8 +29,8 @@ def logistic_regression_parameters_rules(parameters):
 
 search_spaces = [
     SearchSpace(
-        LogisticRegression,
-        'Logistic Regression',
+        model_class = LogisticRegression,
+        id = 'Logistic Regression',
         parameters_values = {
             'penalty': ['l1', 'l2'],
             'C': np.arange(0.1, 2, 0.1),
@@ -38,7 +38,7 @@ search_spaces = [
             'solver': ['newton-cg', 'lbfgs', 'liblinear', 'sag', 'saga'],
             'random_state': [0]
         },
-        parameters_rules=logistic_regression_parameters_rules
+        parameters_rules = logistic_regression_parameters_rules
     )
 ]
 

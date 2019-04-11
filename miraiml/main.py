@@ -37,17 +37,20 @@ class SearchSpace:
         from miraiml import SearchSpace
 
         def logistic_regression_parameters_rules(parameters):
-        if parameters['solver'] in ['newton-cg', 'sag', 'lbfgs']:
-            parameters['penalty'] = 'l2'
+            if parameters['solver'] in ['newton-cg', 'sag', 'lbfgs']:
+                parameters['penalty'] = 'l2'
 
-        search_space = SearchSpace(LogisticRegression, 'Logistic Regression', {
-                'penalty': ['l1', 'l2'], # may assume values 'l1' or 'l2'
-                'C': np.arange(0.1, 2, 0.1), # may assume values .1, .2, ... or 1.9
+        search_space = SearchSpace(
+            model_class = LogisticRegression,
+            id = 'Logistic Regression',
+            parameters_values = {
+                'penalty': ['l1', 'l2'],
+                'C': np.arange(0.1, 2, 0.1),
                 'max_iter': np.arange(50, 300),
                 'solver': ['newton-cg', 'lbfgs', 'liblinear', 'sag', 'saga'],
-                'random_state': [0] # IMPORTANT
+                'random_state': [0]
             },
-            parameters_rules=logistic_regression_parameters_rules
+            parameters_rules = logistic_regression_parameters_rules
         )
 
     .. warning::
