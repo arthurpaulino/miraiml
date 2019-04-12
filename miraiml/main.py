@@ -34,7 +34,7 @@ class SearchSpace:
              Make sure that the parameters accessed in ``parameters_rules`` exist
              in the set of parameters defined on ``parameters_values``, otherwise
              the engine will attempt to access an invalid key on the dictionary of
-             parameters and then stop.
+             parameters.
 
     :Example:
 
@@ -275,7 +275,16 @@ class Engine:
         if self.X_train is None:
             raise RuntimeError('Update data before restarting the engine.')
         self.interrupt()
-        Thread(target=lambda: self.__main_loop__()).start()
+
+        def starter():
+            try:
+                self.__main_loop__()
+            except:
+                print('Stopping the engine.')
+                self.__is_running__ = False
+                raise
+
+        Thread(target=lambda: starter()).start()
 
     def __main_loop__(self):
         """
@@ -305,23 +314,13 @@ class Engine:
             if os.path.exists(base_model_path):
                 base_model = load(base_model_path)
             else:
-                try:
-                    base_model = self.mirai_seeker.seek(search_space.id)
-                except:
-                    print('Stopping the engine.')
-                    self.__is_running__ = False
-                    return
+                base_model = self.mirai_seeker.seek(search_space.id)
                 par_dump(base_model, base_model_path)
             self.base_models[id] = base_model
 
-            try:
-                self.train_predictions_dict[id], self.test_predictions_dict[id],\
-                    self.scores[id] = base_model.predict(self.X_train, self.y_train,
-                        self.X_test, self.config)
-            except:
-                print('Stopping the engine.')
-                self.__is_running__ = False
-                return
+            self.train_predictions_dict[id], self.test_predictions_dict[id],\
+                self.scores[id] = base_model.predict(self.X_train, self.y_train,
+                    self.X_test, self.config)
 
             if self.best_score is None or self.scores[id] > self.best_score:
                 self.best_score = self.scores[id]
@@ -357,15 +356,11 @@ class Engine:
                     break
                 id = search_space.id
 
-                try:
-                    base_model = self.mirai_seeker.seek(id)
-                    train_predictions, test_predictions, score = base_model.\
-                        predict(self.X_train, self.y_train, self.X_test,
-                            self.config)
-                except:
-                    print('Stopping the engine.')
-                    self.__is_running__ = False
-                    return
+                base_model = self.mirai_seeker.seek(id)
+
+                train_predictions, test_predictions, score = base_model.\
+                    predict(self.X_train, self.y_train, self.X_test,
+                        self.config)
 
                 self.mirai_seeker.register_base_model(id, base_model, score)
 

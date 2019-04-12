@@ -76,6 +76,7 @@ class BaseModel:
             * ``train_predictions``: The predictions for the training dataset
             * ``test_predictions``: The predictions for the testing dataset
             * ``score``: The score of the model on the training dataset
+        :raises: RuntimeError
         """
         X_train, X_test = X_train[self.features], X_test[self.features]
         train_predictions = np.zeros(X_train.shape[0])
@@ -85,18 +86,28 @@ class BaseModel:
         elif config.problem_type == 'regression' or not config.stratified:
             fold = KFold(n_splits=config.n_folds, shuffle=False)
         for big_part, small_part in fold.split(X_train, y_train):
-            X_train_big, X_train_small = X_train.values[big_part], X_train.values[small_part]
+            X_train_big  = X_train.values[big_part]
+            X_train_small = X_train.values[small_part]
             y_train_big = y_train.values[big_part]
 
             model = self.model_class(**self.parameters)
+            class_name = self.model_class.__name__
 
-            model.fit(X_train_big, y_train_big)
-            if config.problem_type == 'classification':
-                train_predictions[small_part] = model.predict_proba(X_train_small)[:,1]
-                test_predictions += model.predict_proba(X_test)[:,1]
-            elif config.problem_type == 'regression':
-                train_predictions[small_part] = model.predict(X_train_small)
-                test_predictions += model.predict(X_test)
+            try:
+                model.fit(X_train_big, y_train_big)
+            except:
+                raise RuntimeError('Error when fitting with model class \'{}\'.'.\
+                    format(class_name))
+            try:
+                if config.problem_type == 'classification':
+                    train_predictions[small_part] = model.predict_proba(X_train_small)[:,1]
+                    test_predictions += model.predict_proba(X_test)[:,1]
+                elif config.problem_type == 'regression':
+                    train_predictions[small_part] = model.predict(X_train_small)
+                    test_predictions += model.predict(X_test)
+            except:
+                raise RuntimeError('Error when predicting with model class \'{}\'.'.\
+                    format(class_name))
 
         test_predictions /= config.n_folds
         return (train_predictions, test_predictions, config.score_function(y_train,
@@ -194,8 +205,7 @@ class MiraiSeeker:
         try:
             search_space.parameters_rules(parameters)
         except:
-            print('Error on parameters rules for the id \'{}\'.'.format(id))
-            raise KeyError
+            raise KeyError('Error on parameters rules for the id \'{}\'.'.format(id))
         model_class = search_space.model_class
 
         return BaseModel(model_class, parameters, features)
