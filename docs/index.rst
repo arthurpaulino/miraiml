@@ -1,5 +1,5 @@
-MiraiML documentation
-=====================
+MiraiML Docs
+============
 
 .. toctree::
    :maxdepth: 2

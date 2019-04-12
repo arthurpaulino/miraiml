@@ -11,7 +11,8 @@ built for real-time usage.
 
 1. Download: `$ git clone https://github.com/arthurpaulino/miraiml.git`
 2. Change directory: `$ cd miraiml`
-3. Install: `$ python setup.py install`
+3. Install: `$ make install` or `$ python setup.py install`
+   Optional: remove the local `build` directory
 4. Now, inside a Python environment, import the main classes:
 
 ```python
@@ -20,6 +21,11 @@ built for real-time usage.
 
 Some didactic tutorials can be found in the [example](examples) directory. Or
 [Read the Docs][docs_url] for a better understanding of MiraiML.
+
+## Building the documentation
+
+Simply call `$ make docs` and it will echo a clickable link to the index page for
+you.
 
 ## Contributing
 
