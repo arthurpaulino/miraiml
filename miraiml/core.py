@@ -202,10 +202,11 @@ class MiraiSeeker:
             parameters, features = self.random_search(id)
 
         search_space = self.search_spaces_dict[id]
-        try:
-            search_space.parameters_rules(parameters)
-        except:
-            raise KeyError('Error on parameters rules for the id \'{}\'.'.format(id))
+        if len(parameters) > 0:
+            try:
+                search_space.parameters_rules(parameters)
+            except:
+                raise KeyError('Error on parameters rules for the id \'{}\'.'.format(id))
         model_class = search_space.model_class
 
         return BaseModel(model_class, parameters, features)

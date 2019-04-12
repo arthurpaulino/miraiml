@@ -20,15 +20,15 @@ class SearchSpace:
         this search space.
     :type id: str
 
-    :type parameters_values: dict
-    :param parameters_values: Optional, ``default={}``. A dictionary containing
-        a list of values to be tested as parameters to instantiate objects of
-        ``model_class``.
+    :param parameters_values: A dictionary containing lists of values to be
+        tested as parameters when instantiating objects of ``model_class``.
+    :type parameters_values: dict, optional (default=``{}``)
 
-    :type parameters_rules: function
-    :param parameters_rules: Optional, ``default=lambda x: None``. A function that
-        constrains certain parameters because of the values assumed by others. It
-        must receive a dictionary as input and doesn't need to return anything.
+    :param parameters_rules: A function that constrains certain parameters because
+        of the values assumed by others. It must receive a dictionary as input and
+        doesn't need to return anything. Not used if ``parameters_values`` has no
+        keys.
+    :type parameters_rules: function, optional (default=``lambda x: None``)
 
         .. warning::
              Make sure that the parameters accessed in ``parameters_rules`` exist
@@ -95,27 +95,26 @@ class Config:
         (in this order) and returns the score. Bigger scores must mean better models.
     :type score_function: function
 
-    :param n_folds: Optional, ``default=5``. The number of folds for cross-validations.
-    :type n_folds: int
+    :param n_folds: The number of folds for cross-validations.
+    :type n_folds: int, optional (default=5)
 
-    :param stratified: Optional, ``default=True``. Whether to stratify folds on
-        target or not. Only used if ``problem_type == 'classification'``.
-    :type stratified: bool
+    :param stratified: Whether to stratify folds on target or not. Only used if
+        ``problem_type == 'classification'``.
+    :type stratified: bool, optional (default=``True``)
 
-    :param random_exploration_ratio: Optional, ``default=0.5``. The proportion of
-        attempts in which the engine will explore the search space by blindly random
-        attempts. Must be a number in the interval [0, 1).
-    :type random_exploration_ratio: float
+    :param random_exploration_ratio: The proportion of attempts in which the engine
+        will explore the search space by blindly random attempts. Must be a number
+        in the interval [0, 1).
+    :type random_exploration_ratio: float, optional (default=0.5)
 
-    :param ensemble_id: Optional, ``default=None``. The id for the ensemble. If none
-        is given, the engine will not ensemble base models.
-    :type ensemble_id: str
+    :param ensemble_id: The id for the ensemble. If none is given, the engine will
+        not ensemble base models.
+    :type ensemble_id: str, optional (default=``None``)
 
-    :param n_ensemble_cycles: Optional, ``default=None``. The number of times that
-        the engine will attempt to improve the ensemble weights in each loop after
-        optimizing all base models. If none is given, the engine will not ensemble
-        base models.
-    :type n_ensemble_cycles: int
+    :param n_ensemble_cycles: The number of times that the engine will attempt to
+        improve the ensemble weights in each loop after optimizing all base models.
+        If none is given, the engine will not ensemble base models.
+    :type n_ensemble_cycles: int, optional (default=``None``)
 
     :Example:
 
@@ -208,9 +207,8 @@ class Engine:
         :param target: The label of the target column.
         :type target: str
 
-        :param restart: Optional, ``default=False``. Whether to restart the engine
-            after updating data or not.
-        :type restart: bool
+        :param restart: Whether to restart the engine after updating data or not.
+        :type restart: bool, optional (default=``False``)
         """
         self.interrupt()
         self.X_train = train_data.drop(columns=target)
@@ -226,9 +224,8 @@ class Engine:
         """
         Interrupts the engine and shuffles the training data.
 
-        :param restart: Optional, ``default=False``. Whether to restart the engine
-            after shuffling data or not.
-        :type restart: bool
+        :param restart: Whether to restart the engine after shuffling data or not.
+        :type restart: bool, optional (default=``False``)
 
         :raises: RuntimeError
 
@@ -254,9 +251,9 @@ class Engine:
         :param config: The configurations for the behavior of the engine.
         :type config: miraiml.Config
 
-        :param restart: Optional, ``default=False``. Whether to restart the engine
-            after reconfiguring it or not.
-        :type restart: bool
+        :param restart: Whether to restart the engine after reconfiguring it or
+            not.
+        :type restart: bool, optional (default=``False``)
         """
         self.interrupt()
         self.config = config
