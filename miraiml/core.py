@@ -167,7 +167,7 @@ class MiraiSeeker:
         for parameter in base_model.parameters:
             event[parameter+'(parameter)'] = base_model.parameters[parameter]
         for feature in self.all_features:
-            event[feature+'(feature)'] = feature in base_model.features
+            event[feature+'(feature)'] = 1 if feature in base_model.features else 0
 
         self.history[id] = pd.concat([self.history[id],
             pd.DataFrame([event])]).drop_duplicates()
@@ -248,7 +248,6 @@ class MiraiSeeker:
             Respectively, the dictionary of parameters and the list of features
             that can be used to generate a new base model.
         """
-        model_class = self.search_spaces_dict[id].model_class
         history = self.history[id]
         parameters = {}
         features = []
