@@ -282,8 +282,11 @@ class Engine:
         self.best_score = None
         self.best_id = None
 
-        self.mirai_seeker = MiraiSeeker(self.config.search_spaces, self.all_features,
-            self.config)
+        self.mirai_seeker = MiraiSeeker(
+            self.config.search_spaces,
+            self.all_features,
+            self.config
+        )
 
         for search_space in self.config.search_spaces:
             if self.must_interrupt:
@@ -312,9 +315,14 @@ class Engine:
             and not self.config.n_ensemble_cycles is None
 
         if will_ensemble:
-            self.ensembler = Ensembler(base_models_ids, self.y_train,
-                self.train_predictions_dict, self.test_predictions_dict,
-                self.scores, self.config)
+            self.ensembler = Ensembler(
+                base_models_ids,
+                self.y_train,
+                self.train_predictions_dict,
+                self.test_predictions_dict,
+                self.scores,
+                self.config
+            )
 
             ensemble_id = self.config.ensemble_id
 

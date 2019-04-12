@@ -7,9 +7,39 @@ without null values. The target column is called `target_class` and contains onl
 0's and 1's (it's a classification problem).
 
 1. [Getting started](getting_started.py)
+
+   This example shows the very basics of MiraiML, from importing the main classes
+   to fitting and predicting.
+
 2. [Implementing parameters rules](parameters_rules.py)
+
+   When a certain combination of hyperparameters is prohibited, you can use
+   `parameters_rules` to avoid such conflicts.
+
 3. [Ensembling models](ensembling.py)
-4. [Wrapping a LightGBM model](lightgbm_wrapper.py) (requires [lightgbm][lightgbm])
+
+   This example shows MiraiML's capabilities to find smart weights when ensembling
+   various models.
+
+4. [Wrapping a LightGBM model](lightgbm_wrapper.py) (requires
+   [lightgbm][lightgbm_pypi])
+
+   MiraiML can work with any model class that implements `fit(X, y)` and
+   `predict(X)` in case of regression problems or `predict_proba(X)` in case of
+   classification problems, as long as these functions' parameters and returned
+   objects are built in the same pattern as those from [scikit-learn]([sklearn]).
+
+   I chose this example because, in my experience, the best way to fit data with
+   LightGBM is by splitting the data in **n** folds and using the smaller parts
+   as watchlists, **n** times, to avoid overfitting. For each of the **n** splits,
+   make predictions for the testing data and then compute the mean of those
+   predictions to return as the answer.
+
+   Unfortunately, this approach is not supported by any function under
+   [LightGBM's Python API][lightgbm_api]. So this is a great chance to show how
+   to build your own model classes and how to use LightGBM with MiraiML.
 
 [pulsar]: https://www.kaggle.com/pavanraj159/predicting-a-pulsar-star
-[lightgbm]: https://pypi.org/project/lightgbm/
+[lightgbm_pypi]: https://pypi.org/project/lightgbm/
+[sklearn]: https://scikit-learn.org
+[lightgbm_api]: https://lightgbm.readthedocs.io/en/latest/Python-API.html

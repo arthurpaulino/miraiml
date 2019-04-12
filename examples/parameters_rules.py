@@ -60,6 +60,7 @@ train_data, test_data = train_test_split(data, stratify=data['target_class'],
 engine.update_data(train_data, test_data, target='target_class')
 
 # Fire!
+print('Training...')
 engine.restart()
 
 # Let's wait 5 seconds and interrupt it
