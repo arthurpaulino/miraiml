@@ -18,7 +18,7 @@ warnings.filterwarnings('ignore')
 
 # We just need to make sure that those parameters will exist in the set of
 # parameters tested by the engine, otherwise it will attempt to access an invalid
-# key on the dictionary.
+# key from the dictionary.
 
 def logistic_regression_parameters_rules(parameters):
     if parameters['solver'] in ['newton-cg', 'sag', 'lbfgs']:

@@ -24,16 +24,14 @@ class LightGBM:
         self.models = None
 
     def fit(self, X, y):
-        # X and y are numpy.ndarrays at this point
-
         # list to save trained models
         self.models = []
 
         folds = StratifiedKFold(n_splits = self.n_folds)
 
         for _, (index_train, index_valid) in enumerate(folds.split(X, y)):
-            X_train, y_train = X[index_train], y[index_train]
-            X_valid, y_valid = X[index_valid], y[index_valid]
+            X_train, y_train = X.iloc[index_train], y.iloc[index_train]
+            X_valid, y_valid = X.iloc[index_valid], y.iloc[index_valid]
 
             dtrain = lgb.Dataset(X_train, y_train)
             dvalid = lgb.Dataset(X_valid, y_valid)
@@ -41,7 +39,7 @@ class LightGBM:
             model = lgb.train(
                 params = self.parameters,
                 train_set = dtrain,
-                num_boost_round = 10000000, # a big number. it will use early stop
+                num_boost_round = 1000000, # a big number. it will use early stop
                 valid_sets = dvalid,
                 early_stopping_rounds = 30,
                 verbose_eval = False
