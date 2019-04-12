@@ -43,7 +43,7 @@ search_spaces = [
 
 # Quick configuration
 config = Config(
-    local_dir = 'miraiml_local_hyperparameter_constraining',
+    local_dir = 'miraiml_local_parameters_rules',
     problem_type = 'classification',
     search_spaces = search_spaces,
     score_function = roc_auc_score
