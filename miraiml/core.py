@@ -14,7 +14,7 @@ import pandas as pd
 import numpy as np
 import os
 
-from .util import load, par_dump, sample_random_len
+from .util import load, dump, sample_random_len
 
 class BaseModel:
     """
@@ -76,7 +76,8 @@ class BaseModel:
             * ``train_predictions``: The predictions for the training dataset
             * ``test_predictions``: The predictions for the testing dataset
             * ``score``: The score of the model on the training dataset
-        :raises: RuntimeError
+
+        :raises: ``RuntimeError`` if training or predicting fail.
         """
         X_train, X_test = X_train[self.features], X_test[self.features]
         train_predictions = np.zeros(X_train.shape[0])
@@ -147,7 +148,7 @@ class MiraiSeeker:
         self.history = {}
         for id in self.search_spaces_dict:
             self.history[id] = pd.DataFrame()
-        par_dump(self.history, self.history_path)
+        dump(self.history, self.history_path)
 
     def register_base_model(self, id, base_model, score):
         """
@@ -170,7 +171,7 @@ class MiraiSeeker:
 
         self.history[id] = pd.concat([self.history[id],
             pd.DataFrame([event])]).drop_duplicates()
-        par_dump(self.history, self.history_path)
+        dump(self.history, self.history_path)
 
     def is_ready(self, id):
         """
@@ -194,7 +195,8 @@ class MiraiSeeker:
 
         :rtype: miraiml.core.BaseModel
         :returns: The next base model for exploration.
-        :raises: KeyError
+
+        :raises: ``KeyError`` if the parameters rules refer to unused parameters.
         """
         if self.is_ready(id) and rnd.uniform(0, 1) > self.config.random_exploration_ratio:
             parameters, features = self.naive_search(id)
@@ -307,7 +309,7 @@ class Ensembler:
             self.weights = load(self.weights_path)
         else:
             self.weights = self.gen_weights()
-            par_dump(self.weights, self.weights_path)
+            dump(self.weights, self.weights_path)
 
     def interrupt(self):
         """
@@ -410,6 +412,6 @@ class Ensembler:
                 self.weights = weights
                 self.train_predictions_dict[self.id] = train_predictions
                 self.test_predictions_dict[self.id] = test_predictions
-                par_dump(self.weights, self.weights_path)
+                dump(self.weights, self.weights_path)
                 optimized = True
         return optimized

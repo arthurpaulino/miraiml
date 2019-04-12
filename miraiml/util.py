@@ -13,8 +13,8 @@ def load(path):
     """
     A clean `pickle.load` wrapper for binary files.
 
-    :param path: The path of the binary file to be loaded.
     :type path: string
+    :param path: The path of the binary file to be loaded.
 
     :rtype: object
     :returns: The loaded object.
@@ -23,33 +23,15 @@ def load(path):
 
 def dump(obj, path):
     """
-    A clean `pickle.dump` wrapper for binary files with a small difference: it
-    loops if writing the file fails.
-
-    :param obj: The object to be dumped to the binary file.
-    :type obj: object
-
-    :param path: The path of the binary file to be written.
-    :type path: string
-    """
-    while True:
-        try:
-            pickle.dump(obj, open(path, 'wb'))
-            return
-        except:
-            sleep(.1)
-
-def par_dump(obj, path):
-    """
     Optimizes the process of writing objects on disc by triggering a thread.
 
-    :param obj: The object to be dumped to the binary file.
     :type obj: object
+    :param obj: The object to be dumped to the binary file.
 
-    :param path: The path of the binary file to be written.
     :type path: string
+    :param path: The path of the binary file to be written.
     """
-    Thread(target=lambda: dump(obj, path)).start()
+    Thread(target=lambda: pickle.dump(obj, open(path, 'wb'))).start()
 
 def sample_random_len(lst):
     """
@@ -72,8 +54,8 @@ def is_valid_filename(filename):
     """
     Tells whether a string can be used as a safe file name or not.
 
-    :param filename: The file name.
     :type filename: str
+    :param filename: The file name.
 
     :rtype: bool
     :returns: Whether ``filename`` is a valid file name or not.
