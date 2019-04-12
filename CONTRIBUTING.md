@@ -24,7 +24,8 @@ I've highlighted the labels that should be used in each case.
 ## Contributing with code
 
 Code contributions can only be made if there is an **open issue** related to the
-changes you want to make, where we've discussed and come to an agreement.
+changes you want to make, where we have discussed and come to an agreement about
+them.
 
 Before commiting your changes, remember to increment the [version][version]
 according to the [Semantic Versioning][semver] specification.
