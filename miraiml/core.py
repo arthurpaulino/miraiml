@@ -86,9 +86,9 @@ class BaseModel:
         elif config.problem_type == 'regression' or not config.stratified:
             fold = KFold(n_splits=config.n_folds, shuffle=False)
         for big_part, small_part in fold.split(X_train, y_train):
-            X_train_big  = X_train.values[big_part]
-            X_train_small = X_train.values[small_part]
-            y_train_big = y_train.values[big_part]
+
+            X_train_big, y_train_big = X_train.iloc[big_part], y_train.iloc[big_part]
+            X_train_small = X_train.iloc[small_part]
 
             model = self.model_class(**self.parameters)
             class_name = self.model_class.__name__
@@ -298,10 +298,9 @@ class Ensembler:
         self.test_predictions_dict = test_predictions_dict
         self.scores = scores
         self.config = config
-        self.must_interrupt = False
-
         self.id = config.ensemble_id
         self.weights_path = config.local_dir + 'models/' + self.id
+        self.must_interrupt = False
 
         if os.path.exists(self.weights_path):
             self.weights = load(self.weights_path)

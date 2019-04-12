@@ -3,8 +3,8 @@ import pandas as pd
 import time
 import os
 
+from .util import load, par_dump, is_valid_filename
 from .core import MiraiSeeker, Ensembler
-from .util import load, par_dump
 
 class SearchSpace:
     """
@@ -33,8 +33,7 @@ class SearchSpace:
         .. warning::
              Make sure that the parameters accessed in ``parameters_rules`` exist
              in the set of parameters defined on ``parameters_values``, otherwise
-             the engine will attempt to access an invalid key on the dictionary of
-             parameters.
+             the engine will attempt to access an invalid key.
 
     :Example:
 

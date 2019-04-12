@@ -6,6 +6,7 @@ modules.
 from threading import Thread
 import random as rnd
 import pickle
+import string
 import math
 
 def load(path):
@@ -64,3 +65,20 @@ def sample_random_len(lst):
     if len(lst) == 0:
         return []
     return rnd.sample(lst, max(1, math.ceil(rnd.random()*len(lst))))
+
+__valid_chars__ = frozenset("-_.() %s%s" % (string.ascii_letters, string.digits))
+
+def is_valid_filename(filename):
+    """
+    Tells whether a string can be used as a safe file name or not.
+
+    :param filename: The file name.
+    :type filename: str
+
+    :rtype: bool
+    :returns: Whether ``filename`` is a valid file name or not.
+    """
+    for char in filename:
+        if char not in __valid_chars__:
+            return False
+    return True

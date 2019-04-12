@@ -15,4 +15,4 @@ from .main import SearchSpace, Config, Engine
 
 __all__ = ['SearchSpace', 'Config', 'Engine']
 
-__version__ = '0.0.2'
+__version__ = '0.0.3'
