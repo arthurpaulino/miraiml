@@ -77,7 +77,8 @@ class BaseModel:
             * ``test_predictions``: The predictions for the testing dataset
             * ``score``: The score of the model on the training dataset
 
-        :raises: ``RuntimeError`` if training or predicting fail.
+        :raises: ``RuntimeError`` if some error occurs during the
+            training/predicting process.
         """
         X_train, X_test = X_train[self.features], X_test[self.features]
         train_predictions = np.zeros(X_train.shape[0])

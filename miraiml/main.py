@@ -194,7 +194,7 @@ class Engine:
             time.sleep(.1)
         self.must_interrupt = False
 
-    def update_data(self, train_data, test_data, target, restart=False):
+    def load_data(self, train_data, test_data, target, restart=False):
         """
         Interrupts the engine and loads a new pair of train/test datasets.
 
@@ -227,14 +227,14 @@ class Engine:
         :type restart: bool, optional, default=False
         :param restart: Whether to restart the engine after shuffling data or not.
 
-        :raises: ``RuntimeError`` if no data has been updated.
+        :raises: ``RuntimeError`` if called before loading data.
 
         .. note::
             It's a good practice to shuffle the training data periodically to avoid
             overfitting on a certain folding pattern.
         """
         if self.X_train is None:
-            raise RuntimeError('Update data before trying to shuffle it.')
+            raise RuntimeError('No data to shuffle.')
 
         self.interrupt()
         if not self.X_train is None:
@@ -266,10 +266,13 @@ class Engine:
         """
         Interrupts the engine and starts again from last checkpoint (if any).
 
-        :raises: ``RuntimeError`` if called before updating data.
+        :raises: ``RuntimeError`` if called before loading data or if some error
+            occurs during the training/predicting process.
+
+            ``KeyError`` if invalid keys are accessed on parameters rules.
         """
         if self.X_train is None:
-            raise RuntimeError('Update data before restarting the engine.')
+            raise RuntimeError('No data to train.')
         self.interrupt()
 
         def starter():

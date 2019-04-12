@@ -56,7 +56,7 @@ engine = Engine(config)
 data = pd.read_csv('pulsar_stars.csv')
 train_data, test_data = train_test_split(data, stratify=data['target_class'],
     test_size=0.2, random_state=0)
-engine.update_data(train_data, test_data, target='target_class')
+engine.load_data(train_data, test_data, target='target_class')
 
 # Fire!
 print('Training...')
