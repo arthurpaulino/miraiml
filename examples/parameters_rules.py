@@ -16,17 +16,16 @@ warnings.filterwarnings('ignore')
 # implements such parameters rules. The function receives a dictionary of parameters
 # and changes what is needed.
 
+# We just need to make sure that those parameters will exist in the set of
+# parameters tested by the engine, otherwise it will attempt to access an invalid
+# key on the dictionary.
+
 def logistic_regression_parameters_rules(parameters):
     if parameters['solver'] in ['newton-cg', 'sag', 'lbfgs']:
         parameters['penalty'] = 'l2'
 
-# We just need to make sure that those parameters will exist in the set of
-# parameters tested by the engine, otherwise it will scream some error messages
-# to let us know that we told it to access invalid keys on the dictionary.
-
-# Now we create the list of search spaces containing only one for some Logistic
-# Regression parameters.
-
+# Now we create the list of search spaces containing only one element to keep it
+# simple.
 search_spaces = [
     SearchSpace(
         model_class = LogisticRegression,

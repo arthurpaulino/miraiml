@@ -183,6 +183,7 @@ class MiraiSeeker:
 
         :rtype: miraiml.core.BaseModel
         :returns: The next base model for exploration.
+        :raises: KeyError
         """
         if self.is_ready(id) and rnd.uniform(0, 1) > self.config.random_exploration_ratio:
             parameters, features = self.naive_search(id)
@@ -194,6 +195,7 @@ class MiraiSeeker:
             search_space.parameters_rules(parameters)
         except:
             print('Error on parameters rules for the id \'{}\'.'.format(id))
+            raise KeyError
         model_class = search_space.model_class
 
         return BaseModel(model_class, parameters, features)

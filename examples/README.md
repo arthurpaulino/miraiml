@@ -26,8 +26,9 @@ without null values. The target column is called `target_class` and contains onl
 
    MiraiML can work with any model class that implements `fit(X, y)` and
    `predict(X)` in case of regression problems or `predict_proba(X)` in case of
-   classification problems, as long as these functions' parameters and returned
-   objects are built in the same pattern as those from [scikit-learn]([sklearn]).
+   classification problems, as long as these functions' returned objects are built
+   in the same pattern as those from [scikit-learn]([sklearn]). `X` and `y` will
+   be `numpy.ndarrays`.
 
    I chose this example because, in my experience, the best way to fit data with
    LightGBM is by splitting the data in **n** folds and using the smaller parts
