@@ -157,7 +157,12 @@ class Config:
     def __validate__(self, local_dir, problem_type, search_spaces, score_function,
             n_folds, stratified, random_exploration_ratio, ensemble_id,
             n_ensemble_cycles):
-        pass
+        if type(local_dir) != str:
+            raise TypeError('local_dir must be a string.')
+        for dir_name in local_dir.split('/'):
+            if not is_valid_filename(dir_name):
+                raise ValueError('Invalid directory name: {}'.format(dir_name))
+
 
 
 class Engine:
@@ -252,7 +257,7 @@ class Engine:
             overfitting on a certain folding pattern.
         """
         if self.X_train is None:
-            raise RuntimeError('No data to shuffle.')
+            raise RuntimeError('No data to shuffle')
 
         self.interrupt()
         if not self.X_train is None:
@@ -287,7 +292,7 @@ class Engine:
         :raises: ``RuntimeError``, ``KeyError``
         """
         if self.X_train is None:
-            raise RuntimeError('No data to train.')
+            raise RuntimeError('No data to train')
         self.interrupt()
 
         def starter():
