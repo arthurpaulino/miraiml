@@ -28,16 +28,20 @@ Code contributions can only be made if there is an **open issue** related to the
 changes you want to make, where we have discussed and come to an agreement about
 them. Such issues will be tagged with the `reserved: approved` label.
 
-Before commiting your changes, remember to increment the [version][version]
-according to the [Semantic Versioning][semver] specification, with one difference:
-there is also an UPDATE identifier, which MUST be incremented when the change does
-not directly affect the way that the code works (eg.: updating the documentation).
+Before commiting your changes, remember to increment the package version according
+to the [Semantic Versioning][semver] specification, with one difference: there is
+also an UPDATE identifier, which MUST be incremented when the change does not
+directly affect the way that the code works (eg.: updating the documentation or
+editing the `Makefile`).
+
+The version can be incremented by calling `make` with one of the following
+directives: `major`, `minor`, `patch` or `update`. Feel free to call `$ make help`
+for more information.
 
 After opening a [pull request][pulls], insert the link to the issue on your pull
 request comment and then post the link to your pull request on the respective
 issue.
 
 [issues]: https://github.com/arthurpaulino/miraiml/issues
-[version]: miraiml/__init__.py#L18
 [semver]: https://semver.org/
 [pulls]: https://github.com/arthurpaulino/miraiml/pulls
