@@ -114,7 +114,8 @@ class Config:
     :type n_ensemble_cycles: int, optional, default=None
     :param n_ensemble_cycles: The number of times that the engine will attempt to
         improve the ensemble weights in each loop after optimizing all base models.
-        If none is given, the engine will not ensemble base models.
+        If none or a value that's less than 1 is given, the engine will not ensemble
+        base models.
 
     :Example:
 
@@ -138,6 +139,9 @@ class Config:
     def __init__(self, local_dir, problem_type, search_spaces, score_function,
             n_folds=5, stratified=True, random_exploration_ratio=0.5,
             ensemble_id=None, n_ensemble_cycles=None):
+        self.__validate__(local_dir, problem_type, search_spaces, score_function,
+            n_folds, stratified, random_exploration_ratio, ensemble_id,
+            n_ensemble_cycles)
         self.local_dir = local_dir
         if self.local_dir[-1] != '/':
             self.local_dir += '/'
@@ -150,12 +154,20 @@ class Config:
         self.ensemble_id = ensemble_id
         self.n_ensemble_cycles = n_ensemble_cycles
 
+    def __validate__(self, local_dir, problem_type, search_spaces, score_function,
+            n_folds, stratified, random_exploration_ratio, ensemble_id,
+            n_ensemble_cycles):
+        pass
+
+
 class Engine:
     """
     This class offers the controls for the engine.
 
     :type config: miraiml.Config
     :param config: The configurations for the behavior of the engine.
+
+    :raises: ``TypeError``
 
     :Example:
 
@@ -166,6 +178,7 @@ class Engine:
         engine = Engine(config)
     """
     def __init__(self, config):
+        self.__validate__(config)
         self.config = config
         self.__is_running__ = False
         self.must_interrupt = False
@@ -173,6 +186,11 @@ class Engine:
         self.models_dir = config.local_dir + 'models/'
         self.X_train = None
         self.ensembler = None
+
+    def __validate__(self, config):
+        if type(config) != Config:
+            raise TypeError('miraiml.Engine\'s constructor requires an object'+\
+                ' of miraiml.Config')
 
     def is_running(self):
         """
@@ -227,7 +245,7 @@ class Engine:
         :type restart: bool, optional, default=False
         :param restart: Whether to restart the engine after shuffling data or not.
 
-        :raises: ``RuntimeError`` if called before loading data.
+        :raises: ``RuntimeError``
 
         .. note::
             It's a good practice to shuffle the training data periodically to avoid
@@ -266,10 +284,7 @@ class Engine:
         """
         Interrupts the engine and starts again from last checkpoint (if any).
 
-        :raises: ``RuntimeError`` if called before loading data or if some error
-            occurs during the training/predicting process.
-
-            ``KeyError`` if invalid keys are accessed on parameters rules.
+        :raises: ``RuntimeError``, ``KeyError``
         """
         if self.X_train is None:
             raise RuntimeError('No data to train.')
@@ -329,7 +344,8 @@ class Engine:
 
         will_ensemble = len(base_models_ids) > 1\
             and not self.config.ensemble_id is None\
-            and not self.config.n_ensemble_cycles is None
+            and not self.config.n_ensemble_cycles is None\
+            and self.config.n_ensemble_cycles > 0
 
         if will_ensemble:
             self.ensembler = Ensembler(

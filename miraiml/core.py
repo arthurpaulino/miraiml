@@ -77,8 +77,7 @@ class BaseModel:
             * ``test_predictions``: The predictions for the testing dataset
             * ``score``: The score of the model on the training dataset
 
-        :raises: ``RuntimeError`` if some error occurs during the
-            training/predicting process.
+        :raises: ``RuntimeError``
         """
         X_train, X_test = X_train[self.features], X_test[self.features]
         train_predictions = np.zeros(X_train.shape[0])
@@ -197,7 +196,7 @@ class MiraiSeeker:
         :rtype: miraiml.core.BaseModel
         :returns: The next base model for exploration.
 
-        :raises: ``KeyError`` if the parameters rules refer to unused parameters.
+        :raises: ``KeyError``
         """
         if self.is_ready(id) and rnd.uniform(0, 1) > self.config.random_exploration_ratio:
             parameters, features = self.naive_search(id)
