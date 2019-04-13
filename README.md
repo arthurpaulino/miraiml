@@ -22,7 +22,7 @@ built for real-time usage.
 Some didactic tutorials can be found in the [example](examples) directory. Or
 [Read the Docs][docs_url] for a better understanding of MiraiML.
 
-**Note**: For more `make` directives, call `$ make help`
+**Note**: For more info on `make` directives, call `$ make help`
 
 ## Contributing
 
