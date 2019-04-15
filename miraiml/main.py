@@ -222,9 +222,9 @@ class Config:
             raise ValueError('invalid ensemble_id')
         if ensemble_id in ids:
             raise ValueError('ensemble_id cannot have the same id of a search space')
-        if type(n_ensemble_cycles) != int:
+        if type(n_ensemble_cycles) != type(None) and type(n_ensemble_cycles) != int:
             raise TypeError('n_ensemble_cycles must be an integer')
-        if n_ensemble_cycles < 0:
+        if type(n_ensemble_cycles) != type(None) and n_ensemble_cycles < 0:
             raise ValueError('invalid n_ensemble_cycles')
 
 
@@ -252,7 +252,7 @@ class Engine:
         self.must_interrupt = False
         self.mirai_seeker = None
         self.models_dir = config.local_dir + 'models/'
-        self.X_train = None
+        self.train_data = None
         self.ensembler = None
 
     def __validate__(self, config):
@@ -280,18 +280,18 @@ class Engine:
             time.sleep(.1)
         self.must_interrupt = False
 
-    def load_data(self, train_data, test_data, target, restart=False):
+    def load_data(self, train_data, train_target, test_data, restart=False):
         """
         Interrupts the engine and loads a new pair of train/test datasets.
 
         :type train_data: pandas.DataFrame
         :param train_data: The training data.
 
+        :type train_target: pandas.Series or numpy.ndarray
+        :param train_target: The training target.
+
         :type test_data: pandas.DataFrame
         :param test_data: The testing data.
-
-        :type target: str
-        :param target: The label of the target column.
 
         :type restart: bool, optional, default=False
         :param restart: Whether to restart the engine after updating data or not.
@@ -300,10 +300,10 @@ class Engine:
             raise TypeError('Data must be of type \'pandas.DataFrame\'')
 
         self.interrupt()
-        self.X_train = train_data.drop(columns=target)
-        self.all_features = list(self.X_train.columns)
-        self.y_train = train_data[target]
-        self.X_test = test_data
+        self.train_data = train_data
+        self.all_features = list(train_data.columns)
+        self.train_target = train_target
+        self.test_data = test_data
         if not self.mirai_seeker is None:
             self.mirai_seeker.reset()
         if restart:
@@ -322,14 +322,15 @@ class Engine:
             It's a good practice to shuffle the training data periodically to avoid
             overfitting on a certain folding pattern.
         """
-        if self.X_train is None:
+        if self.train_data is None:
             raise RuntimeError('No data to shuffle')
 
         self.interrupt()
-        if not self.X_train is None:
-            seed = int(time.time())
-            self.X_train = self.X_train.sample(frac=1, random_state=seed)
-            self.y_train = self.y_train.sample(frac=1, random_state=seed)
+
+        seed = int(time.time())
+        self.train_data = self.train_data.sample(frac=1, random_state=seed)
+        self.train_target = self.train_target.sample(frac=1, random_state=seed)
+
         if restart:
             self.restart()
 
@@ -357,7 +358,7 @@ class Engine:
 
         :raises: ``RuntimeError``, ``KeyError``
         """
-        if self.X_train is None:
+        if self.train_data is None:
             raise RuntimeError('No data to train')
         self.interrupt()
 
@@ -404,8 +405,8 @@ class Engine:
             self.base_models[id] = base_model
 
             self.train_predictions_df[id], self.test_predictions_df[id],\
-                self.scores[id] = base_model.predict(self.X_train, self.y_train,
-                    self.X_test, self.config)
+                self.scores[id] = base_model.predict(self.train_data, self.train_target,
+                    self.test_data, self.config)
 
             if self.best_score is None or self.scores[id] > self.best_score:
                 self.best_score = self.scores[id]
@@ -421,7 +422,7 @@ class Engine:
         if will_ensemble:
             self.ensembler = Ensembler(
                 base_models_ids,
-                self.y_train,
+                self.train_target,
                 self.train_predictions_df,
                 self.test_predictions_df,
                 self.scores,
@@ -445,7 +446,7 @@ class Engine:
                 base_model = self.mirai_seeker.seek(id)
 
                 train_predictions, test_predictions, score = base_model.\
-                    predict(self.X_train, self.y_train, self.X_test,
+                    predict(self.train_data, self.train_target, self.test_data,
                         self.config)
 
                 self.mirai_seeker.register_base_model(id, base_model, score)
