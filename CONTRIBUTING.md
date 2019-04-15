@@ -26,7 +26,11 @@ I've highlighted the labels that should be used in each case. Please, do not use
 
 Code contributions can only be made if there is an **open issue** related to the
 changes you want to make, where we have discussed and come to an agreement about
-them. Such issues will be tagged with the `reserved: approved` label.
+them. Such issues will be tagged with the `reserved: approved` label. Comment on
+the issue saying that you will implement it and I will assign it to you.
+
+Before you start coding, checkout to a new branch called `issue-<#issue>` (e.g.:
+`issue-42`).
 
 Before commiting your changes, remember to increment the package version according
 to the [Semantic Versioning][semver] specification, with one difference: there is
@@ -38,9 +42,8 @@ The version can be incremented by calling `make` with one of the following
 directives: `major`, `minor`, `patch` or `update`. Feel free to call `$ make help`
 for more information.
 
-After opening a [pull request][pulls], insert the link to the issue on your pull
-request comment and then post the link to your pull request on the respective
-issue.
+After opening a [pull request][pulls], insert the link of the issue on your pull
+request comment and Github will automatically mention that reference on the issue.
 
 [issues]: https://github.com/arthurpaulino/miraiml/issues
 [semver]: https://semver.org/
