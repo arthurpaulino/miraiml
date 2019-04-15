@@ -11,17 +11,22 @@ without null values. The target column is called `target_class` and contains onl
    This example shows the very basics of MiraiML, from importing the main classes
    to fitting and predicting.
 
-2. [Implementing parameters rules](parameters_rules.py)
+2. [Implementing an `on_improvement` function](on_improvement.py)
+
+   If we want the engine to trigger a function when a better set of predictions
+   is found, we can define it and pass it to the Engine's constructor.
+
+3. [Implementing parameters rules](parameters_rules.py)
 
    When a certain combination of hyperparameters is prohibited, you can use
    `parameters_rules` to avoid such conflicts.
 
-3. [Ensembling models](ensembling.py)
+4. [Ensembling models](ensembling.py)
 
    This example shows MiraiML's capabilities to find smart weights when ensembling
    various models.
 
-4. [Wrapping a LightGBM model](lightgbm_wrapper.py) (requires
+5. [Wrapping a LightGBM model](lightgbm_wrapper.py) (requires
    [lightgbm][lightgbm_pypi])
 
    MiraiML can work with any model class that implements `fit(X, y)` and
