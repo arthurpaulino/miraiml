@@ -49,6 +49,11 @@ engine.restart()
 sleep(10)
 engine.interrupt()
 
-# Now we can requests all scores
-print('Scores:')
-print(engine.request_scores())
+# Now we can requests the scores
+status = engine.request_status()
+scores = status['scores']
+print('\nScores:', scores)
+
+# We can also get the score of the best id
+best_id = status['best_id']
+print('\nBest score:', scores[best_id])
