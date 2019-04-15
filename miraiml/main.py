@@ -385,6 +385,13 @@ class Engine:
 
         Thread(target=lambda: starter()).start()
 
+    def __improvement_trigger__(self):
+        """
+        Called when an improvement happens.
+        """
+        if not self.on_improvement is None:
+            self.on_improvement(self.request_status())
+
     def __main_loop__(self):
         """
         Main optimization loop.
@@ -450,8 +457,7 @@ class Engine:
                     self.best_score = score
                     self.best_id = ensemble_id
 
-        if not self.on_improvement is None and not self.must_interrupt:
-            self.on_improvement(self.request_status())
+        self.__improvement_trigger__()
 
         while not self.must_interrupt:
             for search_space in self.config.search_spaces:
@@ -484,8 +490,7 @@ class Engine:
                             self.best_score = self.scores[ensemble_id]
                             self.best_id = ensemble_id
 
-                    if not self.on_improvement is None:
-                        self.on_improvement(self.request_status())
+                    self.__improvement_trigger__()
 
                     dump(base_model, self.models_dir + id)
 
@@ -496,8 +501,7 @@ class Engine:
                         self.best_score = score
                         self.best_id = ensemble_id
 
-                    if not self.on_improvement is None and not self.must_interrupt:
-                        self.on_improvement(self.request_status())
+                    self.__improvement_trigger__()
 
         self.__is_running__ = False
 
