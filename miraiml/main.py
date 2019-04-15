@@ -237,8 +237,8 @@ class Engine:
 
     :type on_improvement: function, optional, default=None
     :param on_improvement: A function that will be executed everytime the engine
-        finds an improvement for the best id. It must receive a ``status``
-        parameter, which is the return of the method :func:`request_status`.
+        finds an improvement for some id. It must receive a ``status`` parameter,
+        which is the return of the method :func:`request_status`.
 
     :raises: ``TypeError``
 
@@ -450,7 +450,7 @@ class Engine:
                     self.best_score = score
                     self.best_id = ensemble_id
 
-        if not self.on_improvement is None:
+        if not self.on_improvement is None and not self.must_interrupt:
             self.on_improvement(self.request_status())
 
         while not self.must_interrupt:
@@ -476,9 +476,6 @@ class Engine:
                         self.best_score = score
                         self.best_id = id
 
-                        if not self.on_improvement is None:
-                            self.on_improvement(self.request_status())
-
                     if will_ensemble:
                         self.train_predictions_df[ensemble_id],\
                             self.test_predictions_df[ensemble_id],\
@@ -487,8 +484,8 @@ class Engine:
                             self.best_score = self.scores[ensemble_id]
                             self.best_id = ensemble_id
 
-                            if not self.on_improvement is None:
-                                self.on_improvement(self.request_status())
+                    if not self.on_improvement is None:
+                        self.on_improvement(self.request_status())
 
                     dump(base_model, self.models_dir + id)
 
@@ -499,8 +496,8 @@ class Engine:
                         self.best_score = score
                         self.best_id = ensemble_id
 
-                        if not self.on_improvement is None:
-                            self.on_improvement(self.request_status())
+                    if not self.on_improvement is None and not self.must_interrupt:
+                        self.on_improvement(self.request_status())
 
         self.__is_running__ = False
 
