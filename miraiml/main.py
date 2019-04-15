@@ -379,8 +379,8 @@ class Engine:
         if not os.path.exists(self.models_dir):
             os.makedirs(self.models_dir)
         self.base_models = {}
-        self.train_predictions_dict = {}
-        self.test_predictions_dict = {}
+        self.train_predictions_df = pd.DataFrame()
+        self.test_predictions_df = pd.DataFrame()
         self.scores = {}
         self.best_score = None
         self.best_id = None
@@ -403,7 +403,7 @@ class Engine:
                 dump(base_model, base_model_path)
             self.base_models[id] = base_model
 
-            self.train_predictions_dict[id], self.test_predictions_dict[id],\
+            self.train_predictions_df[id], self.test_predictions_df[id],\
                 self.scores[id] = base_model.predict(self.X_train, self.y_train,
                     self.X_test, self.config)
 
@@ -422,8 +422,8 @@ class Engine:
             self.ensembler = Ensembler(
                 base_models_ids,
                 self.y_train,
-                self.train_predictions_dict,
-                self.test_predictions_dict,
+                self.train_predictions_df,
+                self.test_predictions_df,
                 self.scores,
                 self.config
             )
@@ -453,15 +453,15 @@ class Engine:
                 if score > self.scores[id] or (score == self.scores[id] and\
                         len(base_model.features) < len(self.base_models[id].features)):
                     self.scores[id] = score
-                    self.train_predictions_dict[id] = train_predictions
-                    self.test_predictions_dict[id] = test_predictions
+                    self.train_predictions_df[id] = train_predictions
+                    self.test_predictions_df[id] = test_predictions
                     if score > self.best_score:
                         self.best_score = score
                         self.best_id = id
 
                     if will_ensemble:
-                        self.train_predictions_dict[ensemble_id],\
-                            self.test_predictions_dict[ensemble_id],\
+                        self.train_predictions_df[ensemble_id],\
+                            self.test_predictions_df[ensemble_id],\
                             self.scores[ensemble_id] = self.ensembler.update()
                         if self.scores[ensemble_id] > self.best_score:
                             self.best_score = self.scores[ensemble_id]
@@ -499,8 +499,8 @@ class Engine:
         :returns: The predictions of the best model (or ensemble) for the testing
             data. If no predictions has been computed yet, returns ``None``.
         """
-        if len(self.test_predictions_dict) > 0:
-            return self.test_predictions_dict[self.best_id]
+        if not self.best_id is None:
+            return self.test_predictions_df[self.best_id]
         return None
 
     def request_scores(self):
