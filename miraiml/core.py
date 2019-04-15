@@ -278,13 +278,13 @@ class Ensembler:
     :param base_models_ids: The list of base models' ids to keep track of.
     :type base_models_ids: list
 
-    :param train_predictions_dict: The dictionary of predictions for the training
+    :param train_predictions_df: The dataframe of predictions for the training
         dataset.
-    :type train_predictions_dict: dict
+    :type train_predictions_df: pandas.DataFrame
 
-    :param test_predictions_dict: The dictionary of predictions for the testing
+    :param test_predictions_df: The dataframe of predictions for the testing
         dataset.
-    :type test_predictions_dict: dict
+    :type test_predictions_df: pandas.DataFrame
 
     :param scores: The dictionary of scores.
     :type scores: dict
@@ -292,12 +292,12 @@ class Ensembler:
     :param config: The configuration of the engine.
     :type config: miraiml.Config
     """
-    def __init__(self, base_models_ids, y_train, train_predictions_dict,
-            test_predictions_dict, scores, config):
+    def __init__(self, base_models_ids, y_train, train_predictions_df,
+            test_predictions_df, scores, config):
         self.y_train = y_train
         self.base_models_ids = base_models_ids
-        self.train_predictions_dict = train_predictions_dict
-        self.test_predictions_dict = test_predictions_dict
+        self.train_predictions_df = train_predictions_df
+        self.test_predictions_df = test_predictions_df
         self.scores = scores
         self.config = config
         self.id = config.ensemble_id
@@ -330,8 +330,8 @@ class Ensembler:
             * ``score``: The score of the ensemble on the training dataset
         """
         train_predictions, test_predictions, score = self.ensemble(self.weights)
-        self.train_predictions_dict[self.id] = train_predictions
-        self.test_predictions_dict[self.id] = test_predictions
+        self.train_predictions_df[self.id] = train_predictions
+        self.test_predictions_df[self.id] = test_predictions
         self.scores[self.id] = score
         return (train_predictions, test_predictions, score)
 
@@ -379,14 +379,13 @@ class Ensembler:
             * ``score``: The score of the ensemble on the training dataset
         """
         id = self.base_models_ids[0]
-        train_predictions = weights[id]*self.train_predictions_dict[id]
-        test_predictions = weights[id]*self.test_predictions_dict[id]
+        train_predictions = weights[id]*self.train_predictions_df[id]
+        test_predictions = weights[id]*self.test_predictions_df[id]
         weights_sum = weights[id]
         for id in self.base_models_ids[1:]:
-            if id in self.train_predictions_dict:
-                train_predictions += weights[id]*self.train_predictions_dict[id]
-                test_predictions += weights[id]*self.test_predictions_dict[id]
-                weights_sum += weights[id]
+            train_predictions += weights[id]*self.train_predictions_df[id]
+            test_predictions += weights[id]*self.test_predictions_df[id]
+            weights_sum += weights[id]
         train_predictions /= weights_sum
         test_predictions /= weights_sum
         return (train_predictions, test_predictions,
@@ -409,8 +408,8 @@ class Ensembler:
             if self.id not in self.scores or score > self.scores[self.id]:
                 self.scores[self.id] = score
                 self.weights = weights
-                self.train_predictions_dict[self.id] = train_predictions
-                self.test_predictions_dict[self.id] = test_predictions
+                self.train_predictions_df[self.id] = train_predictions
+                self.test_predictions_df[self.id] = test_predictions
                 dump(self.weights, self.weights_path)
                 optimized = True
         return optimized
