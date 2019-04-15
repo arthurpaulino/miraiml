@@ -45,6 +45,11 @@ without null values. The target column is called `target_class` and contains onl
    [LightGBM's Python API][lightgbm_api]. So this is a great chance to show how
    to build your own model classes and how to use LightGBM with MiraiML.
 
+6. [Stacking up layers of predictions](stacking.py)
+
+   We can also use the predictions from a layer of different models as input for
+   a second layer of models.
+
 [pulsar]: https://www.kaggle.com/pavanraj159/predicting-a-pulsar-star
 [lightgbm_pypi]: https://pypi.org/project/lightgbm/
 [sklearn]: https://scikit-learn.org
