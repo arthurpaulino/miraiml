@@ -35,6 +35,8 @@ class SearchSpace:
              in the set of parameters defined on ``parameters_values``, otherwise
              the engine will attempt to access an invalid key.
 
+    :raises: `` NotImplementedError('')``, ``TypeError``, ``ValueError``
+
     :Example:
 
     ::
@@ -70,10 +72,24 @@ class SearchSpace:
     """
     def __init__(self, model_class, id, parameters_values={},
             parameters_rules=lambda x: None):
+        self.__validate__(model_class, id, parameters_values, parameters_rules)
         self.model_class = model_class
         self.id = id
         self.parameters_values = parameters_values
         self.parameters_rules = parameters_rules
+
+    def __validate__(self, model_class, id, parameters_values, parameters_rules):
+        dir_model_class = dir(model_class)
+        if 'fit' not in dir_model_class:
+            raise NotImplementedError('model_class must implement fit')
+        if type(id) != str:
+            raise TypeError('id must be a string')
+        if not is_valid_filename(id):
+            raise ValueError('Invalid id: {}'.format(id))
+        if type(parameters_values) != dict:
+            raise TypeError('parameters_values must be a dictionary')
+        if type(parameters_rules) != type(lambda: None):
+            raise TypeError('parameters_rules must be a function')
 
 class Config:
     """
@@ -117,6 +133,8 @@ class Config:
         If none or a value that's less than 1 is given, the engine will not ensemble
         base models.
 
+    :raises: ``NotImplementedError``, ``TypeError``, ``ValueError``
+
     :Example:
 
     ::
@@ -158,11 +176,56 @@ class Config:
             n_folds, stratified, random_exploration_ratio, ensemble_id,
             n_ensemble_cycles):
         if type(local_dir) != str:
-            raise TypeError('local_dir must be a string.')
+            raise TypeError('local_dir must be a string')
         for dir_name in local_dir.split('/'):
             if not is_valid_filename(dir_name):
                 raise ValueError('Invalid directory name: {}'.format(dir_name))
+        if problem_type not in ('classification', 'regression'):
+            raise ValueError('Invalid problem type')
 
+        if type(search_spaces) != list:
+            raise TypeError('search_spaces must be a list')
+        ids = []
+        for search_space in search_spaces:
+            if type(search_space) != SearchSpace:
+                raise TypeError('All search spaces must be objects of '+\
+                    'miraiml.SearchSpace')
+            id = search_space.id
+            if id in ids:
+                raise ValueError('Duplicated search space id: {}'.format(id))
+            ids.append(id)
+            dir_model_class = dir(search_space.model_class)
+            if problem_type == 'classification' and 'predict_proba' not in dir_model_class:
+                raise NotImplementedError('Model class of id {} '.format(id)+\
+                    'must implement predict_proba for classification problems')
+            if problem_type == 'regression' and 'predict' not in dir_model_class:
+                raise NotImplementedError('Model class of id {} '.format(id)+\
+                    'must implement predict for regression problems')
+
+        if type(score_function) != type(lambda: None):
+            raise TypeError('score_function must be a function')
+        if type(n_folds) != int:
+            raise TypeError('n_folds must be an integer')
+        if n_folds < 2:
+            raise ValueError('n_folds greater than 1')
+        if type(stratified) != bool:
+            raise TypeError('stratified must be a boolean')
+        if random_exploration_ratio == 0:
+            random_exploration_ratio = 0.0
+        if type(random_exploration_ratio) != float:
+            raise TypeError('random_exploration_ratio must be a number')
+        if random_exploration_ratio < 0 or 1 <= random_exploration_ratio:
+            raise ValueError('random_exploration_ratio must be in [0, 1)')
+        if type(ensemble_id) != type(None) and type(ensemble_id) != str:
+            raise TypeError('ensemble_id must be a None or a string')
+        if type(ensemble_id) == str and not is_valid_filename(ensemble_id):
+            raise ValueError('invalid ensemble_id')
+        if ensemble_id in ids:
+            raise ValueError('ensemble_id cannot have the same id of a search space')
+        if type(n_ensemble_cycles) != int:
+            raise TypeError('n_ensemble_cycles must be an integer')
+        if n_ensemble_cycles < 0:
+            raise ValueError('invalid n_ensemble_cycles')
 
 
 class Engine:
@@ -233,6 +296,9 @@ class Engine:
         :type restart: bool, optional, default=False
         :param restart: Whether to restart the engine after updating data or not.
         """
+        if type(train_data) != pd.DataFrame or type(test_data) != pd.DataFrame:
+            raise TypeError('Data must be of type \'pandas.DataFrame\'')
+
         self.interrupt()
         self.X_train = train_data.drop(columns=target)
         self.all_features = list(self.X_train.columns)
