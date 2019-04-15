@@ -45,22 +45,24 @@ print('Waiting 1 second...')
 sleep(1)
 print('\nIs the engine running?', engine.is_running())
 
-# We can request the score at any time. Let's just wait 5 seconds to make sure
-# that at least one cycle of cross-validation has finished.
+# We can request the engine's status at any time. Let's just wait 5 seconds to
+# make sure that at least one cycle of cross-validation has finished.
 print('\nWaiting 5 seconds...')
 sleep(5)
-print('\nScore of the engine:', engine.request_score())
+status = engine.request_status()
 
-# We can also request the predictions for the testing data anytime we want
-print('\nPredictions for the testing data:', engine.request_predictions())
+# Let's print the scores of the engine
+print('\nScores:', status['scores'])
 
-# Okay, let's shut it down and check if it's running every second. The print
-# inside the loop may not be called.
+# Okay, let's wait 5 more seconds, shut it down and check if it's running every
+# second. The print inside the loop may not be called.
+print('\nWaiting 5 seconds...')
+sleep(5)
 engine.interrupt()
 while engine.is_running():
     print('\nEngine still running')
     sleep(1)
 
-# Predictions and scores are still available, but may have improved.
-print('\nScore of the engine:', engine.request_score())
-print('\nPredictions for the testing data:', engine.request_predictions())
+# The engine's status is still available. The score may have improved
+status = engine.request_status()
+print('\nScores:', status['scores'])

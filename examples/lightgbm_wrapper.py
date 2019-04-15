@@ -98,4 +98,5 @@ sleep(10)
 
 engine.interrupt()
 
-print('Score:', engine.request_score())
+status = engine.request_status()
+print('\nScores:', status['scores'])

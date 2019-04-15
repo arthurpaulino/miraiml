@@ -366,7 +366,6 @@ class Engine:
             try:
                 self.__main_loop__()
             except:
-                print('Stopping the engine.')
                 self.__is_running__ = False
                 raise
 
@@ -479,43 +478,28 @@ class Engine:
 
         self.__is_running__ = False
 
-    def request_score(self):
+    def request_status(self):
         """
-        Queries the score of the best id on the training data.
+        Queries the current status of the engine.
 
-        :rtype: float or None
-        :returns: The score of the best model. If no score has been computed yet,
-            returns ``None``.
+        :rtype: dict or None
+        :returns: The current status of the engine in the form of a dictionary.
+            If no score has been computed yet, returns ``None``. The available
+            keys for the dictionary are:
+
+            * ``'best_id'``: The best id of the engine
+
+            * ``'scores'``: A dictionary containing the score of each id
+
+            * ``'train_predictions'``: A dataframe containing the predictions of each id for the training dataset
+
+            * ``'test_predictions'``: A dataframe containing the predictions of each id for the testing dataset
         """
-        if len(self.scores) > 0:
-            return self.scores[self.best_id]
-        return None
-
-    def request_predictions(self):
-        """
-        Queries the predictions of the best id for the testing
-        data.
-
-        :rtype: numpy.ndarray or None
-        :returns: The predictions of the best model (or ensemble) for the testing
-            data. If no predictions has been computed yet, returns ``None``.
-        """
-        if not self.best_id is None:
-            return self.test_predictions_df[self.best_id]
-        return None
-
-    def request_scores(self):
-        """
-        Returns the score for each id in a ``pandas.DataFrame``.
-
-        :rtype: pandas.DataFrame
-        :returns: The score for each id in a ``pandas.DataFrame`` with the columns
-            ``'id'`` and ``'score'``, in a descending order (sorted by ``'score'``).
-        """
-        status = []
-        for id in self.scores:
-            status.append({'id': id, 'score': self.scores[id]})
-
-        return pd.DataFrame(status).\
-            sort_values('score', ascending=False).\
-            reset_index(drop=True)
+        if self.best_id is None:
+            return None
+        return dict(
+            best_id = self.best_id,
+            scores = self.scores.copy(),
+            train_predictions = self.train_predictions_df.copy(),
+            test_predictions = self.test_predictions_df.copy()
+        )
