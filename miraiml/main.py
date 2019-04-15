@@ -235,6 +235,11 @@ class Engine:
     :type config: miraiml.Config
     :param config: The configurations for the behavior of the engine.
 
+    :type on_improvement: function, optional, default=None
+    :param on_improvement: A function that will be executed everytime the engine
+        finds an improvement for the best id. It must receive a ``status``
+        parameter, which is the return of the method :func:`request_status`.
+
     :raises: ``TypeError``
 
     :Example:
@@ -243,11 +248,17 @@ class Engine:
 
         from miraiml import Engine
 
-        engine = Engine(config)
+        def on_improvement(status):
+            best_id = status['best_id']
+            scores = status['scores']
+            print('Best score:', scores[best_id])
+
+        engine = Engine(config, on_improvement=on_improvement)
     """
-    def __init__(self, config):
-        self.__validate__(config)
+    def __init__(self, config, on_improvement=None):
+        self.__validate__(config, on_improvement)
         self.config = config
+        self.on_improvement = on_improvement
         self.__is_running__ = False
         self.must_interrupt = False
         self.mirai_seeker = None
@@ -255,10 +266,13 @@ class Engine:
         self.train_data = None
         self.ensembler = None
 
-    def __validate__(self, config):
+    def __validate__(self, config, on_improvement):
         if type(config) != Config:
             raise TypeError('miraiml.Engine\'s constructor requires an object'+\
                 ' of miraiml.Config')
+        if type(on_improvement) != type(lambda: None) and\
+            type(on_improvement) != type(None):
+            raise TypeError('on_improvement must be None or a function')
 
     def is_running(self):
         """
@@ -436,6 +450,9 @@ class Engine:
                     self.best_score = score
                     self.best_id = ensemble_id
 
+        if not self.on_improvement is None:
+            self.on_improvement(self.request_status())
+
         while not self.must_interrupt:
             for search_space in self.config.search_spaces:
                 if self.must_interrupt:
@@ -459,6 +476,9 @@ class Engine:
                         self.best_score = score
                         self.best_id = id
 
+                        if not self.on_improvement is None:
+                            self.on_improvement(self.request_status())
+
                     if will_ensemble:
                         self.train_predictions_df[ensemble_id],\
                             self.test_predictions_df[ensemble_id],\
@@ -466,6 +486,9 @@ class Engine:
                         if self.scores[ensemble_id] > self.best_score:
                             self.best_score = self.scores[ensemble_id]
                             self.best_id = ensemble_id
+
+                            if not self.on_improvement is None:
+                                self.on_improvement(self.request_status())
 
                     dump(base_model, self.models_dir + id)
 
@@ -475,6 +498,9 @@ class Engine:
                     if score > self.best_score:
                         self.best_score = score
                         self.best_id = ensemble_id
+
+                        if not self.on_improvement is None:
+                            self.on_improvement(self.request_status())
 
         self.__is_running__ = False
 
