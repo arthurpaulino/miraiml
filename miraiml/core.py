@@ -77,8 +77,7 @@ class BaseModel:
             * ``test_predictions``: The predictions for the testing dataset
             * ``score``: The score of the model on the training dataset
 
-        :raises: ``RuntimeError`` if some error occurs during the
-            training/predicting process.
+        :raises: ``RuntimeError``
         """
         X_train, X_test = X_train[self.features], X_test[self.features]
         train_predictions = np.zeros(X_train.shape[0])
@@ -98,7 +97,7 @@ class BaseModel:
             try:
                 model.fit(X_train_big, y_train_big)
             except:
-                raise RuntimeError('Error when fitting with model class \'{}\'.'.\
+                raise RuntimeError('Error when fitting with model class {}'.\
                     format(class_name))
             try:
                 if config.problem_type == 'classification':
@@ -108,7 +107,7 @@ class BaseModel:
                     train_predictions[small_part] = model.predict(X_train_small)
                     test_predictions += model.predict(X_test)
             except:
-                raise RuntimeError('Error when predicting with model class \'{}\'.'.\
+                raise RuntimeError('Error when predicting with model class {}'.\
                     format(class_name))
 
         test_predictions /= config.n_folds
@@ -197,7 +196,7 @@ class MiraiSeeker:
         :rtype: miraiml.core.BaseModel
         :returns: The next base model for exploration.
 
-        :raises: ``KeyError`` if the parameters rules refer to unused parameters.
+        :raises: ``KeyError``
         """
         if self.is_ready(id) and rnd.uniform(0, 1) > self.config.random_exploration_ratio:
             parameters, features = self.naive_search(id)
@@ -209,7 +208,7 @@ class MiraiSeeker:
             try:
                 search_space.parameters_rules(parameters)
             except:
-                raise KeyError('Error on parameters rules for the id \'{}\'.'.format(id))
+                raise KeyError('Error on parameters rules for the id {}'.format(id))
         model_class = search_space.model_class
 
         return BaseModel(model_class, parameters, features)
