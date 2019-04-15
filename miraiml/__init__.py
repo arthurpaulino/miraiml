@@ -11,7 +11,7 @@ You can import them by doing
 >>> from miraiml import SearchSpace, Config, Engine
 """
 
-__version__ = '3.1.5.3'
+__version__ = '3.1.5.4'
 
 from .main import SearchSpace, Config, Engine
 

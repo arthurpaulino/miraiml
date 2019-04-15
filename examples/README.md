@@ -47,10 +47,11 @@ without null values. The target column is called `target_class` and contains onl
 
 6. [Stacking up layers of predictions](stacking.py)
 
-   We can also use the predictions from a layer of different models as input for
-   a second layer of models.
+   We can also use the predictions from a layer of different models to enhance the
+   input for a second layer of models. It's called [Stacking][stacking].
 
 [pulsar]: https://www.kaggle.com/pavanraj159/predicting-a-pulsar-star
 [lightgbm_pypi]: https://pypi.org/project/lightgbm/
 [sklearn]: https://scikit-learn.org
 [lightgbm_api]: https://lightgbm.readthedocs.io/en/latest/Python-API.html
+[stacking]: https://en.wikipedia.org/wiki/Ensemble_learning#Stacking
