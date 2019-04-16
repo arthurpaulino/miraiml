@@ -514,19 +514,17 @@ class Engine:
             If no score has been computed yet, returns ``None``. The available
             keys for the dictionary are:
 
-            * ``'best_id'``: The best id of the engine
+            * ``'score'``: The score of the best id
 
             * ``'scores'``: A dictionary containing the score of each id
 
-            * ``'train_predictions'``: A dataframe containing the predictions of each id for the training dataset
-
-            * ``'test_predictions'``: A dataframe containing the predictions of each id for the testing dataset
+            * ``'predictions'``: A ``pandas.Series`` object containing the\
+                predictions of the best id for the testing dataset
         """
         if self.best_id is None:
             return None
         return dict(
-            best_id = self.best_id,
+            score = self.scores[self.best_id],
             scores = self.scores.copy(),
-            train_predictions = self.train_predictions_df.copy(),
-            test_predictions = self.test_predictions_df.copy()
+            predictions = self.test_predictions_df[self.best_id].copy()
         )

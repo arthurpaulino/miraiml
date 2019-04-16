@@ -53,18 +53,14 @@ print('\nWaiting 5 seconds...')
 sleep(5)
 status = engine.request_status()
 
-# Let's print the scores of the engine
-print('\nScores:', status['scores'])
+# Let's print the score of the engine
+print('\nScore:', status['score'])
 
-# Okay, let's wait 5 more seconds, shut it down and check if it's running every
-# second. The print inside the loop may not be called.
+# Okay, let's wait 5 more seconds and shut it down.
 print('\nWaiting 5 seconds...')
 sleep(5)
 engine.interrupt()
-while engine.is_running():
-    print('\nEngine still running')
-    sleep(1)
 
-# The engine's status is still available. The score may have improved
+# The engine's status is still available and the score may have improved
 status = engine.request_status()
-print('\nScores:', status['scores'])
+print('\nScore:', status['score'])
