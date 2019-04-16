@@ -1,5 +1,10 @@
-A brief introduction to MiraiML
-===============================
+User Guide
+==========
+
+This section explains the mechanics of MiraiML.
+
+A brief introduction
+--------------------
 
     Mirai: `future` in japanese.
 
