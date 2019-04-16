@@ -185,6 +185,9 @@ class Config:
 
         if type(search_spaces) != list:
             raise TypeError('search_spaces must be a list')
+        if len(search_spaces) == 0:
+            raise ValueError('No search spaces')
+
         ids = []
         for search_space in search_spaces:
             if type(search_space) != SearchSpace:

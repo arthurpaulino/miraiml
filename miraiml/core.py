@@ -129,26 +129,35 @@ class MiraiSeeker:
     :type config: miraiml.Config
     """
     def __init__(self, search_spaces, all_features, config):
-        self.search_spaces_dict = {}
-        for search_space in search_spaces:
-            self.search_spaces_dict[search_space.id] = search_space
         self.all_features = all_features
         self.config = config
-        self.history_path = config.local_dir + 'history'
 
-        if os.path.exists(self.history_path):
-            self.history = load(self.history_path)
-        else:
-            self.reset()
+        histories_path = config.local_dir + 'histories/'
+
+        if not os.path.exists(histories_path):
+            os.makedirs(histories_path)
+
+        self.search_spaces_dict = {}
+        self.histories = {}
+        self.histories_paths = {}
+        for search_space in search_spaces:
+            id = search_space.id
+            self.search_spaces_dict[id] = search_space
+
+            self.histories_paths[id] = histories_path + id
+            if os.path.exists(self.histories_paths[id]):
+                self.histories[id] = load(self.histories_paths[id])
+            else:
+                self.histories[id] = pd.DataFrame()
+                dump(self.histories[id], self.histories_paths[id])
 
     def reset(self):
         """
         Deletes all base models registries.
         """
-        self.history = {}
         for id in self.search_spaces_dict:
-            self.history[id] = pd.DataFrame()
-        dump(self.history, self.history_path)
+            self.histories[id] = pd.DataFrame()
+            dump(self.histories[id], self.histories_paths[id])
 
     def register_base_model(self, id, base_model, score):
         """
@@ -169,9 +178,9 @@ class MiraiSeeker:
         for feature in self.all_features:
             event[feature+'(feature)'] = 1 if feature in base_model.features else 0
 
-        self.history[id] = pd.concat([self.history[id],
+        self.histories[id] = pd.concat([self.histories[id],
             pd.DataFrame([event])]).drop_duplicates()
-        dump(self.history, self.history_path)
+        dump(self.histories[id], self.histories_paths[id])
 
     def is_ready(self, id):
         """
@@ -184,7 +193,7 @@ class MiraiSeeker:
         :returns: Whether ``id`` can be used to generate parameters and features
             lists or not.
         """
-        return self.history[id].shape[0] > 1
+        return self.histories[id].shape[0] > 1
 
     def seek(self, id):
         """
@@ -209,6 +218,7 @@ class MiraiSeeker:
                 search_space.parameters_rules(parameters)
             except:
                 raise KeyError('Error on parameters rules for the id {}'.format(id))
+
         model_class = search_space.model_class
 
         return BaseModel(model_class, parameters, features)
@@ -248,7 +258,7 @@ class MiraiSeeker:
             Respectively, the dictionary of parameters and the list of features
             that can be used to generate a new base model.
         """
-        history = self.history[id]
+        history = self.histories[id]
         parameters = {}
         features = []
         for column in history.columns:
