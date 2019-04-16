@@ -35,7 +35,7 @@ class SearchSpace:
              in the set of parameters defined on ``parameters_values``, otherwise
              the engine will attempt to access an invalid key.
 
-    :raises: `` NotImplementedError('')``, ``TypeError``, ``ValueError``
+    :raises: ``NotImplementedError``, ``TypeError``, ``ValueError``
 
     :Example:
 
