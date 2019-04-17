@@ -22,6 +22,8 @@ class BaseModel:
     Represents an element from the search space, defined by an instance of
     :class:`miraiml.HyperSearchSpace` and a set of features.
 
+    Read more in the :ref:`User Guide <base_model>`.
+
     :param model_class: A statistical model class that must implement the methods
         ``fit`` and ``predict`` for regression or ``predict_proba`` classification
         problems.
@@ -43,18 +45,7 @@ class BaseModel:
     def predict(self, X_train, y_train, X_test, config):
         """
         Performs the predictions for the training and testing datasets and also
-        provides the score of the model.
-
-        For each fold of the training dataset, the model trains on the bigger
-        part and then make predictions for the smaller part and for the testing
-        dataset. After iterating over all folds, the predictions for the training
-        dataset will be complete and there will be ``config.n_folds`` sets of
-        predictions for the testing dataset. The final set of predictions for the
-        testing dataset is the mean of the ``config.n_folds`` predictions.
-
-        This mechanic may produce more stable predictions for the testing dataset
-        than for the training dataset, resulting in slightly better accuracies
-        than expected.
+        computes the score of the model.
 
         :param X_train: The dataframe that contains the training inputs for the
             model.
@@ -117,6 +108,8 @@ class MiraiSeeker:
     """
     This class implements a smarter way of searching good parameters and sets of
     features.
+
+    Read more in the :ref:`User Guide <mirai_seeker>`.
 
     :param base_models_ids: The list of base models' ids to keep track of.
     :type base_models_ids: list
@@ -244,10 +237,10 @@ class MiraiSeeker:
 
     def naive_search(self, id):
         """
-        For each hyperparameter and feature, its value (True or False for
-        features) is chosen stochastically depending on the mean score of the
-        registered entries in which the value was chosen before. Better
-        parameters and features have higher chances of being chosen.
+        Generates an instance of :class:`miraiml.core.BaseModel` based on previously
+        registered ones. The characteristics of the base model are chosen by chance.
+        Characteristics that achieved higher scores have higher chances of being
+        chosen again.
 
         :param id: The id for which we want a new set of parameters and features.
         :type id: str
@@ -280,6 +273,8 @@ class MiraiSeeker:
 class Ensembler:
     """
     Performs the ensemble of the base models.
+
+    Read more in the :ref:`User Guide <ensemble>`.
 
     :param y_train: The target column.
     :type y_train: pandas.Series or numpy.ndarray
