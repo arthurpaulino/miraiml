@@ -1,10 +1,11 @@
+[![][mit_img]][mit_url]
 [![][docs_img]][docs_proj]
 
 # MiraiML
 
 > Mirai: _future_ in japanese.
 
-MiraiML is an asynchronous engine for autonomous & continuous machine learning,
+MiraiML is an asynchronous engine for continuous & autonomous machine learning,
 built for real-time usage.
 
 ## Usage
@@ -32,3 +33,5 @@ project.
 [docs_img]: https://readthedocs.org/projects/miraiml/badge/?version=latest
 [docs_proj]: https://readthedocs.org/projects/miraiml/
 [docs_url]: https://miraiml.readthedocs.io/en/latest/
+[mit_img]: https://img.shields.io/badge/License-MIT-yellow.svg
+[mit_url]: https://opensource.org/licenses/MIT

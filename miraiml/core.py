@@ -1,5 +1,5 @@
 """
-:mod:`miraiml.core` contains the basic bricks for the optimization process.
+:mod:`miraiml.core` contains classes responsible for the optimization process.
 
 - :class:`miraiml.core.BaseModel` represents a solution
 - :class:`miraiml.core.MiraiSeeker` implements the strategies to search for good
