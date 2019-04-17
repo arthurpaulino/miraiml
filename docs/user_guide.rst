@@ -52,27 +52,77 @@ Base models implement a versatile method for predictions, which return predictio
 for the training data and for the testing data, as well as the score achieved on
 the training data.
 
-For each fold of the training dataset, the model trains on the bigger part and
-then make predictions for the smaller part and for the testing dataset. After
-iterating over all folds, the predictions for the training dataset will be
-complete and there will be ``config.n_folds`` sets of predictions for the testing
-dataset. The final set of predictions for the testing dataset is the mean of the
-``config.n_folds`` predictions.
+The mechanics of this process is similar to a cross-validation, with a slight
+difference: the final score is not the mean score of each fold. Instead, the array
+of predictions is built incrementally and then fully compared to the target column.
+More precisely:
 
-This mechanic may produce more stable predictions for the testing dataset than for
-the training dataset, resulting in slightly better accuracies than expected.
+1. Filter training and testing features
+2. Split the training data in N folds
+3. For each fold:
+    - Train the model on the bigger part
+    - Make predictions for the smaller part
+    - Make predictions for the testing dataset
+4. Compute the score for the entire column of predictions
+5. Compute the average of the predictions for the testing dataset
+
+Averaging the predictions for the testing dataset may result in slightly better
+accuracies than expected.
 
 Seeking good base models
 ------------------------
 
 .. _mirai_seeker:
 
-For each hyperparameter and feature, its value (True or False for features) is
-chosen stochastically depending on the mean score of the registered entries in
-which the value was chosen before. Better parameters and features have higher
-chances of being chosen.
+There can be too many base models in the search space and we may not be able to
+afford exhausive searches. Thus, a smart strategy to search good base models is
+mandatory.
+
+Currently, the available strategies are:
+
+- Random
+    Generates a completely random sets of hyperparameters and features.
+- Naive
+    On the history of tested base models, hyperparameters can assume their
+    respective values and features can assume the value 1 if they were present
+    on the validation and 0 otherwise.
+
+    The naive strategy iterates over each history column (except the score) and
+    performs a `group by` using the `mean` aggregation function on the score.
+    Each value present on the current column can be chosen with a probability
+    that is proportional to the score from the `group by` aggregation.
 
 Ensembling base models
 ----------------------
 
 .. _ensemble:
+
+It is possible to combine the predictions of various base models in order to reach
+even higher scores. This process is done by computing a straightforward linear
+combination of the base models' predictions. The score of the ensemble is computed
+on the training target and the same linear combination is performed on the
+predictions for the testing dataset.
+
+Now, the obvious question is: how to find smart coefficients (or weights) for the
+linear combination? This is where the concept of `ensembling cycles` comes into
+play.
+
+An ensembling cycle is an attempt to generate good weights based on the the score
+of each base model individually. This is done by using `triangular distributions
+<https://en.wikipedia.org/wiki/Triangular_distribution>`_.
+
+The weight of the best base model is drawn from the triangular distribution that
+varies from 0 to 1, with mode 1.
+
+For the other base models :math:`i`, the weight is drawn from triangular
+distributions that varies from 0 to `range`, with mode 0. `range` is chosen from
+a triangular distribution that varies from 0 to 1, with mode `normalized`.
+
+`normalized` is computed by the formula :math:`(s_i-s_\textrm{min})/
+(s_\textrm{max}-s_\textrm{min})`, where :math:`s_i` is the score of the current
+base model, :math:`s_\textrm{min}` and :math:`s_\textrm{max}` are the scores of
+the worst and the best base models, respectively.
+
+It means that bad base models can still influence the ensemble, but their
+probabilities of having high weights are relatively low if compared to better
+base models.

@@ -47,18 +47,18 @@ class BaseModel:
         Performs the predictions for the training and testing datasets and also
         computes the score of the model.
 
+        :type X_train: pandas.DataFrame
         :param X_train: The dataframe that contains the training inputs for the
             model.
-        :type X_train: pandas.DataFrame
 
-        :param y_train: The training targets for the model.
         :type y_train: pandas.Series or numpy.ndarray
+        :param y_train: The training targets for the model.
 
-        :param X_test: The dataframe that contains the testing inputs for the model.
         :type X_test: pandas.DataFrame
+        :param X_test: The dataframe that contains the testing inputs for the model.
 
-        :param config: The configuration of the engine.
         :type config: miraiml.Config
+        :param config: The configuration of the engine.
 
         :rtype: tuple
         :returns: ``(train_predictions, test_predictions, score)``

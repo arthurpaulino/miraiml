@@ -111,7 +111,7 @@ class Config:
         (in this order) and returns the score. Bigger scores must mean better models.
 
     :type n_folds: int, optional, default=5
-    :param n_folds: The number of folds for cross-validations.
+    :param n_folds: The number of folds for the fitting/predicting process.
 
     :type stratified: bool, optional, default=True
     :param stratified: Whether to stratify folds on target or not. Only used if
