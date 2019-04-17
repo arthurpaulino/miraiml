@@ -17,7 +17,7 @@ built for real-time usage.
 4. Now, inside a Python environment, import the main classes:
 
 ```python
->>> from miraiml import SearchSpace, Config, Engine
+>>> from miraiml import HyperSearchSpace, Config, Engine
 ```
 
 Some didactic tutorials can be found in the [example](examples) directory. Or

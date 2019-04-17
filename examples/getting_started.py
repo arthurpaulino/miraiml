@@ -7,23 +7,23 @@ import pandas as pd
 import numpy as np
 import warnings
 
-from miraiml import SearchSpace, Config, Engine
+from miraiml import HyperSearchSpace, Config, Engine
 
 warnings.filterwarnings('ignore')
 
-# First, let's define our list of SearchSpaces. We're going to allow the engine
+# First, let's define our list of HyperSearchSpaces. We're going to allow the engine
 # to work with a single Gaussian Naive Bayes classifier for this example. There
 # is no hyperparameter search in this case, but the engine still searches for a
 # good set of features to use.
-search_spaces = [
-    SearchSpace(model_class=GaussianNB, id='Gaussian NB')
+hyper_search_spaces = [
+    HyperSearchSpace(model_class=GaussianNB, id='Gaussian NB')
 ]
 
 # Now we configure the behavior of the engine.
 config = Config(
     local_dir = 'miraiml_local_getting_started',
     problem_type = 'classification',
-    search_spaces = search_spaces,
+    hyper_search_spaces = hyper_search_spaces,
     score_function = roc_auc_score
 )
 
@@ -35,10 +35,9 @@ engine = Engine(config)
 data = pd.read_csv('pulsar_stars.csv')
 train_data, test_data = train_test_split(data, stratify=data['target_class'],
     test_size=0.2, random_state=0)
-train_target = train_data.pop('target_class')
 
 # Now we load the data and inform the name of the target column.
-engine.load_data(train_data, train_target, test_data)
+engine.load_data(train_data, test_data, 'target_class')
 
 # Ready to roll. To check if it's running asynchronously, we will start it and
 # then call `is_running` after 1 second.

@@ -8,14 +8,14 @@ import pandas as pd
 import numpy as np
 import warnings
 
-from miraiml import SearchSpace, Config, Engine
+from miraiml import HyperSearchSpace, Config, Engine
 
 warnings.filterwarnings('ignore')
 
 # We're going to ensemble a Naive Bayes classifier and a K-NN classifier.
-search_spaces = [
-    SearchSpace(model_class=GaussianNB, id='Gaussian NB'),
-    SearchSpace(model_class=KNeighborsClassifier, id='K-NN', parameters_values= {
+hyper_search_spaces = [
+    HyperSearchSpace(model_class=GaussianNB, id='Gaussian NB'),
+    HyperSearchSpace(model_class=KNeighborsClassifier, id='K-NN', parameters_values= {
         'n_neighbors': np.arange(1, 15),
         'weights': ['uniform', 'distance'],
         'p': np.arange(1, 5)
@@ -27,7 +27,7 @@ search_spaces = [
 config = Config(
     local_dir = 'miraiml_local_ensembling',
     problem_type = 'classification',
-    search_spaces = search_spaces,
+    hyper_search_spaces = hyper_search_spaces,
     score_function = roc_auc_score,
     ensemble_id = 'Ensemble',
     n_ensemble_cycles = 1000
@@ -40,8 +40,7 @@ engine = Engine(config)
 data = pd.read_csv('pulsar_stars.csv')
 train_data, test_data = train_test_split(data, stratify=data['target_class'],
     test_size=0.2, random_state=0)
-train_target = train_data.pop('target_class')
-engine.load_data(train_data, train_target, test_data)
+engine.load_data(train_data, test_data, 'target_class')
 
 # Starting the engine
 print('Training...')

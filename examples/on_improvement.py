@@ -6,17 +6,17 @@ from time import sleep
 import pandas as pd
 import warnings
 
-from miraiml import SearchSpace, Config, Engine
+from miraiml import HyperSearchSpace, Config, Engine
 
 warnings.filterwarnings('ignore')
 
 # Let's use a single Naive Bayes classifier for this example.
-search_spaces = [SearchSpace(model_class=GaussianNB, id='Gaussian NB')]
+hyper_search_spaces = [HyperSearchSpace(model_class=GaussianNB, id='Gaussian NB')]
 
 config = Config(
     local_dir = 'miraiml_local_on_improvement',
     problem_type = 'classification',
-    search_spaces = search_spaces,
+    hyper_search_spaces = hyper_search_spaces,
     score_function = roc_auc_score
 )
 
@@ -32,8 +32,7 @@ engine = Engine(config, on_improvement=on_improvement)
 data = pd.read_csv('pulsar_stars.csv')
 train_data, test_data = train_test_split(data, stratify=data['target_class'],
     test_size=0.2, random_state=0)
-train_target = train_data.pop('target_class')
-engine.load_data(train_data, train_target, test_data)
+engine.load_data(train_data, test_data, 'target_class')
 
 # Starting the engine
 engine.restart()

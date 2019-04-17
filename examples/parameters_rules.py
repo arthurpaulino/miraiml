@@ -7,7 +7,7 @@ import pandas as pd
 import numpy as np
 import warnings
 
-from miraiml import SearchSpace, Config, Engine
+from miraiml import HyperSearchSpace, Config, Engine
 
 warnings.filterwarnings('ignore')
 
@@ -28,8 +28,8 @@ def logistic_regression_parameters_rules(parameters):
 
 # Now we create the list of search spaces containing only one element to keep it
 # simple.
-search_spaces = [
-    SearchSpace(
+hyper_search_spaces = [
+    HyperSearchSpace(
         model_class = LogisticRegression,
         id = 'Logistic Regression',
         parameters_values = {
@@ -47,7 +47,7 @@ search_spaces = [
 config = Config(
     local_dir = 'miraiml_local_parameters_rules',
     problem_type = 'classification',
-    search_spaces = search_spaces,
+    hyper_search_spaces = hyper_search_spaces,
     score_function = roc_auc_score
 )
 
@@ -58,8 +58,7 @@ engine = Engine(config)
 data = pd.read_csv('pulsar_stars.csv')
 train_data, test_data = train_test_split(data, stratify=data['target_class'],
     test_size=0.2, random_state=0)
-train_target = train_data.pop('target_class')
-engine.load_data(train_data, train_target, test_data)
+engine.load_data(train_data, test_data, 'target_class')
 
 # Fire!
 print('Training...')

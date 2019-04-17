@@ -6,10 +6,9 @@ import os
 from .util import load, dump, is_valid_filename
 from .core import MiraiSeeker, Ensembler
 
-class SearchSpace:
+class HyperSearchSpace:
     """
-    This class represents the search hyperspace for a base statistical model. As
-    an analogy, it represents all possible sets of clothes that someone can use.
+    This class represents the search space of hyperparameters for a base model.
 
     :type model_class: type
     :param model_class: Any class that represents a statistical model. It must
@@ -42,13 +41,13 @@ class SearchSpace:
     ::
 
         from sklearn.linear_model import LogisticRegression
-        from miraiml import SearchSpace
+        from miraiml import HyperSearchSpace
 
         def logistic_regression_parameters_rules(parameters):
             if parameters['solver'] in ['newton-cg', 'sag', 'lbfgs']:
                 parameters['penalty'] = 'l2'
 
-        search_space = SearchSpace(
+        hyper_search_space = HyperSearchSpace(
             model_class = LogisticRegression,
             id = 'Logistic Regression',
             parameters_values = {
@@ -63,7 +62,7 @@ class SearchSpace:
 
     .. warning::
         **Do not** allow ``random_state`` assume multiple values. If ``model_class``
-        has a ``random_state`` parameter, force ``SearchSpace`` to always choose
+        has a ``random_state`` parameter, force ``HyperSearchSpace`` to always choose
         the same value by providing a list with a single element.
 
         Allowing ``random_state`` to assume multiple values will confuse the engine
@@ -103,9 +102,9 @@ class Config:
     :param problem_type: ``'classification'`` or ``'regression'``. The problem
         type. Multi-class classification problems are not supported.
 
-    :type search_spaces: list
-    :param search_spaces: The list of :class:`miraiml.SearchSpace` objects to optimize.
-        If ``search_spaces`` has length 1, the engine will not run ensemble cycles.
+    :type hyper_search_spaces: list
+    :param hyper_search_spaces: The list of :class:`miraiml.HyperSearchSpace` objects to optimize.
+        If ``hyper_search_spaces`` has length 1, the engine will not run ensemble cycles.
 
     :type score_function: function
     :param score_function: A function that receives the "truth" and the predictions
@@ -145,7 +144,7 @@ class Config:
         config = Config(
             local_dir = 'miraiml_local',
             problem_type = 'classification',
-            search_spaces = search_spaces,
+            hyper_search_spaces = hyper_search_spaces,
             score_function = roc_auc_score,
             n_folds = 5,
             stratified = True,
@@ -154,17 +153,17 @@ class Config:
             n_ensemble_cycles = 1000
         )
     """
-    def __init__(self, local_dir, problem_type, search_spaces, score_function,
+    def __init__(self, local_dir, problem_type, hyper_search_spaces, score_function,
             n_folds=5, stratified=True, random_exploration_ratio=0.5,
             ensemble_id=None, n_ensemble_cycles=None):
-        self.__validate__(local_dir, problem_type, search_spaces, score_function,
+        self.__validate__(local_dir, problem_type, hyper_search_spaces, score_function,
             n_folds, stratified, random_exploration_ratio, ensemble_id,
             n_ensemble_cycles)
         self.local_dir = local_dir
         if self.local_dir[-1] != '/':
             self.local_dir += '/'
         self.problem_type = problem_type
-        self.search_spaces = search_spaces
+        self.hyper_search_spaces = hyper_search_spaces
         self.score_function = score_function
         self.n_folds = n_folds
         self.stratified = stratified
@@ -172,7 +171,7 @@ class Config:
         self.ensemble_id = ensemble_id
         self.n_ensemble_cycles = n_ensemble_cycles
 
-    def __validate__(self, local_dir, problem_type, search_spaces, score_function,
+    def __validate__(self, local_dir, problem_type, hyper_search_spaces, score_function,
             n_folds, stratified, random_exploration_ratio, ensemble_id,
             n_ensemble_cycles):
         if type(local_dir) != str:
@@ -183,21 +182,21 @@ class Config:
         if problem_type not in ('classification', 'regression'):
             raise ValueError('Invalid problem type')
 
-        if type(search_spaces) != list:
-            raise TypeError('search_spaces must be a list')
-        if len(search_spaces) == 0:
+        if type(hyper_search_spaces) != list:
+            raise TypeError('hyper_search_spaces must be a list')
+        if len(hyper_search_spaces) == 0:
             raise ValueError('No search spaces')
 
         ids = []
-        for search_space in search_spaces:
-            if type(search_space) != SearchSpace:
-                raise TypeError('All search spaces must be objects of '+\
-                    'miraiml.SearchSpace')
-            id = search_space.id
+        for hyper_search_space in hyper_search_spaces:
+            if type(hyper_search_space) != HyperSearchSpace:
+                raise TypeError('All hyper search spaces must be objects of '+\
+                    'miraiml.HyperSearchSpace')
+            id = hyper_search_space.id
             if id in ids:
                 raise ValueError('Duplicated search space id: {}'.format(id))
             ids.append(id)
-            dir_model_class = dir(search_space.model_class)
+            dir_model_class = dir(hyper_search_space.model_class)
             if problem_type == 'classification' and 'predict_proba' not in dir_model_class:
                 raise NotImplementedError('Model class of id {} '.format(id)+\
                     'must implement predict_proba for classification problems')
@@ -224,7 +223,8 @@ class Config:
         if type(ensemble_id) == str and not is_valid_filename(ensemble_id):
             raise ValueError('invalid ensemble_id')
         if ensemble_id in ids:
-            raise ValueError('ensemble_id cannot have the same id of a search space')
+            raise ValueError('ensemble_id cannot have the same id of a hyper '+\
+                'search space')
         if type(n_ensemble_cycles) != type(None) and type(n_ensemble_cycles) != int:
             raise TypeError('n_ensemble_cycles must be an integer')
         if type(n_ensemble_cycles) != type(None) and n_ensemble_cycles < 0:
@@ -297,18 +297,18 @@ class Engine:
             time.sleep(.1)
         self.must_interrupt = False
 
-    def load_data(self, train_data, train_target, test_data, restart=False):
+    def load_data(self, train_data, test_data, target_column, restart=False):
         """
         Interrupts the engine and loads a new pair of train/test datasets.
 
         :type train_data: pandas.DataFrame
         :param train_data: The training data.
 
-        :type train_target: pandas.Series or numpy.ndarray
-        :param train_target: The training target.
-
         :type test_data: pandas.DataFrame
         :param test_data: The testing data.
+
+        :type target_column: str
+        :param target_column: The name of the target column.
 
         :type restart: bool, optional, default=False
         :param restart: Whether to restart the engine after updating data or not.
@@ -318,8 +318,8 @@ class Engine:
 
         self.interrupt()
         self.train_data = train_data
+        self.train_target = self.train_data.pop(target_column)
         self.all_features = list(train_data.columns)
-        self.train_target = train_target
         self.test_data = test_data
         if not self.mirai_seeker is None:
             self.mirai_seeker.reset()
@@ -410,20 +410,20 @@ class Engine:
         self.best_id = None
 
         self.mirai_seeker = MiraiSeeker(
-            self.config.search_spaces,
+            self.config.hyper_search_spaces,
             self.all_features,
             self.config
         )
 
-        for search_space in self.config.search_spaces:
+        for hyper_search_space in self.config.hyper_search_spaces:
             if self.must_interrupt:
                 break
-            id = search_space.id
+            id = hyper_search_space.id
             base_model_path = self.models_dir + id
             if os.path.exists(base_model_path):
                 base_model = load(base_model_path)
             else:
-                base_model = self.mirai_seeker.seek(search_space.id)
+                base_model = self.mirai_seeker.seek(hyper_search_space.id)
                 dump(base_model, base_model_path)
             self.base_models[id] = base_model
 
@@ -463,10 +463,10 @@ class Engine:
         self.__improvement_trigger__()
 
         while not self.must_interrupt:
-            for search_space in self.config.search_spaces:
+            for hyper_search_space in self.config.hyper_search_spaces:
                 if self.must_interrupt:
                     break
-                id = search_space.id
+                id = hyper_search_space.id
 
                 base_model = self.mirai_seeker.seek(id)
 

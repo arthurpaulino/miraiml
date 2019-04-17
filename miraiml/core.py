@@ -1,5 +1,6 @@
 """
-:mod:`miraiml.core` contains classes responsible for the optimization process.
+:mod:`miraiml.core` contains internal classes responsible for the optimization
+process.
 
 - :class:`miraiml.core.BaseModel` represents a solution
 - :class:`miraiml.core.MiraiSeeker` implements the strategies to search for good
@@ -18,10 +19,8 @@ from .util import load, dump, sample_random_len
 
 class BaseModel:
     """
-    Represents an element from the search hyperspace defined by a
-    :class:`miraiml.SearchSpace`, linking a set of parameters to a set of features.
-    As an analogy, it represents a particular choice of clothes that someone can
-    make.
+    Represents an element from the search space, defined by an instance of
+    :class:`miraiml.HyperSearchSpace` and a set of features.
 
     :param model_class: A statistical model class that must implement the methods
         ``fit`` and ``predict`` for regression or ``predict_proba`` classification
@@ -128,7 +127,7 @@ class MiraiSeeker:
     :param config: The configuration of the engine.
     :type config: miraiml.Config
     """
-    def __init__(self, search_spaces, all_features, config):
+    def __init__(self, hyper_search_spaces, all_features, config):
         self.all_features = all_features
         self.config = config
 
@@ -137,12 +136,12 @@ class MiraiSeeker:
         if not os.path.exists(histories_path):
             os.makedirs(histories_path)
 
-        self.search_spaces_dict = {}
+        self.hyper_search_spaces_dict = {}
         self.histories = {}
         self.histories_paths = {}
-        for search_space in search_spaces:
-            id = search_space.id
-            self.search_spaces_dict[id] = search_space
+        for hyper_search_space in hyper_search_spaces:
+            id = hyper_search_space.id
+            self.hyper_search_spaces_dict[id] = hyper_search_space
 
             self.histories_paths[id] = histories_path + id
             if os.path.exists(self.histories_paths[id]):
@@ -155,7 +154,7 @@ class MiraiSeeker:
         """
         Deletes all base models registries.
         """
-        for id in self.search_spaces_dict:
+        for id in self.hyper_search_spaces_dict:
             self.histories[id] = pd.DataFrame()
             dump(self.histories[id], self.histories_paths[id])
 
@@ -197,7 +196,7 @@ class MiraiSeeker:
 
     def seek(self, id):
         """
-        Manages the search strategy throughout the optimization hyperspace.
+        Manages the search strategy for better solutions.
 
         :param id: The id for which a new base model is required.
         :type id: str
@@ -212,14 +211,14 @@ class MiraiSeeker:
         else:
             parameters, features = self.random_search(id)
 
-        search_space = self.search_spaces_dict[id]
+        hyper_search_space = self.hyper_search_spaces_dict[id]
         if len(parameters) > 0:
             try:
-                search_space.parameters_rules(parameters)
+                hyper_search_space.parameters_rules(parameters)
             except:
                 raise KeyError('Error on parameters rules for the id {}'.format(id))
 
-        model_class = search_space.model_class
+        model_class = hyper_search_space.model_class
 
         return BaseModel(model_class, parameters, features)
 
@@ -235,11 +234,11 @@ class MiraiSeeker:
             Respectively, the dictionary of parameters and the list of features
             that can be used to generate a new base model.
         """
-        search_space = self.search_spaces_dict[id]
-        model_class = search_space.model_class
+        hyper_search_space = self.hyper_search_spaces_dict[id]
+        model_class = hyper_search_space.model_class
         parameters = {}
-        for parameter in search_space.parameters_values:
-            parameters[parameter] = rnd.choice(search_space.parameters_values[parameter])
+        for parameter in hyper_search_space.parameters_values:
+            parameters[parameter] = rnd.choice(hyper_search_space.parameters_values[parameter])
         features = sample_random_len(self.all_features)
         return (parameters, features)
 
