@@ -1,10 +1,11 @@
+[![][mit_img]][mit_url]
 [![][docs_img]][docs_proj]
 
 # MiraiML
 
 > Mirai: _future_ in japanese.
 
-MiraiML is an asynchronous engine for autonomous & continuous machine learning,
+MiraiML is an asynchronous engine for continuous & autonomous machine learning,
 built for real-time usage.
 
 ## Usage
@@ -16,10 +17,10 @@ built for real-time usage.
 4. Now, inside a Python environment, import the main classes:
 
 ```python
->>> from miraiml import SearchSpace, Config, Engine
+>>> from miraiml import HyperSearchSpace, Config, Engine
 ```
 
-Some didactic tutorials can be found in the [example](examples) directory. Or
+Some didactic tutorials can be found in the [examples](examples) directory. Or
 [Read the Docs][docs_url] for a better understanding of MiraiML.
 
 **Note**: For more info on `make` directives, call `$ make help`
@@ -32,3 +33,5 @@ project.
 [docs_img]: https://readthedocs.org/projects/miraiml/badge/?version=latest
 [docs_proj]: https://readthedocs.org/projects/miraiml/
 [docs_url]: https://miraiml.readthedocs.io/en/latest/
+[mit_img]: https://img.shields.io/badge/License-MIT-yellow.svg
+[mit_url]: https://opensource.org/licenses/MIT

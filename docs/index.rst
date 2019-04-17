@@ -4,5 +4,5 @@ MiraiML Docs
 .. toctree::
    :maxdepth: 2
 
-   introduction
+   user_guide
    miraiml

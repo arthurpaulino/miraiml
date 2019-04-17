@@ -3,10 +3,10 @@ Package Content
 
 .. automodule:: miraiml
 
-miraiml.SearchSpace
--------------------
+miraiml.HyperSearchSpace
+------------------------
 
-.. autoclass:: miraiml.SearchSpace
+.. autoclass:: miraiml.HyperSearchSpace
     :members:
     :undoc-members:
     :show-inheritance:
