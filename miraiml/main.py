@@ -252,9 +252,8 @@ class Engine:
         from miraiml import Engine
 
         def on_improvement(status):
-            best_id = status['best_id']
-            scores = status['scores']
-            print('Best score:', scores[best_id])
+            # prints the best score everytime an improvement is found
+            print('Score:', status['score'])
 
         engine = Engine(config, on_improvement=on_improvement)
     """
