@@ -27,9 +27,8 @@ Usage
 
 >>> from miraiml import HyperSearchSpace, Config, Engine
 
-Some didactic tutorials can be found in the `examples <examples>`_ directory. Or
-`Read the Docs <https://miraiml.readthedocs.io/en/latest/>`_ for a better
-understanding of MiraiML.
+Some didactic tutorials can be found in the examples_ directory. Or `Read the
+Docs`_ for a better understanding of MiraiML.
 
 Development
 -----------
@@ -44,5 +43,8 @@ Now you can install it with ``$ make install`` or ``$ python setup.py install``.
 Contributing
 ------------
 
-Please, follow the `guidelines <CONTRIBUTING.md>`_ if you want to be part of this
-project.
+Please, follow the guidelines_ if you want to be part of this project.
+
+.. _examples: https://github.com/arthurpaulino/miraiml/tree/master/examples
+.. _Read the Docs: https://miraiml.readthedocs.io/en/latest/
+.. _guidelines: https://github.com/arthurpaulino/miraiml/blob/master/CONTRIBUTING.md
