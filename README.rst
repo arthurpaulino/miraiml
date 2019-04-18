@@ -9,7 +9,7 @@
 .. _docs: https://readthedocs.org/projects/miraiml/
 
 .. |pypi| image:: https://badge.fury.io/py/MiraiML.svg
-.. _pypi: https://badge.fury.io/py/MiraiML
+.. _pypi: https://pypi.org/project/MiraiML/
 
 MiraiML
 =======
