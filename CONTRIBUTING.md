@@ -34,9 +34,9 @@ Before you start coding, checkout to a new branch called `issue-<#issue>` (e.g.:
 
 Before commiting your changes, remember to increment the package version according
 to the [Semantic Versioning][semver] specification, with one difference: there is
-also an UPDATE identifier, which MUST be incremented when the change does not
-directly affect the way that the code works (eg.: updating the documentation or
-editing the `Makefile`).
+also an UPDATE identifier, which MUST be incremented if the change affects only
+docstrings. If the change does not affect ``.py`` files, it's not necessary to
+change the version.
 
 The version can be incremented by calling `make` with one of the following
 directives: `major`, `minor`, `patch` or `update`. Feel free to call `$ make help`

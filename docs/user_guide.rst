@@ -126,15 +126,23 @@ Ensembling base models
 
 It is possible to combine the predictions of various base models in order to reach
 even higher scores. This process is done by computing a straightforward linear
-combination of the base models' predictions. The score of the ensemble is computed
-by comparing the training target and the linear combination of the predictions for
-the training dataset. The predictions for the testing dataset is computed by
-performing the same linear combination on the predictions for the testing dataset
-from the base models.
+combination of the base models' predictions.
 
-Now, the obvious question is: how to find smart coefficients (or weights) for the
-linear combination? This is where the concept of `ensembling cycles` comes into
-play.
+More precisely, suppose we have a set of base models. For each base model :math:`i`,
+let :math:`tr_i` and :math:`ts_i` be its predictions for the training and testing
+dataset, respectively. The ensemble of the base models is based on a set of
+coefficients :math:`w` (weights), for which we can compute the combined predictions
+:math:`E_{tr}` and :math:`E_{ts}` for the training and testing datasets, respectively,
+according to the formula:
+
+    :math:`(E_{tr}, E_{ts}) = \left(\frac{\sum w_i tr_i}{\sum w_i},
+    \frac{\sum w_i ts_i}{\sum w_i}\right)`
+
+With a smart choice of :math:`w`, the score for :math:`E_{tr}` may be better than
+the score of any :math:`tr_i`.
+
+Now, the obvious question is: how to find a good :math:`w`? This is where the
+concept of `ensembling cycles` comes into play.
 
 An ensembling cycle is an attempt to generate good weights stochastically, based
 on the the score of each base model individually. This is done by using `triangular
@@ -143,19 +151,21 @@ distributions <https://en.wikipedia.org/wiki/Triangular_distribution>`_.
 The weight of the best base model is drawn from the triangular distribution that
 varies from 0 to 1, with mode 1.
 
-For another base model :math:`i`, the weight is drawn from a triangular
-distribution that varies from 0 to `range`, with mode 0. It means that its weight
-will most likely be close to 0. The upperbound is defined by the `range` variable.
+For every other base model :math:`i` (not a base model with the highest score),
+the weight is drawn from a triangular distribution that varies from 0 to `range`,
+with mode 0. It means that its weight will most likely be close to 0. The upperbound
+is defined by the `range` variable.
 
-Now, `range` should depend on the relative score of the base model. But preventing
-it from reaching 1 would be too prohibitive. The solution for this is: `range` is
-chosen from a triangular distribution that varies from 0 to 1, with mode `normalized`.
-The variable `normalized` measures the relative quality of the base model.
+The value of `range` should depend on the relative score of the base model. But
+preventing it from reaching 1 would be too prohibitive. A solution for this is:
+`range` is chosen from a triangular distribution that varies from 0 to 1, with mode
+`normalized`. The variable `normalized` measures the relative quality of the base
+model.
 
 The value of `normalized` is computed by the formula :math:`(s_i-s_\textrm{min})/
-(s_\textrm{max}-s_\textrm{min})`, where :math:`s_i` is the score of the current
-base model and :math:`s_\textrm{min}` and :math:`s_\textrm{max}` are the scores
-of the worst and the best base models, respectively.
+(s_\textrm{max}-s_\textrm{min})`, where :math:`s_i` is the score of the base model
+and :math:`s_\textrm{min}` and :math:`s_\textrm{max}` are the scores of the worst
+and the best base models, respectively.
 
 In the end, bad base models can still influence the ensemble, but their
 probabilities of having high weights are relatively low.
