@@ -8,8 +8,8 @@
 .. |docs| image:: https://readthedocs.org/projects/miraiml/badge/?version=latest
 .. _docs: https://readthedocs.org/projects/miraiml/
 
-.. |pypi| image:: https://badge.fury.io/py/miraiml.svg
-.. _pypi: https://badge.fury.io/py/miraiml
+.. |pypi| image:: https://badge.fury.io/py/MiraiML.svg
+.. _pypi: https://badge.fury.io/py/MiraiML
 
 MiraiML
 =======
