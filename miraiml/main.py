@@ -297,24 +297,28 @@ class Engine:
             time.sleep(.1)
         self.must_interrupt = False
 
-    def load_data(self, train_data, test_data, target_column, restart=False):
+    def load_data(self, train_data, target_column, test_data=None, restart=False):
         """
         Interrupts the engine and loads a new pair of train/test datasets.
 
         :type train_data: pandas.DataFrame
         :param train_data: The training data.
 
-        :type test_data: pandas.DataFrame
-        :param test_data: The testing data.
-
         :type target_column: str
         :param target_column: The name of the target column.
+
+        :type test_data: pandas.DataFrame, optional, default=None
+        :param test_data: The testing data. Use the default value if you don't
+            need to make predictions for data with unknown labels.
 
         :type restart: bool, optional, default=False
         :param restart: Whether to restart the engine after updating data or not.
         """
-        if type(train_data) != pd.DataFrame or type(test_data) != pd.DataFrame:
-            raise TypeError('Data must be of type \'pandas.DataFrame\'')
+        if type(train_data) != pd.DataFrame:
+            raise TypeError('Training data must be an object of pandas.DataFrame')
+
+        if type(test_data) != type(None) and type(test_data) != pd.DataFrame:
+            raise TypeError('Testing data must be None or an object of pandas.DataFrame')
 
         self.interrupt()
         self.train_data = train_data
@@ -511,12 +515,18 @@ class Engine:
             * ``'scores'``: A dictionary containing the score of each id
 
             * ``'predictions'``: A ``pandas.Series`` object containing the\
-                predictions of the best id for the testing dataset
+                predictions of the best id for the testing dataset. If no testing
+                dataset was provided, the value associated with this key is None.
         """
         if self.best_id is None:
             return None
+
+        predictions = None
+        if not self.test_data is None:
+            predictions = self.test_predictions_df[self.best_id].copy()
+
         return dict(
             score = self.scores[self.best_id],
             scores = self.scores.copy(),
-            predictions = self.test_predictions_df[self.best_id].copy()
+            predictions = predictions
         )

@@ -37,7 +37,7 @@ train_data, test_data = train_test_split(data, stratify=data['target_class'],
     test_size=0.2, random_state=0)
 
 # Now we load the data and inform the name of the target column.
-engine.load_data(train_data, test_data, 'target_class')
+engine.load_data(train_data, 'target_class', test_data)
 
 # Ready to roll. To check if it's running asynchronously, we will start it and
 # then call `is_running` after 1 second.
