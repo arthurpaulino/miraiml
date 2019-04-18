@@ -1,6 +1,8 @@
 .ipynb_checkpoints
 *miraiml_local*
 __pycache__
+MANIFEST
 docs/_*
 *.csv
 build
+dist

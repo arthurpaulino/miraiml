@@ -1,13 +1,19 @@
 from distutils.core import setup
 from miraiml import __version__
 
+VERSION = __version__
+with open('README.rst') as f:
+    LONG_DESCRIPTION = f.read()
+
 setup(
     name = "MiraiML",
-    version = __version__,
+    version = VERSION,
     packages = ["miraiml"],
     author = "Arthur Paulino",
     author_email = "arthurleonardo.ap@gmail.com.com",
-    description = "An asynchronous engine for autonomous & continuous machine\
+    url = "https://github.com/arthurpaulino/miraiml",
+    description = "An asynchronous engine for continuous & autonomous machine\
         learning, built for real-time usage",
-    url = "https://github.com/arthurpaulino/miraiml"
+    long_description = LONG_DESCRIPTION,
+    long_description_content_type = 'text/x-rst'
 )

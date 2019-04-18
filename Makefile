@@ -1,4 +1,4 @@
-.PHONY: install docs major minor patch update help
+.PHONY: install docs major minor patch update release upload_test upload_pypi help
 
 install:
 	@python setup.py install && rm -rf build
@@ -19,6 +19,15 @@ patch:
 update:
 	@python versioning.py update
 
+release:
+	@rm -rf dist && python setup.py sdist
+
+upload_test:
+	@twine upload --repository-url https://test.pypi.org/legacy/ dist/*
+
+upload_pypi:
+	@twine upload dist/*
+
 help:
 	@echo '	install'
 	@echo '		Builds and installs MiraiML;'
@@ -34,3 +43,9 @@ help:
 	@echo '		Increments the PATCH version identifier.'
 	@echo '	update'
 	@echo '		Increments the UPDATE version identifier.'
+	@echo '	release'
+	@echo '		Creates a dist directory for release.'
+	@echo '	upload_test'
+	@echo '		Uploads the release to TestPyPI.'
+	@echo '	upload_pypi'
+	@echo '		Uploads the release to PyPI.'
