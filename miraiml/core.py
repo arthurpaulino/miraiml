@@ -69,9 +69,14 @@ class BaseModel:
 
         :raises: ``RuntimeError``
         """
-        X_train, X_test = X_train[self.features], X_test[self.features]
+        X_train = X_train[self.features]
         train_predictions = np.zeros(X_train.shape[0])
-        test_predictions = np.zeros(X_test.shape[0])
+
+        test_predictions = None
+        if not X_test is None:
+            X_test = X_test[self.features]
+            test_predictions = np.zeros(X_test.shape[0])
+
         if config.problem_type == 'classification' and config.stratified:
             fold = StratifiedKFold(n_splits=config.n_folds, shuffle=False)
         elif config.problem_type == 'regression' or not config.stratified:
@@ -92,15 +97,18 @@ class BaseModel:
             try:
                 if config.problem_type == 'classification':
                     train_predictions[small_part] = model.predict_proba(X_train_small)[:,1]
-                    test_predictions += model.predict_proba(X_test)[:,1]
+                    if not X_test is None:
+                        test_predictions += model.predict_proba(X_test)[:,1]
                 elif config.problem_type == 'regression':
                     train_predictions[small_part] = model.predict(X_train_small)
-                    test_predictions += model.predict(X_test)
+                    if not X_test is None:
+                        test_predictions += model.predict(X_test)
             except:
                 raise RuntimeError('Error when predicting with model class {}'.\
                     format(class_name))
 
-        test_predictions /= config.n_folds
+        if not X_test is None:
+            test_predictions /= config.n_folds
         return (train_predictions, test_predictions, config.score_function(y_train,
             train_predictions))
 
@@ -371,16 +379,20 @@ class Ensembler:
             * ``test_predictions``: The ensemble predictions for the testing dataset
             * ``score``: The score of the ensemble on the training dataset
         """
+        test_predictions = None
         id = self.base_models_ids[0]
         train_predictions = weights[id]*self.train_predictions_df[id]
-        test_predictions = weights[id]*self.test_predictions_df[id]
+        if not self.test_predictions_df[id] is None:
+            test_predictions = weights[id]*self.test_predictions_df[id]
         weights_sum = weights[id]
         for id in self.base_models_ids[1:]:
             train_predictions += weights[id]*self.train_predictions_df[id]
-            test_predictions += weights[id]*self.test_predictions_df[id]
+            if not self.test_predictions_df[id] is None:
+                test_predictions += weights[id]*self.test_predictions_df[id]
             weights_sum += weights[id]
         train_predictions /= weights_sum
-        test_predictions /= weights_sum
+        if not test_predictions is None:
+            test_predictions /= weights_sum
         return (train_predictions, test_predictions,
             self.config.score_function(self.y_train, train_predictions))
 
