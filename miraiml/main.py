@@ -395,6 +395,11 @@ class Engine:
         if not self.on_improvement is None:
             self.on_improvement(self.request_status())
 
+    def __check_best__(self, score, id):
+        if self.best_score is None or score > self.best_score:
+            self.best_score = score
+            self.best_id = id
+
     def __main_loop__(self):
         """
         Main optimization loop.
@@ -431,20 +436,16 @@ class Engine:
                 self.scores[id] = base_model.predict(self.train_data, self.train_target,
                     self.test_data, self.config)
 
-            if self.best_score is None or self.scores[id] > self.best_score:
-                self.best_score = self.scores[id]
-                self.best_id = id
+            self.__check_best__(self.scores[id], id)
 
-        base_models_ids = list(self.base_models)
-
-        will_ensemble = len(base_models_ids) > 1\
+        will_ensemble = len(self.base_models) > 1\
             and not self.config.ensemble_id is None\
             and not self.config.n_ensemble_cycles is None\
             and self.config.n_ensemble_cycles > 0
 
         if will_ensemble:
             self.ensembler = Ensembler(
-                base_models_ids,
+                list(self.base_models),
                 self.train_target,
                 self.train_predictions_df,
                 self.test_predictions_df,
@@ -455,10 +456,7 @@ class Engine:
             ensemble_id = self.config.ensemble_id
 
             if self.ensembler.optimize():
-                score = self.scores[ensemble_id]
-                if score > self.best_score:
-                    self.best_score = score
-                    self.best_id = ensemble_id
+                self.__check_best__(self.scores[ensemble_id], ensemble_id)
 
         self.__improvement_trigger__()
 
@@ -481,17 +479,11 @@ class Engine:
                     self.scores[id] = score
                     self.train_predictions_df[id] = train_predictions
                     self.test_predictions_df[id] = test_predictions
-                    if score > self.best_score:
-                        self.best_score = score
-                        self.best_id = id
+                    self.__check_best__(score, id)
 
                     if will_ensemble:
-                        self.train_predictions_df[ensemble_id],\
-                            self.test_predictions_df[ensemble_id],\
-                            self.scores[ensemble_id] = self.ensembler.update()
-                        if self.scores[ensemble_id] > self.best_score:
-                            self.best_score = self.scores[ensemble_id]
-                            self.best_id = ensemble_id
+                        self.ensembler.update()
+                        self.__check_best__(self.scores[ensemble_id], ensemble_id)
 
                     self.__improvement_trigger__()
 
@@ -499,10 +491,7 @@ class Engine:
 
             if will_ensemble:
                 if self.ensembler.optimize():
-                    score = self.scores[ensemble_id]
-                    if score > self.best_score:
-                        self.best_score = score
-                        self.best_id = ensemble_id
+                    self.__check_best__(self.scores[ensemble_id], ensemble_id)
 
                     self.__improvement_trigger__()
 
