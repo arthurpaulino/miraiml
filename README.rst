@@ -1,6 +1,6 @@
 .. -*- mode: rst -*-
 
-|license| |docs| |pypi|
+|license|_ |docs|_ |pypi|_
 
 .. |license| image:: https://img.shields.io/badge/License-MIT-yellow.svg
 .. _license: https://opensource.org/licenses/MIT
