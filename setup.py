@@ -14,6 +14,5 @@ setup(
     url = "https://github.com/arthurpaulino/miraiml",
     description = "An asynchronous engine for continuous & autonomous machine\
         learning, built for real-time usage",
-    long_description = LONG_DESCRIPTION,
-    long_description_content_type = 'text/x-rst'
+    long_description = LONG_DESCRIPTION
 )
