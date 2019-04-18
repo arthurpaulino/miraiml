@@ -78,19 +78,46 @@ There can be too many base models in the search space and we may not be able to
 afford exhausive searches. Thus, a smart strategy to search good base models is
 mandatory.
 
-Currently, the available strategies are:
+The engine is able to register optimization attempts on dataframes called
+`histories`. These dataframes have columns for each hyperparameter and each
+feature, as well as a column for the reported score. The values of the
+hyperparameters' columns are the values of the hyperparameters themselves. The
+values of the features' columns are either 0 or 1, which indicate whether the
+features were used or not. An example of history for a K-NN classifier with two
+registries would be:
+
+=========== ========== === ====== =====
+Hyperparameters        Features   ---
+---------------------- ---------- -----
+n_neighbors weights    age gender score
+=========== ========== === ====== =====
+3           'uniform'  1   0      0.82
+2           'distance' 0   1      0.76
+4           'uniform'  1   1      0.84
+=========== ========== === ====== =====
+
+As the history grows, it can be used to generate potentially good base models for
+future validations. Currently, the available strategies to create base models are:
 
 - Random
-    Generates a completely random sets of hyperparameters and features.
-- Naive
-    On the history of tested base models, hyperparameters can assume their
-    respective values and features can assume the value 1 if they were present
-    on the validation and 0 otherwise.
+    Generates completely random sets of hyperparameters and features.
 
-    The naive strategy iterates over each history column (except the score) and
-    performs a `group by` using the `mean` aggregation function on the score.
-    Each value present on the current column can be chosen with a probability
-    that is proportional to the score from the `group by` aggregation.
+- Naive
+    The naive strategy iterates over the history columns (except the score) and
+    groups the data by the current column values using the `mean` aggregation
+    function on the score column. Each value present on the current column can be
+    chosen with a probability that is proportional to the mean score from the
+    `group by` aggregation.
+
+    For instance, if we aggregate the history dataframe above by the column `age`,
+    the mean score of attempts in which the feature `age` was chosen is 0.83 and
+    the mean score of the attempts in which the feature `age` was **not** chosen
+    is 0.76. Now, we choose to use `age` on the next base model with a probability
+    that's proportional to 0.83 and we choose **not to** with a probability that's
+    proportional to 0.76.
+
+    It's called `Naive` because it assumes the strong hypothesis that the columns
+    of history dataframes affect the score independently.
 
 Ensembling base models
 ----------------------
@@ -100,29 +127,35 @@ Ensembling base models
 It is possible to combine the predictions of various base models in order to reach
 even higher scores. This process is done by computing a straightforward linear
 combination of the base models' predictions. The score of the ensemble is computed
-on the training target and the same linear combination is performed on the
-predictions for the testing dataset.
+by comparing the training target and the linear combination of the predictions for
+the training dataset. The predictions for the testing dataset is computed by
+performing the same linear combination on the predictions for the testing dataset
+from the base models.
 
 Now, the obvious question is: how to find smart coefficients (or weights) for the
 linear combination? This is where the concept of `ensembling cycles` comes into
 play.
 
-An ensembling cycle is an attempt to generate good weights based on the the score
-of each base model individually. This is done by using `triangular distributions
-<https://en.wikipedia.org/wiki/Triangular_distribution>`_.
+An ensembling cycle is an attempt to generate good weights stochastically, based
+on the the score of each base model individually. This is done by using `triangular
+distributions <https://en.wikipedia.org/wiki/Triangular_distribution>`_.
 
 The weight of the best base model is drawn from the triangular distribution that
 varies from 0 to 1, with mode 1.
 
-For the other base models :math:`i`, the weight is drawn from triangular
-distributions that varies from 0 to `range`, with mode 0. `range` is chosen from
-a triangular distribution that varies from 0 to 1, with mode `normalized`.
+For another base model :math:`i`, the weight is drawn from a triangular
+distribution that varies from 0 to `range`, with mode 0. It means that its weight
+will most likely be close to 0. The upperbound is defined by the `range` variable.
 
-`normalized` is computed by the formula :math:`(s_i-s_\textrm{min})/
+Now, `range` should depend on the relative score of the base model. But preventing
+it from reaching 1 would be too prohibitive. The solution for this is: `range` is
+chosen from a triangular distribution that varies from 0 to 1, with mode `normalized`.
+The variable `normalized` measures the relative quality of the base model.
+
+The value of `normalized` is computed by the formula :math:`(s_i-s_\textrm{min})/
 (s_\textrm{max}-s_\textrm{min})`, where :math:`s_i` is the score of the current
-base model, :math:`s_\textrm{min}` and :math:`s_\textrm{max}` are the scores of
-the worst and the best base models, respectively.
+base model and :math:`s_\textrm{min}` and :math:`s_\textrm{max}` are the scores
+of the worst and the best base models, respectively.
 
-It means that bad base models can still influence the ensemble, but their
-probabilities of having high weights are relatively low if compared to better
-base models.
+In the end, bad base models can still influence the ensemble, but their
+probabilities of having high weights are relatively low.
