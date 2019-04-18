@@ -83,8 +83,8 @@ The engine is able to register optimization attempts on dataframes called
 feature, as well as a column for the reported score. The values of the
 hyperparameters' columns are the values of the hyperparameters themselves. The
 values of the features' columns are either 0 or 1, which indicate whether the
-features were used or not. An example of history for a K-NN classifier with two
-registries would be:
+features were used or not. An example of history dataframe for a K-NN classifier
+with three registries would be:
 
 =========== ========== === ====== =====
 Hyperparameters        Features   ---

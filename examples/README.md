@@ -14,7 +14,7 @@ without null values. The target column is called `target_class` and contains onl
 2. [Implementing an `on_improvement` function](on_improvement.py)
 
    If we want the engine to trigger a function when a better set of predictions
-   is found, we can define it and pass it to the Engine's constructor.
+   is found, we can define it and pass it to the engine's constructor.
 
 3. [Implementing parameters rules](parameters_rules.py)
 
