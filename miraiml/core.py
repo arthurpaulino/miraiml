@@ -324,20 +324,9 @@ class Ensembler:
     def update(self):
         """
         Updates the ensemble with the newest predictions from the base models.
-
-        :rtype: tuple
-        :returns: ``(train_predictions, test_predictions, score)``: Updated
-            predictions and score.
-
-            * ``train_predictions``: The ensemble predictions for the training dataset
-            * ``test_predictions``: The ensemble predictions for the testing dataset
-            * ``score``: The score of the ensemble on the training dataset
         """
-        train_predictions, test_predictions, score = self.ensemble(self.weights)
-        self.train_predictions_df[self.id] = train_predictions
-        self.test_predictions_df[self.id] = test_predictions
-        self.scores[self.id] = score
-        return (train_predictions, test_predictions, score)
+        self.train_predictions_df[self.id], self.test_predictions_df[self.id],\
+            self.scores[self.id] = self.ensemble(self.weights)
 
     def gen_weights(self):
         """
