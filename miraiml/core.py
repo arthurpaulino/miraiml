@@ -396,7 +396,7 @@ class Ensembler:
     def __init__(self, base_models_ids, y_train, train_predictions_df,
             test_predictions_df, scores, config):
         self.y_train = y_train
-        self.base_models_ids = base_models_ids
+        self.base_models_ids = sorted(base_models_ids)
         self.train_predictions_df = train_predictions_df
         self.test_predictions_df = test_predictions_df
         self.scores = scores
@@ -468,20 +468,19 @@ class Ensembler:
             * ``test_predictions``: The ensemble predictions for the testing dataset
             * ``score``: The score of the ensemble on the training dataset
         """
+        weights_list = [weights[id] for id in self.base_models_ids]
+        train_predictions = np.average(
+            self.train_predictions_df[self.base_models_ids],
+            axis=1,
+            weights=weights_list
+        )
         test_predictions = None
-        id = self.base_models_ids[0]
-        train_predictions = weights[id]*self.train_predictions_df[id]
-        if not self.test_predictions_df[id] is None:
-            test_predictions = weights[id]*self.test_predictions_df[id]
-        weights_sum = weights[id]
-        for id in self.base_models_ids[1:]:
-            train_predictions += weights[id]*self.train_predictions_df[id]
-            if not self.test_predictions_df[id] is None:
-                test_predictions += weights[id]*self.test_predictions_df[id]
-            weights_sum += weights[id]
-        train_predictions /= weights_sum
-        if not test_predictions is None:
-            test_predictions /= weights_sum
+        if self.test_predictions_df.shape[0] > 0:
+            test_predictions = np.average(
+                self.test_predictions_df[self.base_models_ids],
+                axis=1,
+                weights=weights_list
+            )
         return (train_predictions, test_predictions,
             self.config.score_function(self.y_train, train_predictions))
 
