@@ -117,11 +117,6 @@ class Config:
     :param stratified: Whether to stratify folds on target or not. Only used if
         ``problem_type == 'classification'``.
 
-    :type random_exploration_ratio: float, optional, default=0.5
-    :param random_exploration_ratio: The proportion of attempts in which the engine
-        will explore the search space by blindly random attempts. Must be a number
-        in the interval [0, 1).
-
     :type ensemble_id: str, optional, default=None
     :param ensemble_id: The id for the ensemble. If none is given, the engine will
         not ensemble base models.
@@ -148,17 +143,14 @@ class Config:
             score_function = roc_auc_score,
             n_folds = 5,
             stratified = True,
-            random_exploration_ratio = 0.5,
             ensemble_id = 'Ensemble',
             n_ensemble_cycles = 1000
         )
     """
     def __init__(self, local_dir, problem_type, hyper_search_spaces, score_function,
-            n_folds=5, stratified=True, random_exploration_ratio=0.5,
-            ensemble_id=None, n_ensemble_cycles=None):
+            n_folds=5, stratified=True, ensemble_id=None, n_ensemble_cycles=None):
         self.__validate__(local_dir, problem_type, hyper_search_spaces, score_function,
-            n_folds, stratified, random_exploration_ratio, ensemble_id,
-            n_ensemble_cycles)
+            n_folds, stratified, ensemble_id, n_ensemble_cycles)
         self.local_dir = local_dir
         if self.local_dir[-1] != '/':
             self.local_dir += '/'
@@ -167,18 +159,20 @@ class Config:
         self.score_function = score_function
         self.n_folds = n_folds
         self.stratified = stratified
-        self.random_exploration_ratio = random_exploration_ratio
         self.ensemble_id = ensemble_id
         self.n_ensemble_cycles = n_ensemble_cycles
 
     def __validate__(self, local_dir, problem_type, hyper_search_spaces, score_function,
-            n_folds, stratified, random_exploration_ratio, ensemble_id,
-            n_ensemble_cycles):
+            n_folds, stratified, ensemble_id, n_ensemble_cycles):
         if type(local_dir) != str:
             raise TypeError('local_dir must be a string')
+
         for dir_name in local_dir.split('/'):
             if not is_valid_filename(dir_name):
                 raise ValueError('Invalid directory name: {}'.format(dir_name))
+
+        if type(problem_type) != str:
+            raise TypeError('problem_type must be a string')
         if problem_type not in ('classification', 'regression'):
             raise ValueError('Invalid problem type')
 
@@ -206,18 +200,15 @@ class Config:
 
         if type(score_function) != type(lambda: None):
             raise TypeError('score_function must be a function')
+
         if type(n_folds) != int:
             raise TypeError('n_folds must be an integer')
         if n_folds < 2:
             raise ValueError('n_folds greater than 1')
+
         if type(stratified) != bool:
             raise TypeError('stratified must be a boolean')
-        if random_exploration_ratio == 0:
-            random_exploration_ratio = 0.0
-        if type(random_exploration_ratio) != float:
-            raise TypeError('random_exploration_ratio must be a number')
-        if random_exploration_ratio < 0 or 1 <= random_exploration_ratio:
-            raise ValueError('random_exploration_ratio must be in [0, 1)')
+
         if type(ensemble_id) != type(None) and type(ensemble_id) != str:
             raise TypeError('ensemble_id must be a None or a string')
         if type(ensemble_id) == str and not is_valid_filename(ensemble_id):
@@ -225,6 +216,7 @@ class Config:
         if ensemble_id in ids:
             raise ValueError('ensemble_id cannot have the same id of a hyper '+\
                 'search space')
+
         if type(n_ensemble_cycles) != type(None) and type(n_ensemble_cycles) != int:
             raise TypeError('n_ensemble_cycles must be an integer')
         if type(n_ensemble_cycles) != type(None) and n_ensemble_cycles < 0:

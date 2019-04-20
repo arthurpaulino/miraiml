@@ -10,6 +10,7 @@ process.
 """
 
 from sklearn.model_selection import StratifiedKFold, KFold
+from sklearn.linear_model import LinearRegression
 import random as rnd
 import pandas as pd
 import numpy as np
@@ -24,18 +25,18 @@ class BaseModel:
 
     Read more in the :ref:`User Guide <base_model>`.
 
+    :type model_class: type
     :param model_class: A statistical model class that must implement the methods
         ``fit`` and ``predict`` for regression or ``predict_proba`` classification
         problems.
-    :type model_class: type
 
+    :type parameters: dict
     :param parameters: The parameters that will be used to instantiate objects of
         ``model_class``.
-    :type parameters: dict
 
+    :type features: list
     :param features: The list of features that will be used to train the statistical
         model.
-    :type features: list
     """
     def __init__(self, model_class, parameters, features):
         self.model_class = model_class
@@ -159,35 +160,53 @@ class MiraiSeeker:
             self.histories[id] = pd.DataFrame()
             dump(self.histories[id], self.histories_paths[id])
 
+    def parameters_features_to_dataframe(self, parameters, features, score):
+        """
+        Creates an entry for a history.
+
+        :type parameters: dict
+        :param parameters: The set of parameters to transform.
+
+        :type parameters: list
+        :param parameters: The set of features to transform.
+
+        :type score: float
+        :param score: The score to transform.
+        """
+        entry = {'score':score}
+        for parameter in parameters:
+            entry[parameter+'(parameter)'] = parameters[parameter]
+        for feature in self.all_features:
+            entry[feature+'(feature)'] = 1 if feature in features else 0
+        return pd.DataFrame([entry])
+
     def register_base_model(self, id, base_model, score):
         """
         Registers the performance of a base model and its characteristics.
 
-        :param id: The id associated with the base model.
         :type id: str
+        :param id: The id associated with the base model.
 
-        :param base_model: The base model being registered.
         :type base_model: miraiml.core.BaseModel
+        :param base_model: The base model being registered.
 
-        :param score: The score of ``base_model``.
         :type score: float
+        :param score: The score of ``base_model``.
         """
-        event = {'score':score}
-        for parameter in base_model.parameters:
-            event[parameter+'(parameter)'] = base_model.parameters[parameter]
-        for feature in self.all_features:
-            event[feature+'(feature)'] = 1 if feature in base_model.features else 0
+        new_entry = self.parameters_features_to_dataframe(base_model.parameters,
+            base_model.features, score)
 
         self.histories[id] = pd.concat([self.histories[id],
-            pd.DataFrame([event])]).drop_duplicates()
+            new_entry]).drop_duplicates()
         dump(self.histories[id], self.histories_paths[id])
 
     def is_ready(self, id):
         """
-        Tells whether it's ready to work for an id or not.
+        Tells whether the history of an id is large enough for more advanced
+        strategies or not.
 
-        :param id: The id to be inspected.
         :type id: str
+        :param id: The id to be inspected.
 
         :rtype: bool
         :returns: Whether ``id`` can be used to generate parameters and features
@@ -199,18 +218,24 @@ class MiraiSeeker:
         """
         Manages the search strategy for better solutions.
 
-        :param id: The id for which a new base model is required.
+        With a probability of 0.5, the random strategy will be chosen. If it's
+        not, the other strategies will be chosen with equal probabilities.
+
         :type id: str
+        :param id: The id for which a new base model is required.
 
         :rtype: miraiml.core.BaseModel
         :returns: The next base model for exploration.
 
         :raises: ``KeyError``
         """
-        if self.is_ready(id) and rnd.uniform(0, 1) > self.config.random_exploration_ratio:
-            parameters, features = self.naive_search(id)
-        else:
+        if rnd.uniform(0, 1) > 0.5 or not self.is_ready(id):
             parameters, features = self.random_search(id)
+        else:
+            if rnd.uniform(0, 1) > 0.5:
+                parameters, features = self.naive_search(id)
+            else:
+                parameters, features = self.linear_regression_search(id)
 
         hyper_search_space = self.hyper_search_spaces_dict[id]
         if len(parameters) > 0:
@@ -225,10 +250,10 @@ class MiraiSeeker:
 
     def random_search(self, id):
         """
-        Generates a completely random instance of :class:`miraiml.core.BaseModel`.
+        Generates completely random sets of parameters and features.
 
-        :param all_features: The list of available features.
         :type all_features: list
+        :param all_features: The list of available features.
 
         :rtype: tuple
         :returns: ``(parameters, features)``
@@ -245,13 +270,11 @@ class MiraiSeeker:
 
     def naive_search(self, id):
         """
-        Generates an instance of :class:`miraiml.core.BaseModel` based on previously
-        registered ones. The characteristics of the base model are chosen by chance.
-        Characteristics that achieved higher scores have higher chances of being
-        chosen again.
+        Characteristics that achieved higher scores have independently higher
+        chances of being chosen again.
 
-        :param id: The id for which we want a new set of parameters and features.
         :type id: str
+        :param id: The id for which we want a new set of parameters and features.
 
         :rtype: tuple
         :returns: ``(parameters, features)``
@@ -278,31 +301,97 @@ class MiraiSeeker:
             features = sample_random_len(self.all_features)
         return (parameters, features)
 
+    def dataframe_to_parameters_features(self, dataframe):
+        """
+        Transforms a history entry in a pair of parameters and features.
+
+        :type dataframe: pandas.DataFrame
+        :param dataframe: The history entry to be transformed,
+
+        :rtype: tuple
+        :returns: ``(parameters, features)``. The transformed sets of parameters
+            and features, respectively.
+        """
+        parameters = {}
+        features = []
+        for column in dataframe.columns:
+            if column == 'score':
+                continue
+            column_filtered = column.split('(')[0]
+            value = dataframe[column].values[0]
+            if column.endswith('(parameter)'):
+                parameters[column_filtered] = value
+            elif column.endswith('(feature)'):
+                if value:
+                    features.append(column_filtered)
+        return (parameters, features)
+
+    def linear_regression_search(self, id):
+        """
+        Uses the history to model the score with a linear regression. Guesses the
+        scores of `n`/2 random sets of parameters and features, where `n` is the
+        size of the history. The one with the highest score is chosen.
+
+        :type id: str
+        :param id: The id for which we want a new set of parameters and features.
+
+        :rtype: tuple
+        :returns: ``(parameters, features)``
+            Respectively, the dictionary of parameters and the list of features
+            that can be used to generate a new base model.
+        """
+        history = self.histories[id]
+        n_guesses = history.shape[0]//2
+
+        guesses_df = pd.DataFrame()
+        for _ in range(n_guesses):
+            guess_parameters, guess_features = self.random_search(id)
+            guess_df = self.parameters_features_to_dataframe(guess_parameters,
+                guess_features, np.nan)
+            guesses_df = pd.concat([guesses_df, guess_df])
+
+        data = pd.concat([history, guesses_df])
+        object_columns = [col for col in data.columns if data[col].dtype == object]
+
+        data_ohe = pd.get_dummies(data, columns=object_columns, drop_first=True)
+        train_mask = data_ohe['score'].notna()
+        data_ohe_train = data_ohe[train_mask]
+        data_ohe_test = data_ohe[~train_mask].drop(columns='score')
+        y = data_ohe_train.pop('score')
+
+        model = LinearRegression(normalize=True)
+        model.fit(data_ohe_train, y)
+        guesses_df['score'] = model.predict(data_ohe_test)
+
+        best_guess = guesses_df.sort_values('score', ascending=False).head(1)
+
+        return self.dataframe_to_parameters_features(best_guess)
+
 class Ensembler:
     """
     Performs the ensemble of the base models.
 
     Read more in the :ref:`User Guide <ensemble>`.
 
-    :param y_train: The target column.
     :type y_train: pandas.Series or numpy.ndarray
+    :param y_train: The target column.
 
-    :param base_models_ids: The list of base models' ids to keep track of.
     :type base_models_ids: list
+    :param base_models_ids: The list of base models' ids to keep track of.
 
+    :type train_predictions_df: pandas.DataFrame
     :param train_predictions_df: The dataframe of predictions for the training
         dataset.
-    :type train_predictions_df: pandas.DataFrame
 
+    :type test_predictions_df: pandas.DataFrame
     :param test_predictions_df: The dataframe of predictions for the testing
         dataset.
-    :type test_predictions_df: pandas.DataFrame
 
-    :param scores: The dictionary of scores.
     :type scores: dict
+    :param scores: The dictionary of scores.
 
-    :param config: The configuration of the engine.
     :type config: miraiml.Config
+    :param config: The configuration of the engine.
     """
     def __init__(self, base_models_ids, y_train, train_predictions_df,
             test_predictions_df, scores, config):
@@ -368,9 +457,9 @@ class Ensembler:
         """
         Performs the ensemble of the current predictions of each base model.
 
+        :type weights: dict
         :param weights: A dictionary containing the weights related to the id of
             each base model.
-        :type weights: dict
 
         :rtype: tuple
         :returns: ``(train_predictions, test_predictions, score)``

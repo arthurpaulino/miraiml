@@ -97,10 +97,11 @@ n_neighbors weights    age gender score
 =========== ========== === ====== =====
 
 As the history grows, it can be used to generate potentially good base models for
-future validations. Currently, the available strategies to create base models are:
+future optimization attempts. Currently, the available strategies to create base
+models are:
 
 - Random
-    Generates completely random sets of hyperparameters and features.
+    Generates a completely random base model.
 
 - Naive
     The naive strategy iterates over the history columns (except the score) and
@@ -118,6 +119,16 @@ future validations. Currently, the available strategies to create base models ar
 
     It's called `Naive` because it assumes the strong hypothesis that the columns
     of history dataframes affect the score independently.
+
+- Linear Regression
+    Uses a simple linear regression to model the score as a function of the other
+    history columns. Makes `n`/2 guesses and chooses the best guess according to
+    the model, where `n` is the size of the history dataframe.
+
+The strategy is chosen stochastically according to the following priority rule:
+
+    `With a probability of 0.5, the random strategy will be chosen. If it's not,
+    the other strategies will be chosen with equal probabilities.`
 
 Ensembling base models
 ----------------------
