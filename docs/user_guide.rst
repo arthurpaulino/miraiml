@@ -180,3 +180,9 @@ and the best base models, respectively.
 
 In the end, bad base models can still influence the ensemble, but their
 probabilities of having high weights are relatively low.
+
+The number of ensembling cycles depend on the time consumed by the other models.
+The current rule is:
+
+    `The time consumed by the ensemble is limited by the total time consumed by
+    all base models, on average.`

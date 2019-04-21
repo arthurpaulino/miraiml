@@ -14,6 +14,7 @@ from sklearn.linear_model import LinearRegression
 import random as rnd
 import pandas as pd
 import numpy as np
+import time
 import os
 
 from .util import load, dump, sample_random_len
@@ -484,18 +485,21 @@ class Ensembler:
         return (train_predictions, test_predictions,
             self.config.score_function(self.y_train, train_predictions))
 
-    def optimize(self):
+    def optimize(self, max_duration):
         """
-        Performs ``config.n_ensemble_cycles`` attempts to improve ensemble weights.
+        Performs ensembling cycles for ``max_duration`` seconds.
+
+        :type max_duration: float
+        :param max_duration: The maximum duration allowed for the optimization
+            process.
 
         :rtype: bool
         :returns: ``True`` if a better set of weights was found and ``False``
             otherwise.
         """
         optimized = False
-        for _ in range(self.config.n_ensemble_cycles):
-            if self.must_interrupt:
-                break
+        start = time.time()
+        while time.time() - start < max_duration and not self.must_interrupt:
             weights = self.gen_weights()
             train_predictions, test_predictions, score = self.ensemble(weights)
             if self.id not in self.scores or score > self.scores[self.id]:
