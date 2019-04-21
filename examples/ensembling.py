@@ -29,8 +29,7 @@ config = Config(
     problem_type = 'classification',
     hyper_search_spaces = hyper_search_spaces,
     score_function = roc_auc_score,
-    ensemble_id = 'Ensemble',
-    n_ensemble_cycles = 1000
+    ensemble_id = 'Ensemble'
 )
 
 # Instantiating the engine
@@ -46,10 +45,10 @@ engine.load_data(train_data, 'target_class', test_data)
 print('Training...')
 engine.restart()
 
-# Let's wait 10 seconds and interrupt it
-sleep(10)
+# Let's wait 20 seconds and interrupt it
+sleep(20)
 engine.interrupt()
 
-# Now we can requests the scores
+# Requesting the scores
 status = engine.request_status()
 print('\nScores:', status['scores'])

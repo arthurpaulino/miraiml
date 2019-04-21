@@ -10,7 +10,7 @@ You can import them by doing
 >>> from miraiml import HyperSearchSpace, Config, Engine
 """
 
-__version__ = '3.0.2.6'
+__version__ = '4.0.2.6'
 
 from .main import HyperSearchSpace, Config, Engine
 

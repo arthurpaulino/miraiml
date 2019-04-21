@@ -121,12 +121,6 @@ class Config:
     :param ensemble_id: The id for the ensemble. If none is given, the engine will
         not ensemble base models.
 
-    :type n_ensemble_cycles: int, optional, default=None
-    :param n_ensemble_cycles: The number of times that the engine will attempt to
-        improve the ensemble weights in each loop after optimizing all base models.
-        If none or a value that's less than 1 is given, the engine will not ensemble
-        base models.
-
     :raises: ``NotImplementedError``, ``TypeError``, ``ValueError``
 
     :Example:
@@ -143,14 +137,13 @@ class Config:
             score_function = roc_auc_score,
             n_folds = 5,
             stratified = True,
-            ensemble_id = 'Ensemble',
-            n_ensemble_cycles = 1000
+            ensemble_id = 'Ensemble'
         )
     """
     def __init__(self, local_dir, problem_type, hyper_search_spaces, score_function,
-            n_folds=5, stratified=True, ensemble_id=None, n_ensemble_cycles=None):
+            n_folds=5, stratified=True, ensemble_id=None):
         self.__validate__(local_dir, problem_type, hyper_search_spaces, score_function,
-            n_folds, stratified, ensemble_id, n_ensemble_cycles)
+            n_folds, stratified, ensemble_id)
         self.local_dir = local_dir
         if self.local_dir[-1] != '/':
             self.local_dir += '/'
@@ -160,10 +153,9 @@ class Config:
         self.n_folds = n_folds
         self.stratified = stratified
         self.ensemble_id = ensemble_id
-        self.n_ensemble_cycles = n_ensemble_cycles
 
     def __validate__(self, local_dir, problem_type, hyper_search_spaces, score_function,
-            n_folds, stratified, ensemble_id, n_ensemble_cycles):
+            n_folds, stratified, ensemble_id):
         if type(local_dir) != str:
             raise TypeError('local_dir must be a string')
 
@@ -216,11 +208,6 @@ class Config:
         if ensemble_id in ids:
             raise ValueError('ensemble_id cannot have the same id of a hyper '+\
                 'search space')
-
-        if type(n_ensemble_cycles) != type(None) and type(n_ensemble_cycles) != int:
-            raise TypeError('n_ensemble_cycles must be an integer')
-        if type(n_ensemble_cycles) != type(None) and n_ensemble_cycles < 0:
-            raise ValueError('invalid n_ensemble_cycles')
 
 
 class Engine:
@@ -279,7 +266,11 @@ class Engine:
 
     def interrupt(self):
         """
-        Sets an internal flag to make the engine stop on the first opportunity.
+        Makes the engine stop on the first opportunity.
+
+        .. note::
+            This method is **not** asynchronous. It will wait for the engine to
+            stop.
         """
         self.must_interrupt = True
         if not self.ensembler is None:
@@ -415,6 +406,7 @@ class Engine:
             self.config
         )
 
+        start = time.time()
         for hyper_search_space in self.config.hyper_search_spaces:
             if self.must_interrupt:
                 break
@@ -433,10 +425,10 @@ class Engine:
 
             self.__check_best__(self.scores[id], id)
 
-        will_ensemble = len(self.base_models) > 1\
-            and not self.config.ensemble_id is None\
-            and not self.config.n_ensemble_cycles is None\
-            and self.config.n_ensemble_cycles > 0
+        total_cycles_duration = time.time() - start
+        n_cycles = 1
+
+        will_ensemble = len(self.base_models) > 1 and not self.config.ensemble_id is None
 
         if will_ensemble:
             self.ensembler = Ensembler(
@@ -450,12 +442,14 @@ class Engine:
 
             ensemble_id = self.config.ensemble_id
 
-            if self.ensembler.optimize():
+            if self.ensembler.optimize(total_cycles_duration):
                 self.__check_best__(self.scores[ensemble_id], ensemble_id)
 
         self.__improvement_trigger__()
 
         while not self.must_interrupt:
+
+            start = time.time()
             for hyper_search_space in self.config.hyper_search_spaces:
                 if self.must_interrupt:
                     break
@@ -484,8 +478,11 @@ class Engine:
 
                     dump(base_model, self.models_dir + id)
 
+            total_cycles_duration += time.time() - start
+            n_cycles += 1
+
             if will_ensemble:
-                if self.ensembler.optimize():
+                if self.ensembler.optimize(total_cycles_duration/n_cycles):
                     self.__check_best__(self.scores[ensemble_id], ensemble_id)
 
                     self.__improvement_trigger__()
@@ -507,7 +504,7 @@ class Engine:
 
             * ``'predictions'``: A ``pandas.Series`` object containing the\
                 predictions of the best id for the testing dataset. If no testing
-                dataset was provided, the value associated with this key is None.
+                dataset was provided, the value for this key is None.
         """
         if self.best_id is None:
             return None
