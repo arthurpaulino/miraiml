@@ -54,7 +54,7 @@ the training data.
 
 The mechanics of this process is similar to a cross-validation, with a slight
 difference: the final score is not the mean score of each fold. Instead, the array
-of predictions is built incrementally and then fully compared to the target column.
+of predictions is built iteratively and then fully compared to the target column.
 More precisely:
 
 1. Filter training and testing features
