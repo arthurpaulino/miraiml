@@ -63,7 +63,7 @@ More precisely:
     - Train the model on the bigger part
     - Make predictions for the smaller part
     - Make predictions for the testing dataset
-4. Compute the score for the entire column of predictions
+4. Compute the score for the entire column of predictions on the training dataset
 5. Compute the average of the predictions for the testing dataset
 
 Averaging the predictions for the testing dataset may result in slightly better
@@ -78,13 +78,12 @@ There can be too many base models in the search space and we may not be able to
 afford exhausive searches. Thus, a smart strategy to search good base models is
 mandatory.
 
-The engine is able to register optimization attempts on dataframes called
-`histories`. These dataframes have columns for each hyperparameter and each
-feature, as well as a column for the reported score. The values of the
-hyperparameters' columns are the values of the hyperparameters themselves. The
-values of the features' columns are either 0 or 1, which indicate whether the
-features were used or not. An example of history dataframe for a K-NN classifier
-with three registries would be:
+The engine registers optimization attempts on dataframes called `histories`. These
+dataframes have columns for each hyperparameter and each feature, as well as a
+column for the reported score. The values of the hyperparameters' columns are the
+values of the hyperparameters themselves. The values of the features' columns are
+either 0 or 1, which indicate whether the features were used or not. An example
+of history dataframe for a K-NN classifier with three registries would be:
 
 =========== ========== === ====== =====
 Hyperparameters        Features   ---
@@ -127,7 +126,7 @@ models are:
 
 The strategy is chosen stochastically according to the following priority rule:
 
-    `With a probability of 0.5, the random strategy will be chosen. If it's not,
+    `The random strategy will be chosen with a probability of 0.5. If it's not,
     the other strategies will be chosen with equal probabilities.`
 
 Ensembling base models
@@ -164,8 +163,8 @@ varies from 0 to 1, with mode 1.
 
 For every other base model :math:`i` (not a base model with the highest score),
 the weight is drawn from a triangular distribution that varies from 0 to `range`,
-with mode 0. It means that its weight will most likely be close to 0. The upperbound
-is defined by the `range` variable.
+with mode 0. It means that its weight will most likely be close to 0 and its
+upperbound is defined by the `range` variable.
 
 The value of `range` should depend on the relative score of the base model. But
 preventing it from reaching 1 would be too prohibitive. A solution for this is:
