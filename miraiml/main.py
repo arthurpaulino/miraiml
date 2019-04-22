@@ -231,8 +231,7 @@ class Engine:
         from miraiml import Engine
 
         def on_improvement(status):
-            # prints the best score everytime an improvement is found
-            print('Score:', status['score'])
+            print('Scores:', status['scores'])
 
         engine = Engine(config, on_improvement=on_improvement)
     """
@@ -496,25 +495,57 @@ class Engine:
         :rtype: dict or None
         :returns: The current status of the engine in the form of a dictionary.
             If no score has been computed yet, returns ``None``. The available
-            keys for the dictionary are:
+            keys and their respective values on the status dictionary are:
 
-            * ``'score'``: The score of the best id
+            * ``'best_id'``: The current best id
 
             * ``'scores'``: A dictionary containing the score of each id
 
-            * ``'predictions'``: A ``pandas.Series`` object containing the\
-                predictions of the best id for the testing dataset. If no testing
-                dataset was provided, the value for this key is None.
+            * ``'predictions'``: A ``pandas.DataFrame`` object containing the\
+                predictions from each id for the testing dataset. If no testing\
+                dataset was provided, the value associated with this key is\
+                ``None``
+
+            * ``'ensemble_weights'``: A dictionary containing the ensemble weights\
+                for each base model. If no ensembling cycle has been executed,\
+                the value associated with this key is ``None``
+
+            * ``'base_models'``: A dictionary containing the current description\
+                of each base model, which can be accessed by their ids
+
+            The dictionary associated with the ``'base_models'`` key contains the
+            following keys and respective values:
+
+            * ``'model_class'``: The name of the base model's class
+
+            * ``'parameters'``: The dictionary of hyperparameters
+
+            * ``'features'``: The list of features
         """
         if self.best_id is None:
             return None
 
         predictions = None
         if not self.test_data is None:
-            predictions = self.test_predictions_df[self.best_id].copy()
+            predictions = self.test_predictions_df.copy()
+
+        ensemble_weights = None
+        if not self.ensembler is None:
+            ensemble_weights = self.ensembler.weights.copy()
+
+        base_models = {}
+        for id in self.base_models:
+            base_model = self.base_models[id]
+            base_models[id] = dict(
+                model_class = base_model.model_class.__name__,
+                parameters = base_model.parameters.copy(),
+                features = base_model.features.copy()
+            )
 
         return dict(
-            score = self.scores[self.best_id],
+            best_id = self.best_id,
             scores = self.scores.copy(),
-            predictions = predictions
+            predictions = predictions,
+            ensemble_weights = ensemble_weights,
+            base_models = base_models
         )

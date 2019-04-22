@@ -49,6 +49,28 @@ engine.restart()
 sleep(20)
 engine.interrupt()
 
-# Requesting the scores
+# Let's explore the status object
 status = engine.request_status()
+
+# As seen before, we can see the engine's scores
 print('\nScores:', status['scores'])
+
+# We have access to a shortcut that informs the best id
+print('\nBest id:', status['best_id'])
+
+# We have the predictions for each id on a pandas.DataFrame object
+predictions = status['predictions']
+print('\nPredictions:')
+print(predictions.head())
+
+# We can inquire the ensemble weights
+print('\Ensemble weights:', status['ensemble_weights'])
+
+# Let's see the details of each base model
+base_models = status['base_models']
+for id in base_models:
+    base_model = base_models[id]
+    print('\nBase model id:', id)
+    print(' Model class:', base_model['model_class'])
+    print(' Parameters:', base_model['parameters'])
+    print(' Features:', base_model['features'])

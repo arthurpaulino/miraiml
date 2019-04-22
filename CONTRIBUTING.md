@@ -33,14 +33,9 @@ Before you start coding, checkout to a new branch called `issue-<#issue>` (e.g.:
 `issue-42`).
 
 Before commiting your changes, remember to increment the package version according
-to the [Semantic Versioning][semver] specification, with one difference: there is
-also an UPDATE identifier, which MUST be incremented if the change affects only
-docstrings. If the change does not affect ``.py`` files, it's not necessary to
-change the version.
-
-The version can be incremented by calling `make` with one of the following
-directives: `major`, `minor`, `patch` or `update`. Feel free to call `$ make help`
-for more information.
+to the [Semantic Versioning][semver] specification. As a shortcut, the version can
+be incremented by calling `make` with one of the following directives: `major`,
+`minor` or `patch`. Feel free to call `$ make help` for more information.
 
 After opening a [pull request][pulls], insert the link of the issue on your pull
 request comment and Github will automatically mention that reference on the issue.
