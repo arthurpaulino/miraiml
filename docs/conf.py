@@ -4,6 +4,7 @@
 # list see the documentation:
 # http://www.sphinx-doc.org/en/master/config
 
+
 # -- Path setup --------------------------------------------------------------
 
 # If extensions (or modules to document with autodoc) are in another directory,
@@ -57,18 +58,15 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-#
 html_theme = 'sphinx_rtd_theme'
-
-# Add any paths that contain custom static files (such as style sheets) here,
-# relative to this directory. They are copied after the builtin static files,
-# so a file named "default.css" will overwrite the builtin "default.css".
-# html_static_path = ['_static']
 
 
 # -- Extension configuration -------------------------------------------------
 
-# -- Options for todo extension ----------------------------------------------
+# This value selects if automatically documented members are sorted alphabetical
+# (value 'alphabetical'), by member type (value 'groupwise') or by source order
+# (value 'bysource'). The default is alphabetical.
+autodoc_member_order = 'bysource'
 
-# If true, `todo` and `todoList` produce output, else they produce nothing.
-todo_include_todos = True
+
+# -- Options for todo extension ----------------------------------------------

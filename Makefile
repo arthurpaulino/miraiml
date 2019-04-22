@@ -1,4 +1,4 @@
-.PHONY: install docs major minor patch update release upload_test upload_pypi help
+.PHONY: install docs major minor patch release upload_test upload_pypi help
 
 install:
 	@python setup.py install && rm -rf build
@@ -15,9 +15,6 @@ minor:
 
 patch:
 	@python versioning.py patch
-
-update:
-	@python versioning.py update
 
 release:
 	@rm -rf dist && python setup.py sdist
@@ -41,8 +38,6 @@ help:
 	@echo '		Increments the MINOR version identifier.'
 	@echo '	patch'
 	@echo '		Increments the PATCH version identifier.'
-	@echo '	update'
-	@echo '		Increments the UPDATE version identifier.'
 	@echo '	release'
 	@echo '		Creates a dist directory for release.'
 	@echo '	upload_test'

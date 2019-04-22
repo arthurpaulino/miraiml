@@ -69,4 +69,4 @@ sleep(5)
 engine.interrupt()
 
 status = engine.request_status()
-print('\nScore:', status['score'])
+print('\nScores:', status['scores'])

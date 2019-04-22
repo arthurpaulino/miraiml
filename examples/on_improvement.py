@@ -23,7 +23,7 @@ config = Config(
 # Simply printing the best score on improvement. This function must receive a
 # dictionary, which is the return of the request_status method.
 def on_improvement(status):
-    print('Score:', status['score'])
+    print('Scores:', status['scores'])
 
 # Instantiating the engine
 engine = Engine(config, on_improvement=on_improvement)

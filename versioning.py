@@ -1,7 +1,7 @@
 import sys
 
 init_file_path = 'miraiml/__init__.py'
-all_identifiers = ['major', 'minor', 'patch', 'update']
+all_identifiers = ['major', 'minor', 'patch']
 
 def display_available_identifiers():
     print('Available identifiers are: {}.'.format(', '.join(all_identifiers)))

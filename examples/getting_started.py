@@ -50,16 +50,16 @@ print('\nIs the engine running?', engine.is_running())
 # make sure that at least one cycle of cross-validation has finished.
 print('\nWaiting 5 seconds...')
 sleep(5)
-status = engine.request_status()
 
-# Let's print the score of the engine
-print('\nScore:', status['score'])
+# Let's print the scores of the engine's base models
+status = engine.request_status()
+print('\nScores:', status['scores'])
 
 # Okay, let's wait 5 more seconds and shut it down.
 print('\nWaiting 5 seconds...')
 sleep(5)
 engine.interrupt()
 
-# The engine's status is still available and the score may have improved
+# The engine's status is still available and the scores may have improved
 status = engine.request_status()
-print('\nScore:', status['score'])
+print('\nScores:', status['scores'])
