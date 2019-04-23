@@ -305,7 +305,8 @@ class MiraiSeeker:
             features = sample_random_len(self.all_features)
         return (parameters, features)
 
-    def dataframe_to_parameters_features(self, dataframe):
+    @classmethod
+    def dataframe_to_parameters_features(cls, dataframe):
         """
         Transforms a history entry in a pair of parameters and features.
 
@@ -330,8 +331,7 @@ class MiraiSeeker:
                     features.append(column_filtered)
         return (parameters, features)
 
-    @classmethod
-    def linear_regression_search(cls, id):
+    def linear_regression_search(self, id):
         """
         Uses the history to model the score with a linear regression. Guesses the
         scores of `n`/2 random sets of parameters and features, where `n` is the
