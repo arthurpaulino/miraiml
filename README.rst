@@ -1,9 +1,12 @@
 .. -*- mode: rst -*-
 
-|license|_ |docs|_ |pypi|_
+|license|_ |codacy|_ |docs|_ |pypi|_
 
 .. |license| image:: https://img.shields.io/badge/License-MIT-yellow.svg
 .. _license: https://opensource.org/licenses/MIT
+
+.. |codacy| image:: https://api.codacy.com/project/badge/Grade/983bcf3973094f20ba4f516d6891c5f7
+.. _codacy: https://www.codacy.com/app/arthurpaulino/miraiml?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=arthurpaulino/miraiml&amp;utm_campaign=Badge_Grade
 
 .. |docs| image:: https://readthedocs.org/projects/miraiml/badge/?version=latest
 .. _docs: https://readthedocs.org/projects/miraiml/

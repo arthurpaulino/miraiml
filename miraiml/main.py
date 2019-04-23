@@ -6,6 +6,7 @@ import os
 from .util import load, dump, is_valid_filename
 from .core import MiraiSeeker, Ensembler
 
+
 class HyperSearchSpace:
     """
     This class represents the search space of hyperparameters for a base model.
@@ -19,7 +20,7 @@ class HyperSearchSpace:
     :param id: The id that will be associated with the models generated within
         this search space.
 
-    :type parameters_values: dict, optional, default={ }
+    :type parameters_values: dict, optional, default=None
     :param parameters_values: A dictionary containing lists of values to be
         tested as parameters when instantiating objects of ``model_class``.
 
@@ -69,26 +70,31 @@ class HyperSearchSpace:
         because the scores will be unstable even with the same choice of
         hyperparameters and features.
     """
-    def __init__(self, model_class, id, parameters_values={},
+    def __init__(self, model_class, id, parameters_values=None,
             parameters_rules=lambda x: None):
         self.__validate__(model_class, id, parameters_values, parameters_rules)
         self.model_class = model_class
         self.id = id
+        if parameters_values is None:
+            parameters_values = {}
         self.parameters_values = parameters_values
         self.parameters_rules = parameters_rules
 
     @classmethod
     def __validate__(cls, model_class, id, parameters_values, parameters_rules):
+        """
+        Validates the constructor parameters.
+        """
         dir_model_class = dir(model_class)
         if 'fit' not in dir_model_class:
             raise NotImplementedError('model_class must implement fit')
-        if type(id) != str:
+        if not isinstance(id, str):
             raise TypeError('id must be a string')
         if not is_valid_filename(id):
             raise ValueError('Invalid id: {}'.format(id))
-        if type(parameters_values) != dict:
-            raise TypeError('parameters_values must be a dictionary')
-        if type(parameters_rules) != type(lambda: None):
+        if parameters_values is not None and not isinstance(parameters_values, dict):
+            raise TypeError('parameters_values must be None or a dictionary')
+        if not callable(parameters_rules):
             raise TypeError('parameters_rules must be a function')
 
 class Config:
@@ -157,28 +163,31 @@ class Config:
         self.ensemble_id = ensemble_id
 
     @classmethod
-    def __validate__(cls, local_dir, problem_type, hyper_search_spaces, score_function,
-            n_folds, stratified, ensemble_id):
-        if type(local_dir) != str:
+    def __validate__(cls, local_dir, problem_type, hyper_search_spaces,
+            score_function, n_folds, stratified, ensemble_id):
+        """
+        Validates the constructor parameters.
+        """
+        if not isinstance(local_dir, str):
             raise TypeError('local_dir must be a string')
 
         for dir_name in local_dir.split('/'):
             if not is_valid_filename(dir_name):
                 raise ValueError('Invalid directory name: {}'.format(dir_name))
 
-        if type(problem_type) != str:
+        if not isinstance(problem_type, str):
             raise TypeError('problem_type must be a string')
         if problem_type not in ('classification', 'regression'):
             raise ValueError('Invalid problem type')
 
-        if type(hyper_search_spaces) != list:
+        if not isinstance(hyper_search_spaces, list):
             raise TypeError('hyper_search_spaces must be a list')
         if len(hyper_search_spaces) == 0:
             raise ValueError('No search spaces')
 
         ids = []
         for hyper_search_space in hyper_search_spaces:
-            if type(hyper_search_space) != HyperSearchSpace:
+            if not isinstance(hyper_search_space, HyperSearchSpace):
                 raise TypeError('All hyper search spaces must be objects of '+\
                     'miraiml.HyperSearchSpace')
             id = hyper_search_space.id
@@ -193,20 +202,20 @@ class Config:
                 raise NotImplementedError('Model class of id {} '.format(id)+\
                     'must implement predict for regression problems')
 
-        if type(score_function) != type(lambda: None):
+        if not callable(score_function):
             raise TypeError('score_function must be a function')
 
-        if type(n_folds) != int:
+        if not isinstance(n_folds, int):
             raise TypeError('n_folds must be an integer')
         if n_folds < 2:
             raise ValueError('n_folds greater than 1')
 
-        if type(stratified) != bool:
+        if not isinstance(stratified, bool):
             raise TypeError('stratified must be a boolean')
 
-        if type(ensemble_id) != type(None) and type(ensemble_id) != str:
-            raise TypeError('ensemble_id must be a None or a string')
-        if type(ensemble_id) == str and not is_valid_filename(ensemble_id):
+        if ensemble_id is not None and not isinstance(ensemble_id, str):
+            raise TypeError('ensemble_id must be None or a string')
+        if not isinstance(ensemble_id, str) and not is_valid_filename(ensemble_id):
             raise ValueError('invalid ensemble_id')
         if ensemble_id in ids:
             raise ValueError('ensemble_id cannot have the same id of a hyper '+\
@@ -251,11 +260,13 @@ class Engine:
 
     @classmethod
     def __validate__(cls, config, on_improvement):
-        if type(config) != Config:
+        """
+        Validates the constructor parameters.
+        """
+        if not isinstance(config, Config):
             raise TypeError('miraiml.Engine\'s constructor requires an object'+\
                 ' of miraiml.Config')
-        if type(on_improvement) != type(lambda: None) and\
-            type(on_improvement) != type(None):
+        if on_improvement is not None and not callable(on_improvement):
             raise TypeError('on_improvement must be None or a function')
 
     def is_running(self):
@@ -299,10 +310,10 @@ class Engine:
         :type restart: bool, optional, default=False
         :param restart: Whether to restart the engine after updating data or not.
         """
-        if type(train_data) != pd.DataFrame:
+        if not isinstance(train_data, pd.DataFrame):
             raise TypeError('Training data must be an object of pandas.DataFrame')
 
-        if type(test_data) != type(None) and type(test_data) != pd.DataFrame:
+        if test_data is not None and not isinstance(test_data, pd.DataFrame):
             raise TypeError('Testing data must be None or an object of pandas.DataFrame')
 
         self.interrupt()
@@ -384,7 +395,10 @@ class Engine:
         if self.on_improvement is not None:
             self.on_improvement(self.request_status())
 
-    def __check_best__(self, score, id):
+    def __update_best__(self, score, id):
+        """
+        Updates the best id of the engine.
+        """
         if self.best_score is None or score > self.best_score:
             self.best_score = score
             self.best_id = id
@@ -428,7 +442,7 @@ class Engine:
             self.test_predictions_df[id] = test_predictions
             self.scores[id] = score
 
-            self.__check_best__(self.scores[id], id)
+            self.__update_best__(self.scores[id], id)
 
         total_cycles_duration = time.time() - start
         n_cycles = 1
@@ -449,7 +463,7 @@ class Engine:
             ensemble_id = self.config.ensemble_id
 
             if self.ensembler.optimize(total_cycles_duration):
-                self.__check_best__(self.scores[ensemble_id], ensemble_id)
+                self.__update_best__(self.scores[ensemble_id], ensemble_id)
 
         self.__improvement_trigger__()
 
@@ -474,11 +488,11 @@ class Engine:
                     self.scores[id] = score
                     self.train_predictions_df[id] = train_predictions
                     self.test_predictions_df[id] = test_predictions
-                    self.__check_best__(score, id)
+                    self.__update_best__(score, id)
 
                     if will_ensemble:
                         self.ensembler.update()
-                        self.__check_best__(self.scores[ensemble_id], ensemble_id)
+                        self.__update_best__(self.scores[ensemble_id], ensemble_id)
 
                     self.__improvement_trigger__()
 
@@ -489,7 +503,7 @@ class Engine:
 
             if will_ensemble:
                 if self.ensembler.optimize(total_cycles_duration/n_cycles):
-                    self.__check_best__(self.scores[ensemble_id], ensemble_id)
+                    self.__update_best__(self.scores[ensemble_id], ensemble_id)
 
                     self.__improvement_trigger__()
 
