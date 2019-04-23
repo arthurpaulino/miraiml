@@ -19,15 +19,14 @@ You can contribute with [issues][issues] by:
 - Presenting a better way to do something with a `better code`
 - Giving tips for better project `management` practices
 
-I've highlighted the labels that should be used in each case. Please, do not use
-`reserved:*` labels.
+I've highlighted the labels that will be used in each case.
 
 ## Contributing with code
 
 Code contributions can only be made if there is an **open issue** related to the
 changes you want to make, where we have discussed and come to an agreement about
-them. Such issues will be tagged with the `reserved: approved` label. Comment on
-the issue saying that you will implement it and I will assign it to you.
+them. Such issues will be tagged with the `approved` label. Comment on the issue
+saying that you will work on it and I will assign it to you.
 
 Before you start coding, checkout to a new branch called `issue-<#issue>` (e.g.:
 `issue-42`).
