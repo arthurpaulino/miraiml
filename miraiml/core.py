@@ -264,7 +264,6 @@ class MiraiSeeker:
             that can be used to generate a new base model.
         """
         hyper_search_space = self.hyper_search_spaces_dict[id]
-        model_class = hyper_search_space.model_class
         parameters = {}
         for parameter in hyper_search_space.parameters_values:
             parameters[parameter] = rnd.choice(
@@ -331,7 +330,8 @@ class MiraiSeeker:
                     features.append(column_filtered)
         return (parameters, features)
 
-    def linear_regression_search(self, id):
+    @classmethod
+    def linear_regression_search(cls, id):
         """
         Uses the history to model the score with a linear regression. Guesses the
         scores of `n`/2 random sets of parameters and features, where `n` is the
@@ -458,8 +458,8 @@ class Ensembler:
                     weights[id] = rnd.triangular(0, 1, 1)
                 else:
                     normalized_score = (self.scores[id]-min_score)/diff_score
-                    range = rnd.triangular(0, 1, normalized_score)
-                    weights[id] = rnd.triangular(0, range, 0)
+                    range_ = rnd.triangular(0, 1, normalized_score)
+                    weights[id] = rnd.triangular(0, range_, 0)
         else:
             for id in self.base_models_ids:
                 weights[id] = 1

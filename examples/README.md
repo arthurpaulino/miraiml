@@ -33,7 +33,7 @@ without null values. The target column is called `target_class` and contains onl
    `predict(X)` in case of regression problems or `predict_proba(X)` in case of
    classification problems, as long as these functions' receive `pandas` objects
    and return objects built in the same pattern as those from
-   [scikit-learn]([sklearn]).
+   [scikit-learn][sklearn].
 
    I chose this example because, in my experience, the best way to fit data with
    LightGBM is by splitting the data in **n** folds and using the smaller parts

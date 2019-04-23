@@ -19,8 +19,7 @@ if identifier_to_increment not in all_identifiers:
 
 lines = open(init_file_path).readlines()
 
-for line_index in range(len(lines)):
-    line = lines[line_index]
+for line_index, line in enumerate(lines):
     if line.startswith('__version__'):
         line_splits = line.split('\'')
         if line_splits[-1] != '\n':

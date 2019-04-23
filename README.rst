@@ -30,16 +30,6 @@ Usage
 Some didactic tutorials can be found in the examples_ directory. Or `Read the
 Docs`_ for a better understanding of MiraiML.
 
-Development
------------
-
-1. Download: ``$ git clone https://github.com/arthurpaulino/miraiml.git``
-2. Change directory: ``$ cd miraiml``
-
-Now you can install it with ``$ make install`` or ``$ python setup.py install``.
-
-**Note**: Call ``$ make help`` for more info on ``make`` directives.
-
 Contributing
 ------------
 

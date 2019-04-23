@@ -77,7 +77,8 @@ class HyperSearchSpace:
         self.parameters_values = parameters_values
         self.parameters_rules = parameters_rules
 
-    def __validate__(self, model_class, id, parameters_values, parameters_rules):
+    @classmethod
+    def __validate__(cls, model_class, id, parameters_values, parameters_rules):
         dir_model_class = dir(model_class)
         if 'fit' not in dir_model_class:
             raise NotImplementedError('model_class must implement fit')
@@ -155,7 +156,8 @@ class Config:
         self.stratified = stratified
         self.ensemble_id = ensemble_id
 
-    def __validate__(self, local_dir, problem_type, hyper_search_spaces, score_function,
+    @classmethod
+    def __validate__(cls, local_dir, problem_type, hyper_search_spaces, score_function,
             n_folds, stratified, ensemble_id):
         if type(local_dir) != str:
             raise TypeError('local_dir must be a string')
@@ -247,7 +249,8 @@ class Engine:
         self.train_data = None
         self.ensembler = None
 
-    def __validate__(self, config, on_improvement):
+    @classmethod
+    def __validate__(cls, config, on_improvement):
         if type(config) != Config:
             raise TypeError('miraiml.Engine\'s constructor requires an object'+\
                 ' of miraiml.Config')
@@ -372,7 +375,7 @@ class Engine:
                 self.__is_running__ = False
                 raise
 
-        Thread(target=lambda: starter()).start()
+        Thread(target=starter).start()
 
     def __improvement_trigger__(self):
         """

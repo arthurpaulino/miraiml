@@ -31,17 +31,25 @@ saying that you will work on it and I will assign it to you.
 Before you start coding, checkout to a new branch called `issue-<#issue>` (e.g.:
 `issue-42`).
 
-While coding, please follow the [PEP8 style guide][pep8].
+While coding, please follow the [PEP8 style guide][pep8]. Using [flake8][flake8]
+should make things a lot easier for you.
+
+You can see the rendered version of the documentation by calling `# make docs`
+(requires [sphinx][sphinx]).
 
 Before commiting your changes, remember to increment the package version according
 to the [Semantic Versioning][semver] specification. As a shortcut, the version can
 be incremented by calling `make` with one of the following directives: `major`,
-`minor` or `patch`. Feel free to call `$ make help` for more information.
+`minor` or `patch`.
+
+Feel free to call `$ make help` for more information on *make* directives.
 
 After opening a [pull request][pulls], insert the link of the issue on your pull
 request comment and Github will automatically mention that reference on the issue.
 
 [issues]: https://github.com/arthurpaulino/miraiml/issues
 [pep8]: https://www.python.org/dev/peps/pep-0008/
+[flake8]: https://pypi.org/project/flake8/
+[sphinx]: https://pypi.org/project/Sphinx/
 [semver]: https://semver.org/
 [pulls]: https://github.com/arthurpaulino/miraiml/pulls
