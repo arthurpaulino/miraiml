@@ -62,8 +62,8 @@ class HyperSearchSpace:
 
     .. warning::
         **Do not** allow ``random_state`` assume multiple values. If ``model_class``
-        has a ``random_state`` parameter, force ``HyperSearchSpace`` to always choose
-        the same value by providing a list with a single element.
+        has a ``random_state`` parameter, force the engine to always choose the
+        same value by providing a list with a single element.
 
         Allowing ``random_state`` to assume multiple values will confuse the engine
         because the scores will be unstable even with the same choice of
@@ -103,8 +103,9 @@ class Config:
         type. Multi-class classification problems are not supported.
 
     :type hyper_search_spaces: list
-    :param hyper_search_spaces: The list of :class:`miraiml.HyperSearchSpace` objects to optimize.
-        If ``hyper_search_spaces`` has length 1, the engine will not run ensemble cycles.
+    :param hyper_search_spaces: The list of :class:`miraiml.HyperSearchSpace`
+        objects to optimize. If ``hyper_search_spaces`` has length 1, the engine
+        will not run ensemble cycles.
 
     :type score_function: function
     :param score_function: A function that receives the "truth" and the predictions
@@ -143,7 +144,7 @@ class Config:
     def __init__(self, local_dir, problem_type, hyper_search_spaces, score_function,
             n_folds=5, stratified=True, ensemble_id=None):
         self.__validate__(local_dir, problem_type, hyper_search_spaces, score_function,
-            n_folds, stratified, ensemble_id)
+                          n_folds, stratified, ensemble_id)
         self.local_dir = local_dir
         if self.local_dir[-1] != '/':
             self.local_dir += '/'
@@ -272,7 +273,7 @@ class Engine:
             stop.
         """
         self.must_interrupt = True
-        if not self.ensembler is None:
+        if self.ensembler is not None:
             self.ensembler.interrupt()
         while self.__is_running__:
             time.sleep(.1)
@@ -306,7 +307,7 @@ class Engine:
         self.train_target = self.train_data.pop(target_column)
         self.all_features = list(train_data.columns)
         self.test_data = test_data
-        if not self.mirai_seeker is None:
+        if self.mirai_seeker is not None:
             self.mirai_seeker.reset()
         if restart:
             self.restart()
@@ -349,7 +350,7 @@ class Engine:
         """
         self.interrupt()
         self.config = config
-        if not self.mirai_seeker is None:
+        if self.mirai_seeker is not None:
             self.mirai_seeker.reset()
         if restart:
             self.restart()
@@ -377,7 +378,7 @@ class Engine:
         """
         Called when an improvement happens.
         """
-        if not self.on_improvement is None:
+        if self.on_improvement is not None:
             self.on_improvement(self.request_status())
 
     def __check_best__(self, score, id):
@@ -418,16 +419,19 @@ class Engine:
                 dump(base_model, base_model_path)
             self.base_models[id] = base_model
 
-            self.train_predictions_df[id], self.test_predictions_df[id],\
-                self.scores[id] = base_model.predict(self.train_data, self.train_target,
-                    self.test_data, self.config)
+            train_predictions, test_predictions, score = base_model.predict(
+                self.train_data, self.train_target, self.test_data, self.config)
+            self.train_predictions_df[id] = train_predictions
+            self.test_predictions_df[id] = test_predictions
+            self.scores[id] = score
 
             self.__check_best__(self.scores[id], id)
 
         total_cycles_duration = time.time() - start
         n_cycles = 1
 
-        will_ensemble = len(self.base_models) > 1 and not self.config.ensemble_id is None
+        will_ensemble = len(self.base_models) > 1 and\
+            self.config.ensemble_id is not None
 
         if will_ensemble:
             self.ensembler = Ensembler(
@@ -456,9 +460,9 @@ class Engine:
 
                 base_model = self.mirai_seeker.seek(id)
 
-                train_predictions, test_predictions, score = base_model.\
-                    predict(self.train_data, self.train_target, self.test_data,
-                        self.config)
+                train_predictions, test_predictions, score = base_model.predict(
+                    self.train_data, self.train_target,
+                    self.test_data, self.config)
 
                 self.mirai_seeker.register_base_model(id, base_model, score)
 
@@ -526,11 +530,11 @@ class Engine:
             return None
 
         predictions = None
-        if not self.test_data is None:
+        if self.test_data is not None:
             predictions = self.test_predictions_df.copy()
 
         ensemble_weights = None
-        if not self.ensembler is None:
+        if self.ensembler is not None:
             ensemble_weights = self.ensembler.weights.copy()
 
         base_models = {}

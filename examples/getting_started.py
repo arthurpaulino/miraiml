@@ -1,15 +1,12 @@
+from time import sleep
+import pandas as pd
+import numpy as np
+
 from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import GaussianNB
 from sklearn.metrics import roc_auc_score
 
-from time import sleep
-import pandas as pd
-import numpy as np
-import warnings
-
 from miraiml import HyperSearchSpace, Config, Engine
-
-warnings.filterwarnings('ignore')
 
 # First, let's define our list of HyperSearchSpaces. We're going to allow the engine
 # to work with a single Gaussian Naive Bayes classifier for this example. There
@@ -34,7 +31,7 @@ engine = Engine(config)
 # we don't have labels.
 data = pd.read_csv('pulsar_stars.csv')
 train_data, test_data = train_test_split(data, stratify=data['target_class'],
-    test_size=0.2, random_state=0)
+                                         test_size=0.2, random_state=0)
 
 # Now we load the data and inform the name of the target column.
 engine.load_data(train_data, 'target_class', test_data)

@@ -9,13 +9,14 @@ process.
   solutions o generate a better one
 """
 
-from sklearn.model_selection import StratifiedKFold, KFold
-from sklearn.linear_model import LinearRegression
 import random as rnd
 import pandas as pd
 import numpy as np
 import time
 import os
+
+from sklearn.model_selection import StratifiedKFold, KFold
+from sklearn.linear_model import LinearRegression
 
 from .util import load, dump, sample_random_len
 
@@ -75,7 +76,7 @@ class BaseModel:
         train_predictions = np.zeros(X_train.shape[0])
 
         test_predictions = None
-        if not X_test is None:
+        if X_test is not None:
             X_test = X_test[self.features]
             test_predictions = np.zeros(X_test.shape[0])
 
@@ -99,20 +100,20 @@ class BaseModel:
             try:
                 if config.problem_type == 'classification':
                     train_predictions[small_part] = model.predict_proba(X_train_small)[:,1]
-                    if not X_test is None:
+                    if X_test is not None:
                         test_predictions += model.predict_proba(X_test)[:,1]
                 elif config.problem_type == 'regression':
                     train_predictions[small_part] = model.predict(X_train_small)
-                    if not X_test is None:
+                    if X_test is not None:
                         test_predictions += model.predict(X_test)
             except:
                 raise RuntimeError('Error when predicting with model class {}'.\
                     format(class_name))
 
-        if not X_test is None:
+        if X_test is not None:
             test_predictions /= config.n_folds
-        return (train_predictions, test_predictions, config.score_function(y_train,
-            train_predictions))
+        return (train_predictions, test_predictions,
+                config.score_function(y_train, train_predictions))
 
 class MiraiSeeker:
     """
@@ -194,11 +195,12 @@ class MiraiSeeker:
         :type score: float
         :param score: The score of ``base_model``.
         """
-        new_entry = self.parameters_features_to_dataframe(base_model.parameters,
+        new_entry = self.parameters_features_to_dataframe(
+            base_model.parameters,
             base_model.features, score)
 
-        self.histories[id] = pd.concat([self.histories[id],
-            new_entry]).drop_duplicates()
+        self.histories[id] = pd.concat([self.histories[id], new_entry])
+        self.histories[id].drop_duplicates(inplace=True)
         dump(self.histories[id], self.histories_paths[id])
 
     def is_ready(self, id):
@@ -265,7 +267,8 @@ class MiraiSeeker:
         model_class = hyper_search_space.model_class
         parameters = {}
         for parameter in hyper_search_space.parameters_values:
-            parameters[parameter] = rnd.choice(hyper_search_space.parameters_values[parameter])
+            parameters[parameter] = rnd.choice(
+                hyper_search_space.parameters_values[parameter])
         features = sample_random_len(self.all_features)
         return (parameters, features)
 
@@ -289,7 +292,8 @@ class MiraiSeeker:
             if column == 'score':
                 continue
             dist = history[[column, 'score']].groupby(column).mean().reset_index()
-            chosen_value = rnd.choices(dist[column].values,
+            chosen_value = rnd.choices(
+                dist[column].values,
                 cum_weights=dist['score'].cumsum().values)[0]
             if column.endswith('(parameter)'):
                 parameter = column.split('(')[0]
@@ -344,26 +348,31 @@ class MiraiSeeker:
         history = self.histories[id]
         n_guesses = history.shape[0]//2
 
+        # Creating guesses:
         guesses_df = pd.DataFrame()
         for _ in range(n_guesses):
             guess_parameters, guess_features = self.random_search(id)
-            guess_df = self.parameters_features_to_dataframe(guess_parameters,
-                guess_features, np.nan)
+            guess_df = self.parameters_features_to_dataframe(
+                guess_parameters, guess_features, np.nan)
             guesses_df = pd.concat([guesses_df, guess_df])
 
+        # Concatenating data to perform one-hot-encoding:
         data = pd.concat([history, guesses_df])
         object_columns = [col for col in data.columns if data[col].dtype == object]
-
         data_ohe = pd.get_dummies(data, columns=object_columns, drop_first=True)
+
+        # Separating train and test:
         train_mask = data_ohe['score'].notna()
         data_ohe_train = data_ohe[train_mask]
         data_ohe_test = data_ohe[~train_mask].drop(columns='score')
         y = data_ohe_train.pop('score')
 
+        # Fitting and predicting scores:
         model = LinearRegression(normalize=True)
         model.fit(data_ohe_train, y)
         guesses_df['score'] = model.predict(data_ohe_test)
 
+        # Choosing the best guess:
         best_guess = guesses_df.sort_values('score', ascending=False).head(1)
 
         return self.dataframe_to_parameters_features(best_guess)
@@ -423,8 +432,10 @@ class Ensembler:
         """
         Updates the ensemble with the newest predictions from the base models.
         """
-        self.train_predictions_df[self.id], self.test_predictions_df[self.id],\
-            self.scores[self.id] = self.ensemble(self.weights)
+        train_predictions, test_predictions, score = self.ensemble(self.weights)
+        self.train_predictions_df[self.id] = train_predictions
+        self.test_predictions_df[self.id] = test_predictions
+        self.scores[self.id] = score
 
     def gen_weights(self):
         """
@@ -472,18 +483,14 @@ class Ensembler:
         weights_list = [weights[id] for id in self.base_models_ids]
         train_predictions = np.average(
             self.train_predictions_df[self.base_models_ids],
-            axis=1,
-            weights=weights_list
-        )
+            axis=1, weights=weights_list)
         test_predictions = None
         if self.test_predictions_df.shape[0] > 0:
             test_predictions = np.average(
                 self.test_predictions_df[self.base_models_ids],
-                axis=1,
-                weights=weights_list
-            )
+                axis=1, weights=weights_list)
         return (train_predictions, test_predictions,
-            self.config.score_function(self.y_train, train_predictions))
+                self.config.score_function(self.y_train, train_predictions))
 
     def optimize(self, max_duration):
         """

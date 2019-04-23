@@ -1,25 +1,25 @@
+from time import sleep
+import pandas as pd
+
 from sklearn.model_selection import train_test_split
-from sklearn.neighbors import KNeighborsClassifier
+from sklearn.tree import DecisionTreeClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn.metrics import roc_auc_score
 
-from time import sleep
-import pandas as pd
-import numpy as np
-import warnings
-
 from miraiml import HyperSearchSpace, Config, Engine
 
-warnings.filterwarnings('ignore')
-
-# We're going to ensemble a Naive Bayes classifier and a K-NN classifier.
+# We're going to ensemble a Naive Bayes and a Decision Tree classifier.
 hyper_search_spaces = [
     HyperSearchSpace(model_class=GaussianNB, id='Gaussian NB'),
-    HyperSearchSpace(model_class=KNeighborsClassifier, id='K-NN', parameters_values= {
-        'n_neighbors': np.arange(1, 15),
-        'weights': ['uniform', 'distance'],
-        'p': np.arange(1, 5)
-    })
+    HyperSearchSpace(
+        model_class=DecisionTreeClassifier, id='Decision Tree',
+        parameters_values = {
+            'criterion': ['gini', 'entropy'],
+            'splitter': ['best', 'random'],
+            'max_depth': range(2, 10),
+            'random_state': [42]
+        }
+    )
 ]
 
 # We have to signal it on the config, otherwise the engine will not attempt to

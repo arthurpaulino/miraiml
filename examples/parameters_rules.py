@@ -1,14 +1,15 @@
-from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import roc_auc_score
-
 from time import sleep
 import pandas as pd
 import numpy as np
 import warnings
 
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import roc_auc_score
+
 from miraiml import HyperSearchSpace, Config, Engine
 
+# Hiding LogisticRegression's convergence warnings
 warnings.filterwarnings('ignore')
 
 # Logistic Regression cannot use the 'l1' penalty for the solvers 'newton-cg',
@@ -57,7 +58,7 @@ engine = Engine(config)
 # Load data
 data = pd.read_csv('pulsar_stars.csv')
 train_data, test_data = train_test_split(data, stratify=data['target_class'],
-    test_size=0.2, random_state=0)
+                                         test_size=0.2, random_state=0)
 engine.load_data(train_data, 'target_class', test_data)
 
 # Fire!

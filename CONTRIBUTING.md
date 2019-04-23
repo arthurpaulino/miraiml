@@ -32,6 +32,8 @@ the issue saying that you will implement it and I will assign it to you.
 Before you start coding, checkout to a new branch called `issue-<#issue>` (e.g.:
 `issue-42`).
 
+While coding, please follow the [PEP8 style guide][pep8].
+
 Before commiting your changes, remember to increment the package version according
 to the [Semantic Versioning][semver] specification. As a shortcut, the version can
 be incremented by calling `make` with one of the following directives: `major`,
@@ -41,5 +43,6 @@ After opening a [pull request][pulls], insert the link of the issue on your pull
 request comment and Github will automatically mention that reference on the issue.
 
 [issues]: https://github.com/arthurpaulino/miraiml/issues
+[pep8]: https://www.python.org/dev/peps/pep-0008/
 [semver]: https://semver.org/
 [pulls]: https://github.com/arthurpaulino/miraiml/pulls

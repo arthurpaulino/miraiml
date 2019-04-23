@@ -1,15 +1,12 @@
-from sklearn.model_selection import StratifiedKFold, train_test_split
-from sklearn.metrics import roc_auc_score
-
 from time import sleep
 import lightgbm as lgb
 import pandas as pd
 import numpy as np
-import warnings
+
+from sklearn.model_selection import StratifiedKFold, train_test_split
+from sklearn.metrics import roc_auc_score
 
 from miraiml import HyperSearchSpace, Config, Engine
-
-warnings.filterwarnings('ignore')
 
 class LightGBM:
     def __init__(self, n_folds, max_leaves, colsample_bytree, learning_rate):
@@ -26,7 +23,7 @@ class LightGBM:
         self.models = None
 
     def fit(self, X, y):
-        # list to save trained models
+        # List to save trained models:
         self.models = []
 
         folds = StratifiedKFold(n_splits = self.n_folds)
@@ -41,7 +38,7 @@ class LightGBM:
             model = lgb.train(
                 params = self.parameters,
                 train_set = dtrain,
-                num_boost_round = 1000000, # a big number. it will use early stop
+                num_boost_round = 1000000, # Early stop will be used instead
                 valid_sets = dvalid,
                 early_stopping_rounds = 30,
                 verbose_eval = False
@@ -53,7 +50,7 @@ class LightGBM:
 
         y_test = None
 
-        # averaging predictions
+        # Averaging predictions:
         for model in self.models:
             if y_test is None:
                 y_test = model.predict(X)
@@ -62,7 +59,7 @@ class LightGBM:
 
         y_test /= self.n_folds
 
-        # returning a 2-columns numpy.ndarray
+        # Returning a 2-columns numpy.ndarray:
         return np.array([1-y_test, y_test]).transpose()
 
 # You know the drill...
@@ -90,7 +87,7 @@ engine = Engine(config)
 
 data = pd.read_csv('pulsar_stars.csv')
 train_data, test_data = train_test_split(data, stratify=data['target_class'],
-    test_size=0.2, random_state=0)
+                                         test_size=0.2, random_state=0)
 engine.load_data(train_data, 'target_class', test_data)
 
 print('Training...')
