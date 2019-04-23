@@ -10,7 +10,7 @@ setup(
     version = VERSION,
     packages = ["miraiml"],
     author = "Arthur Paulino",
-    author_email = "arthurleonardo.ap@gmail.com.com",
+    author_email = "arthurleonardo.ap@gmail.com",
     url = "https://github.com/arthurpaulino/miraiml",
     description = "An asynchronous engine for continuous & autonomous machine\
         learning, built for real-time usage",

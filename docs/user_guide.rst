@@ -1,5 +1,5 @@
-MiraiML User Guide
-==================
+User Guide
+==========
 
 Introduction
 ------------

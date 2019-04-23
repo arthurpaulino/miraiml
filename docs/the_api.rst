@@ -1,5 +1,5 @@
-Package Content
-===============
+The API
+=======
 
 .. automodule:: miraiml
 
@@ -23,25 +23,6 @@ miraiml.Engine
 --------------
 
 .. autoclass:: miraiml.Engine
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-Internal modules
-----------------
-
-miraiml.core
-++++++++++++
-
-.. automodule:: miraiml.core
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-miraiml.util
-++++++++++++
-
-.. automodule:: miraiml.util
     :members:
     :undoc-members:
     :show-inheritance:

@@ -5,4 +5,5 @@ MiraiML Docs
    :maxdepth: 2
 
    user_guide
-   miraiml
+   the_api
+   internal_modules
