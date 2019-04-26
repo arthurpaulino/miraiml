@@ -171,7 +171,10 @@ class Config:
         if not isinstance(local_dir, str):
             raise TypeError('local_dir must be a string')
 
-        for dir_name in local_dir.split('/'):
+        local_dir_for_split = local_dir
+        if local_dir_for_split.endswith('/'):
+            local_dir_for_split = local_dir_for_split[:-1]
+        for dir_name in local_dir_for_split.split('/'):
             if not is_valid_filename(dir_name):
                 raise ValueError('Invalid directory name: {}'.format(dir_name))
 
