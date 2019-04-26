@@ -215,7 +215,7 @@ class Config:
 
         if ensemble_id is not None and not isinstance(ensemble_id, str):
             raise TypeError('ensemble_id must be None or a string')
-        if not isinstance(ensemble_id, str) and not is_valid_filename(ensemble_id):
+        if isinstance(ensemble_id, str) and not is_valid_filename(ensemble_id):
             raise ValueError('invalid ensemble_id')
         if ensemble_id in ids:
             raise ValueError('ensemble_id cannot have the same id of a hyper '+\
@@ -300,8 +300,8 @@ class Engine:
         :type train_data: pandas.DataFrame
         :param train_data: The training data.
 
-        :type target_column: str
-        :param target_column: The name of the target column.
+        :type target_column: object
+        :param target_column: The target column identifier.
 
         :type test_data: pandas.DataFrame, optional, default=None
         :param test_data: The testing data. Use the default value if you don't
@@ -309,12 +309,17 @@ class Engine:
 
         :type restart: bool, optional, default=False
         :param restart: Whether to restart the engine after updating data or not.
+
+        :raises: ``TypeError``, ``ValueError``
         """
         if not isinstance(train_data, pd.DataFrame):
             raise TypeError('Training data must be an object of pandas.DataFrame')
 
         if test_data is not None and not isinstance(test_data, pd.DataFrame):
             raise TypeError('Testing data must be None or an object of pandas.DataFrame')
+
+        if target_column not in train_data.columns:
+            raise ValueError('target_column must be a column of train_data')
 
         self.interrupt()
         self.train_data = train_data
