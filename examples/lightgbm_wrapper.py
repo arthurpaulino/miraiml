@@ -9,21 +9,19 @@ from sklearn.metrics import roc_auc_score
 from miraiml import HyperSearchSpace, Config, Engine
 
 class LightGBM:
-    def __init__(self, n_folds, max_leaves, colsample_bytree, learning_rate):
+    def __init__(self, n_folds, **parameters):
         self.n_folds = n_folds
-        self.parameters = dict(
-            max_leaves = max_leaves,
-            colsample_bytree = colsample_bytree,
-            learning_rate = learning_rate,
-            boosting_type = 'gbdt',
+        parameters.update(dict(
             objective = 'binary',
             metric = 'auc',
             verbosity = -1
-        )
+        ))
+        self.parameters = parameters
+
+        # List to save trained models:
         self.models = None
 
     def fit(self, X, y):
-        # List to save trained models:
         self.models = []
 
         folds = StratifiedKFold(n_splits = self.n_folds)
