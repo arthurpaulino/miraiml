@@ -80,8 +80,8 @@ class HyperSearchSpace:
         self.parameters_values = parameters_values
         self.parameters_rules = parameters_rules
 
-    @classmethod
-    def __validate__(cls, model_class, id, parameters_values, parameters_rules):
+    @staticmethod
+    def __validate__(model_class, id, parameters_values, parameters_rules):
         """
         Validates the constructor parameters.
         """
@@ -163,8 +163,8 @@ class Config:
         self.stratified = stratified
         self.ensemble_id = ensemble_id
 
-    @classmethod
-    def __validate__(cls, local_dir, problem_type, hyper_search_spaces,
+    @staticmethod
+    def __validate__(local_dir, problem_type, hyper_search_spaces,
                      score_function, n_folds, stratified, ensemble_id):
         """
         Validates the constructor parameters.
@@ -263,8 +263,8 @@ class Engine:
         self.train_data = None
         self.ensembler = None
 
-    @classmethod
-    def __validate__(cls, config, on_improvement):
+    @staticmethod
+    def __validate__(config, on_improvement):
         """
         Validates the constructor parameters.
         """

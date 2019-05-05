@@ -307,8 +307,8 @@ class MiraiSeeker:
             features = sample_random_len(self.all_features)
         return (parameters, features)
 
-    @classmethod
-    def dataframe_to_parameters_features(cls, dataframe):
+    @staticmethod
+    def __dataframe_to_parameters_features__(dataframe):
         """
         Transforms a history entry in a pair of parameters and features.
 
@@ -377,7 +377,7 @@ class MiraiSeeker:
         # Choosing the best guess:
         best_guess = guesses_df.sort_values('score', ascending=False).head(1)
 
-        return self.dataframe_to_parameters_features(best_guess)
+        return self.__dataframe_to_parameters_features__(best_guess)
 
 
 class Ensembler:
