@@ -59,10 +59,10 @@ Feel free to call `$ make help` for more information on *make* directives.
 
 ### After coding
 
-After commiting your changes and pushing them to your own fork of the repository,
-go to the [original repository page][repo]. You should be able to see a button to
-open a pull request. Make sure you select the `dev` branch as the target of your
-merge request.
+After commiting your changes and pushing them to the `dev` branch of your own fork
+of the repository, go to the [original repository page][repo]. You should be able
+to see a button to open a pull request. Make sure you select the `dev` branch as
+the target of your merge request.
 
 Insert the link of to the issue on your pull request description and Github will
 automatically mention that reference on the issue.
