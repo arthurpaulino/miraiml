@@ -30,12 +30,22 @@ changes you want to make, where we have discussed and come to an agreement about
 them. Such issues will be tagged with the `approved` label. Comment on the issue
 saying that you will work on it and I will assign it to you.
 
-After forking and cloning the repository, checkout to a new branch `issue-<#issue>`
-(e.g.: `issue-42`).
+After forking the repository, clone the `dev` branch with:
+
+```
+$ git clone --branch dev --single-branch https://github.com/YOUR_USERNAME/miraiml.git
+```
+
+Then checkout to a new branch named after the issue you want to work on (e.g.:
+`issue-42`)
+
+```
+$ git checkout -b issue-42
+```
+
+Now you can start coding.
 
 ### While coding
-
-Please try to follow the [PEP8 guidelines][pep8] as closely as possible.
 
 Remember to document everything you code. You can see the rendered version of the
 documentation by calling `# make docs` (requires [sphinx][sphinx]).
@@ -49,11 +59,16 @@ Feel free to call `$ make help` for more information on *make* directives.
 
 ### After coding
 
-After opening a [pull request][pulls], insert the link of the issue on your pull
-request comment and Github will automatically mention that reference on the issue.
+After commiting your changes and pushing them to your own fork of the repository,
+go to the [original repository page][repo]. You should be able to see a button to
+open a pull request. Make sure you select the `dev` branch as the target of your
+merge request.
+
+Insert the link of to the issue on your pull request description and Github will
+automatically mention that reference on the issue.
 
 [issues]: https://github.com/arthurpaulino/miraiml/issues
 [pep8]: https://www.python.org/dev/peps/pep-0008/
 [sphinx]: https://pypi.org/project/Sphinx/
 [semver]: https://semver.org/
-[pulls]: https://github.com/arthurpaulino/miraiml/pulls
+[repo]: https://github.com/arthurpaulino/miraiml
