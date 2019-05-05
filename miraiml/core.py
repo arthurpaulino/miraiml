@@ -20,6 +20,7 @@ from sklearn.linear_model import LinearRegression
 
 from .util import load, dump, sample_random_len
 
+
 class BaseModel:
     """
     Represents an element from the search space, defined by an instance of
@@ -94,26 +95,27 @@ class BaseModel:
 
             try:
                 model.fit(X_train_big, y_train_big)
-            except:
-                raise RuntimeError('Error when fitting with model class {}'.\
-                    format(class_name))
+            except Exception:
+                raise RuntimeError('Error when fitting with model class {}'.format(class_name))
             try:
                 if config.problem_type == 'classification':
-                    train_predictions[small_part] = model.predict_proba(X_train_small)[:,1]
+                    train_predictions[small_part] = model.predict_proba(X_train_small)[:, 1]
                     if X_test is not None:
-                        test_predictions += model.predict_proba(X_test)[:,1]
+                        test_predictions += model.predict_proba(X_test)[:, 1]
                 elif config.problem_type == 'regression':
                     train_predictions[small_part] = model.predict(X_train_small)
                     if X_test is not None:
                         test_predictions += model.predict(X_test)
-            except:
-                raise RuntimeError('Error when predicting with model class {}'.\
-                    format(class_name))
+            except Exception:
+                raise RuntimeError('Error when predicting with model class {}'.format(
+                    class_name
+                ))
 
         if X_test is not None:
             test_predictions /= config.n_folds
         return (train_predictions, test_predictions,
                 config.score_function(y_train, train_predictions))
+
 
 class MiraiSeeker:
     """
@@ -175,7 +177,7 @@ class MiraiSeeker:
         :type score: float
         :param score: The score to transform.
         """
-        entry = {'score':score}
+        entry = {'score': score}
         for parameter in parameters:
             entry[parameter+'(parameter)'] = parameters[parameter]
         for feature in self.all_features:
@@ -244,7 +246,7 @@ class MiraiSeeker:
         if len(parameters) > 0:
             try:
                 hyper_search_space.parameters_rules(parameters)
-            except:
+            except Exception:
                 raise KeyError('Error on parameters rules for the id {}'.format(id))
 
         model_class = hyper_search_space.model_class
@@ -377,6 +379,7 @@ class MiraiSeeker:
 
         return self.dataframe_to_parameters_features(best_guess)
 
+
 class Ensembler:
     """
     Performs the ensemble of the base models.
@@ -404,7 +407,7 @@ class Ensembler:
     :param config: The configuration of the engine.
     """
     def __init__(self, base_models_ids, y_train, train_predictions_df,
-            test_predictions_df, scores, config):
+                 test_predictions_df, scores, config):
         self.y_train = y_train
         self.base_models_ids = sorted(base_models_ids)
         self.train_predictions_df = train_predictions_df

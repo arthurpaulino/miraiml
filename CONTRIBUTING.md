@@ -32,43 +32,55 @@ saying that you will work on it and I will assign it to you.
 
 After forking the repository, clone the `dev` branch with:
 
-```
-$ git clone --branch dev --single-branch https://github.com/YOUR_USERNAME/miraiml.git
+```bash
+~$ git clone --branch dev --single-branch https://github.com/your_username/miraiml.git
 ```
 
-Then checkout to a new branch named after the issue you want to work on (e.g.:
-`issue-42`)
+Then change directory and checkout to a new branch named after the issue you want
+to work on (e.g.: `issue-42`)
 
-```
-$ git checkout -b issue-42
+```bash
+~$ cd miraiml
+~/miraiml$ git checkout -b issue-42
 ```
 
 Now you can start coding.
 
 ### While coding
 
+Please follow the [PEP8 guidelines][pep8] while coding, although the maximum line
+length is 100 instead of 79. Using [flake8][flake8] is highly recommended:
+
+```bash
+~/miraiml$ flake8
+```
+
 Remember to document everything you code. You can see the rendered version of the
-documentation by calling `# make docs` (requires [sphinx][sphinx]).
+documentation by calling `~/miraiml$ make docs` (requires [Sphinx][sphinx] and
+[sphinx-rtd-theme][sphinx_rtd]).
 
 Before commiting your changes, remember to increment the package version according
 to the [Semantic Versioning][semver] specification. As a shortcut, the version can
 be incremented by calling `make` with one of the following directives: `major`,
 `minor` or `patch`.
 
-Feel free to call `$ make help` for more information on *make* directives.
+Feel free to call `~/miraiml$ make help` for more information on *make* directives.
 
 ### After coding
 
-After commiting your changes and pushing them to the `dev` branch of your own fork
-of the repository, go to the [original repository page][repo]. You should be able
-to see a button to open a pull request. Make sure you select the `dev` branch as
-the target of your merge request.
+Commit your changes and push them to the `dev` branch of your own fork of the
+repository and then go to the [original repository page][repo]. You should be able
+to see a button to open a pull request.
 
-Insert the link of to the issue on your pull request description and Github will
-automatically mention that reference on the issue.
+Make sure you select the `dev` branch as the target of your merge request. Insert
+the link of to the issue on your pull request description and Github will
+automatically mention that reference on the issue. It will make things a lot easier
+to keep track of.
 
 [issues]: https://github.com/arthurpaulino/miraiml/issues
 [pep8]: https://www.python.org/dev/peps/pep-0008/
+[flake8]: https://pypi.org/project/flake8/
 [sphinx]: https://pypi.org/project/Sphinx/
+[sphinx_rtd]: https://pypi.org/project/sphinx-rtd-theme/
 [semver]: https://semver.org/
 [repo]: https://github.com/arthurpaulino/miraiml

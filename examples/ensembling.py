@@ -13,7 +13,7 @@ hyper_search_spaces = [
     HyperSearchSpace(model_class=GaussianNB, id='Gaussian NB'),
     HyperSearchSpace(
         model_class=DecisionTreeClassifier, id='Decision Tree',
-        parameters_values = {
+        parameters_values={
             'criterion': ['gini', 'entropy'],
             'splitter': ['best', 'random'],
             'max_depth': range(2, 10),
@@ -25,11 +25,11 @@ hyper_search_spaces = [
 # We have to signal it on the config, otherwise the engine will not attempt to
 # ensemble them.
 config = Config(
-    local_dir = 'miraiml_local_ensembling',
-    problem_type = 'classification',
-    hyper_search_spaces = hyper_search_spaces,
-    score_function = roc_auc_score,
-    ensemble_id = 'Ensemble'
+    local_dir='miraiml_local_ensembling',
+    problem_type='classification',
+    hyper_search_spaces=hyper_search_spaces,
+    score_function=roc_auc_score,
+    ensemble_id='Ensemble'
 )
 
 # Instantiating the engine
@@ -38,7 +38,7 @@ engine = Engine(config)
 # Load data
 data = pd.read_csv('pulsar_stars.csv')
 train_data, test_data = train_test_split(data, stratify=data['target_class'],
-    test_size=0.2, random_state=0)
+                                         test_size=0.2, random_state=0)
 engine.load_data(train_data, 'target_class', test_data)
 
 # Starting the engine
@@ -64,7 +64,7 @@ print('\nPredictions:')
 print(predictions.head())
 
 # We can inquire the ensemble weights
-print('\Ensemble weights:', status['ensemble_weights'])
+print('\nEnsemble weights:', status['ensemble_weights'])
 
 # Let's see the details of each base model
 base_models = status['base_models']

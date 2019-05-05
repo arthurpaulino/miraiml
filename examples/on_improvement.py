@@ -11,16 +11,18 @@ from miraiml import HyperSearchSpace, Config, Engine
 hyper_search_spaces = [HyperSearchSpace(model_class=GaussianNB, id='Gaussian NB')]
 
 config = Config(
-    local_dir = 'miraiml_local_on_improvement',
-    problem_type = 'classification',
-    hyper_search_spaces = hyper_search_spaces,
-    score_function = roc_auc_score
+    local_dir='miraiml_local_on_improvement',
+    problem_type='classification',
+    hyper_search_spaces=hyper_search_spaces,
+    score_function=roc_auc_score
 )
+
 
 # Simply printing the best score on improvement. This function must receive a
 # dictionary, which is the return of the request_status method.
 def on_improvement(status):
     print('Scores:', status['scores'])
+
 
 # Instantiating the engine
 engine = Engine(config, on_improvement=on_improvement)
