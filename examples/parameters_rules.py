@@ -23,33 +23,35 @@ warnings.filterwarnings('ignore')
 # parameters tested by the engine, otherwise it will attempt to access an invalid
 # key from the dictionary.
 
+
 def logistic_regression_parameters_rules(parameters):
     if parameters['solver'] in ['newton-cg', 'sag', 'lbfgs']:
         parameters['penalty'] = 'l2'
+
 
 # Now we create the list of search spaces containing only one element to keep it
 # simple.
 hyper_search_spaces = [
     HyperSearchSpace(
-        model_class = LogisticRegression,
-        id = 'Logistic Regression',
-        parameters_values = {
+        model_class=LogisticRegression,
+        id='Logistic Regression',
+        parameters_values={
             'penalty': ['l1', 'l2'],
             'C': np.arange(0.1, 2, 0.1),
             'max_iter': np.arange(50, 300),
             'solver': ['newton-cg', 'lbfgs', 'liblinear', 'sag', 'saga'],
             'random_state': [0]
         },
-        parameters_rules = logistic_regression_parameters_rules
+        parameters_rules=logistic_regression_parameters_rules
     )
 ]
 
 # Quick configuration
 config = Config(
-    local_dir = 'miraiml_local_parameters_rules',
-    problem_type = 'classification',
-    hyper_search_spaces = hyper_search_spaces,
-    score_function = roc_auc_score
+    local_dir='miraiml_local_parameters_rules',
+    problem_type='classification',
+    hyper_search_spaces=hyper_search_spaces,
+    score_function=roc_auc_score
 )
 
 # Instantiating the engine

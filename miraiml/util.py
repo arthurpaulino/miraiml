@@ -9,6 +9,7 @@ import pickle
 import string
 import math
 
+
 def load(path):
     """
     A clean `pickle.load` wrapper for binary files.
@@ -21,6 +22,7 @@ def load(path):
     """
     return pickle.load(open(path, 'rb'))
 
+
 def dump(obj, path):
     """
     Optimizes the process of writing objects on disc by triggering a thread.
@@ -32,6 +34,7 @@ def dump(obj, path):
     :param path: The path of the binary file to be written.
     """
     Thread(target=lambda: pickle.dump(obj, open(path, 'wb'))).start()
+
 
 def sample_random_len(lst):
     """
@@ -48,7 +51,9 @@ def sample_random_len(lst):
         return []
     return rnd.sample(lst, max(1, math.ceil(rnd.random()*len(lst))))
 
+
 __valid_chars__ = frozenset("-_.() %s%s" % (string.ascii_letters, string.digits))
+
 
 def is_valid_filename(filename):
     """

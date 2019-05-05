@@ -17,10 +17,10 @@ hyper_search_spaces = [
 
 # Now we configure the behavior of the engine.
 config = Config(
-    local_dir = 'miraiml_local_getting_started',
-    problem_type = 'classification',
-    hyper_search_spaces = hyper_search_spaces,
-    score_function = roc_auc_score
+    local_dir='miraiml_local_getting_started',
+    problem_type='classification',
+    hyper_search_spaces=hyper_search_spaces,
+    score_function=roc_auc_score
 )
 
 # To instantiate the engine, we just need the `config` object.

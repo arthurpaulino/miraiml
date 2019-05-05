@@ -71,7 +71,7 @@ class HyperSearchSpace:
         hyperparameters and features.
     """
     def __init__(self, model_class, id, parameters_values=None,
-            parameters_rules=lambda x: None):
+                 parameters_rules=lambda x: None):
         self.__validate__(model_class, id, parameters_values, parameters_rules)
         self.model_class = model_class
         self.id = id
@@ -80,8 +80,8 @@ class HyperSearchSpace:
         self.parameters_values = parameters_values
         self.parameters_rules = parameters_rules
 
-    @classmethod
-    def __validate__(cls, model_class, id, parameters_values, parameters_rules):
+    @staticmethod
+    def __validate__(model_class, id, parameters_values, parameters_rules):
         """
         Validates the constructor parameters.
         """
@@ -96,6 +96,7 @@ class HyperSearchSpace:
             raise TypeError('parameters_values must be None or a dictionary')
         if not callable(parameters_rules):
             raise TypeError('parameters_rules must be a function')
+
 
 class Config:
     """
@@ -149,7 +150,7 @@ class Config:
         )
     """
     def __init__(self, local_dir, problem_type, hyper_search_spaces, score_function,
-            n_folds=5, stratified=True, ensemble_id=None):
+                 n_folds=5, stratified=True, ensemble_id=None):
         self.__validate__(local_dir, problem_type, hyper_search_spaces, score_function,
                           n_folds, stratified, ensemble_id)
         self.local_dir = local_dir
@@ -162,9 +163,9 @@ class Config:
         self.stratified = stratified
         self.ensemble_id = ensemble_id
 
-    @classmethod
-    def __validate__(cls, local_dir, problem_type, hyper_search_spaces,
-            score_function, n_folds, stratified, ensemble_id):
+    @staticmethod
+    def __validate__(local_dir, problem_type, hyper_search_spaces,
+                     score_function, n_folds, stratified, ensemble_id):
         """
         Validates the constructor parameters.
         """
@@ -191,19 +192,20 @@ class Config:
         ids = []
         for hyper_search_space in hyper_search_spaces:
             if not isinstance(hyper_search_space, HyperSearchSpace):
-                raise TypeError('All hyper search spaces must be objects of '+\
-                    'miraiml.HyperSearchSpace')
+                raise TypeError('All hyper search spaces must be objects of ' +
+                                'miraiml.HyperSearchSpace')
             id = hyper_search_space.id
             if id in ids:
                 raise ValueError('Duplicated search space id: {}'.format(id))
             ids.append(id)
             dir_model_class = dir(hyper_search_space.model_class)
             if problem_type == 'classification' and 'predict_proba' not in dir_model_class:
-                raise NotImplementedError('Model class of id {} '.format(id)+\
-                    'must implement predict_proba for classification problems')
+                raise NotImplementedError('Model class of id {} '.format(id) +
+                                          'must implement predict_proba for ' +
+                                          'classification problems')
             if problem_type == 'regression' and 'predict' not in dir_model_class:
-                raise NotImplementedError('Model class of id {} '.format(id)+\
-                    'must implement predict for regression problems')
+                raise NotImplementedError('Model class of id {} '.format(id) +
+                                          'must implement predict for regression problems')
 
         if not callable(score_function):
             raise TypeError('score_function must be a function')
@@ -221,8 +223,8 @@ class Config:
         if isinstance(ensemble_id, str) and not is_valid_filename(ensemble_id):
             raise ValueError('invalid ensemble_id')
         if ensemble_id in ids:
-            raise ValueError('ensemble_id cannot have the same id of a hyper '+\
-                'search space')
+            raise ValueError('ensemble_id cannot have the same id of a hyper ' +
+                             'search space')
 
 
 class Engine:
@@ -261,14 +263,14 @@ class Engine:
         self.train_data = None
         self.ensembler = None
 
-    @classmethod
-    def __validate__(cls, config, on_improvement):
+    @staticmethod
+    def __validate__(config, on_improvement):
         """
         Validates the constructor parameters.
         """
         if not isinstance(config, Config):
-            raise TypeError('miraiml.Engine\'s constructor requires an object'+\
-                ' of miraiml.Config')
+            raise TypeError('miraiml.Engine\'s constructor requires an object ' +
+                            'of miraiml.Config')
         if on_improvement is not None and not callable(on_improvement):
             raise TypeError('on_improvement must be None or a function')
 
@@ -390,7 +392,7 @@ class Engine:
         def starter():
             try:
                 self.__main_loop__()
-            except:
+            except Exception:
                 self.__is_running__ = False
                 raise
 
@@ -491,8 +493,10 @@ class Engine:
 
                 self.mirai_seeker.register_base_model(id, base_model, score)
 
-                if score > self.scores[id] or (score == self.scores[id] and\
-                        len(base_model.features) < len(self.base_models[id].features)):
+                if score > self.scores[id] or (
+                            score == self.scores[id] and
+                            len(base_model.features) < len(self.base_models[id].features)
+                        ):
                     self.scores[id] = score
                     self.train_predictions_df[id] = train_predictions
                     self.test_predictions_df[id] = test_predictions
@@ -566,15 +570,15 @@ class Engine:
         for id in self.base_models:
             base_model = self.base_models[id]
             base_models[id] = dict(
-                model_class = base_model.model_class.__name__,
-                parameters = base_model.parameters.copy(),
-                features = base_model.features.copy()
+                model_class=base_model.model_class.__name__,
+                parameters=base_model.parameters.copy(),
+                features=base_model.features.copy()
             )
 
         return dict(
-            best_id = self.best_id,
-            scores = self.scores.copy(),
-            predictions = predictions,
-            ensemble_weights = ensemble_weights,
-            base_models = base_models
+            best_id=self.best_id,
+            scores=self.scores.copy(),
+            predictions=predictions,
+            ensemble_weights=ensemble_weights,
+            base_models=base_models
         )
