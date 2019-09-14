@@ -119,6 +119,10 @@ class Config:
     :param score_function: A function that receives the "truth" and the predictions
         (in this order) and returns the score. Bigger scores must mean better models.
 
+    :type use_all_features: bool, optional, default=False
+    :param use_all_features: Whether to force MiraiML to always use all features
+        or not.
+
     :type n_folds: int, optional, default=5
     :param n_folds: The number of folds for the fitting/predicting process.
 
@@ -144,28 +148,31 @@ class Config:
             problem_type = 'classification',
             hyper_search_spaces = hyper_search_spaces,
             score_function = roc_auc_score,
+            use_all_features = False,
             n_folds = 5,
             stratified = True,
             ensemble_id = 'Ensemble'
         )
     """
     def __init__(self, local_dir, problem_type, hyper_search_spaces, score_function,
-                 n_folds=5, stratified=True, ensemble_id=None):
+                 use_all_features=False, n_folds=5, stratified=True, ensemble_id=None):
         self.__validate__(local_dir, problem_type, hyper_search_spaces, score_function,
-                          n_folds, stratified, ensemble_id)
+                          use_all_features, n_folds, stratified, ensemble_id)
         self.local_dir = local_dir
         if self.local_dir[-1] != '/':
             self.local_dir += '/'
         self.problem_type = problem_type
         self.hyper_search_spaces = hyper_search_spaces
         self.score_function = score_function
+        self.use_all_features = use_all_features
         self.n_folds = n_folds
         self.stratified = stratified
         self.ensemble_id = ensemble_id
 
     @staticmethod
     def __validate__(local_dir, problem_type, hyper_search_spaces,
-                     score_function, n_folds, stratified, ensemble_id):
+                     score_function, use_all_features, n_folds, stratified,
+                     ensemble_id):
         """
         Validates the constructor parameters.
         """
@@ -209,6 +216,9 @@ class Config:
 
         if not callable(score_function):
             raise TypeError('score_function must be a function')
+
+        if not isinstance(use_all_features, bool):
+            raise TypeError('use_all_features must be a boolean')
 
         if not isinstance(n_folds, int):
             raise TypeError('n_folds must be an integer')

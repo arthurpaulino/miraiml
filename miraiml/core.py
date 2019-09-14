@@ -179,9 +179,9 @@ class MiraiSeeker:
         """
         entry = {'score': score}
         for parameter in parameters:
-            entry[parameter+'(parameter)'] = parameters[parameter]
+            entry[parameter+'___(parameter)'] = parameters[parameter]
         for feature in self.all_features:
-            entry[feature+'(feature)'] = 1 if feature in features else 0
+            entry[feature+'___(feature)'] = 1 if feature in features else 0
         return pd.DataFrame([entry])
 
     def register_base_model(self, id, base_model, score):
@@ -270,7 +270,10 @@ class MiraiSeeker:
         for parameter in hyper_search_space.parameters_values:
             parameters[parameter] = rnd.choice(
                 hyper_search_space.parameters_values[parameter])
-        features = sample_random_len(self.all_features)
+        if self.config.use_all_features:
+            features = self.all_features
+        else:
+            features = sample_random_len(self.all_features)
         return (parameters, features)
 
     def naive_search(self, id):
@@ -296,13 +299,16 @@ class MiraiSeeker:
             chosen_value = rnd.choices(
                 dist[column].values,
                 cum_weights=dist['score'].cumsum().values)[0]
-            if column.endswith('(parameter)'):
-                parameter = column.split('(')[0]
+            if column.endswith('___(parameter)'):
+                parameter = column.split('___(')[0]
                 parameters[parameter] = chosen_value
-            elif column.endswith('(feature)'):
-                feature = column.split('(')[0]
-                if chosen_value:
+            elif column.endswith('___(feature)'):
+                feature = column.split('___(')[0]
+                if self.config.use_all_features:
                     features.append(feature)
+                else:
+                    if chosen_value:
+                        features.append(feature)
         if len(features) == 0:
             features = sample_random_len(self.all_features)
         return (parameters, features)
@@ -324,11 +330,11 @@ class MiraiSeeker:
         for column in dataframe.columns:
             if column == 'score':
                 continue
-            column_filtered = column.split('(')[0]
+            column_filtered = column.split('___(')[0]
             value = dataframe[column].values[0]
-            if column.endswith('(parameter)'):
+            if column.endswith('___(parameter)'):
                 parameters[column_filtered] = value
-            elif column.endswith('(feature)'):
+            elif column.endswith('___(feature)'):
                 if value:
                     features.append(column_filtered)
         return (parameters, features)
