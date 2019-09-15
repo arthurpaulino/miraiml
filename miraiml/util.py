@@ -65,7 +65,7 @@ def is_valid_filename(filename):
     :rtype: bool
     :returns: Whether ``filename`` is a valid file name or not.
     """
-    if len(filename) == 0:
+    if len(filename) == 0 or ".." in filename:
         return False
     for char in filename:
         if char not in __valid_chars__:

@@ -5,16 +5,10 @@ VERSION = __version__
 with open('README.rst') as f:
     LONG_DESCRIPTION = f.read()
 
-base_packages = ["scikit-learn>=0.21.1,<1", "pandas>=0.24.2,<1"]
-dev_packages = ["sphinx>=2.0.1,<3", "sphinx-rtd-theme>=0.4.3,<1",
-                "pytest>=5.1.2,<6", "flake8>=3.7.7,<4"]
-
 setup(
     name="MiraiML",
     version=VERSION,
     packages=["miraiml"],
-    install_requires=base_packages,
-    extras_require={"dev": dev_packages},
     author="Arthur Leonardo de Alencar Paulino",
     author_email="arthurleonardo.ap@gmail.com",
     url="https://github.com/arthurpaulino/miraiml",
