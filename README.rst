@@ -1,6 +1,6 @@
 .. -*- mode: rst -*-
 
-|license|_ |codacy|_ |docs|_ |pypi|_
+|license|_ |codacy|_ |docs|_ |pypi|_ |pepy|_
 
 .. |license| image:: https://img.shields.io/badge/License-MIT-yellow.svg
 .. _license: https://opensource.org/licenses/MIT
@@ -13,6 +13,9 @@
 
 .. |pypi| image:: https://badge.fury.io/py/MiraiML.svg
 .. _pypi: https://pypi.org/project/MiraiML/
+
+.. |pepy| image:: https://pepy.tech/badge/miraiml
+.. _pepy: https://pepy.tech/project/miraiml
 
 MiraiML
 =======

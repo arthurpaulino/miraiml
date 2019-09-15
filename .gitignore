@@ -1,4 +1,5 @@
 .ipynb_checkpoints
+MiraiML.egg-info/*
 *miraiml_local*
 __pycache__
 MANIFEST

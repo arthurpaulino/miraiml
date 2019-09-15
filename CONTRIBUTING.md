@@ -49,11 +49,8 @@ Now you can start coding.
 ### While coding
 
 Please follow the [PEP8 guidelines][pep8] while coding, although the maximum line
-length is 100 instead of 79. Using [flake8][flake8] is highly recommended:
-
-```bash
-~/miraiml$ flake8
-```
+length is 100 instead of 79. Using [flake8][flake8] is highly recommended and you
+can do so by calling `~/miraiml$ make flake`.
 
 Remember to document everything you code. You can see the rendered version of the
 documentation by calling `~/miraiml$ make docs` (requires [Sphinx][sphinx] and
