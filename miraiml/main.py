@@ -103,8 +103,9 @@ class Config:
     This class defines the general behavior of the engine.
 
     :type local_dir: str
-    :param local_dir: The path for the engine to save its internal files. If the
-        directory doesn't exist, it will be created automatically.
+    :param local_dir: The name of the folder in which the engine will save its
+        internal files. If the directory doesn't exist, it will be created
+        automatically. ``..`` and ``/`` are not allowed to compose ``local_dir``.
 
     :type problem_type: str
     :param problem_type: ``'classification'`` or ``'regression'``. The problem
