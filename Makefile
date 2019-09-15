@@ -1,10 +1,10 @@
 .PHONY: install develop flake docs tests major minor patch release upload_test upload_pypi help
 
 install:
-	@pip install .
+	@pip install -r requirements.txt && pip install .
 
 develop:
-	@pip install -e ".[dev]"
+	@pip install -r requirements_develop.txt && make install
 
 flake:
 	@python -m flake8

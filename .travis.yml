@@ -3,7 +3,5 @@ python:
   - "3.7"
 install:
   - make develop
-# command to run tests
 script:
-  - make flake
-  - make tests
+  - make flake && make tests
