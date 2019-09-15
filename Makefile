@@ -1,4 +1,4 @@
-.PHONY: install develop flake docs major minor patch release upload_test upload_pypi help
+.PHONY: install develop flake docs tests major minor patch release upload_test upload_pypi help
 
 install:
 	@pip install .
@@ -12,6 +12,9 @@ flake:
 docs:
 	@cd docs && make clean && make html
 	@echo -e 'ctrl+click -> \e]8;;file://${PWD}/docs/_build/html/index.html\aMiraiML Docs\e]8;;\a'
+
+tests:
+	pytest tests/*
 
 major:
 	@python versioning.py major
@@ -41,6 +44,8 @@ help:
 	@echo '	docs'
 	@echo '		Cleans and builds html files for MiraiML Docs'
 	@echo '		Outputs a clickable link for the local index page'
+	@echo '	tests'
+	@echo '		Runs all tests'
 	@echo '	major'
 	@echo '		Increments the MAJOR version identifier'
 	@echo '	minor'
