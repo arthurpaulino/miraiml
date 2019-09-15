@@ -1,2 +1,3 @@
 def test():
-    assert 1 == 1
+    if False:
+        raise AssertionError():
