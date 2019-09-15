@@ -272,6 +272,9 @@ class Engine:
         self.models_dir = config.local_dir + 'models/'
         self.train_data = None
         self.ensembler = None
+        self.needs_columns_casting = False
+        self.columns_renaming_map = {}
+        self.columns_renaming_unmap = {}
 
     @staticmethod
     def __validate__(config, on_improvement):
@@ -310,12 +313,13 @@ class Engine:
 
     def load_data(self, train_data, target_column, test_data=None, restart=False):
         """
-        Interrupts the engine and loads a new pair of train/test datasets.
+        Interrupts the engine and loads a new pair of train/test datasets. All of
+        their columns must be instances of str or int.
 
         :type train_data: pandas.DataFrame
         :param train_data: The training data.
 
-        :type target_column: object
+        :type target_column: str or int
         :param target_column: The target column identifier.
 
         :type test_data: pandas.DataFrame, optional, default=None
@@ -327,14 +331,18 @@ class Engine:
 
         :raises: ``TypeError``, ``ValueError``
         """
-        if not isinstance(train_data, pd.DataFrame):
-            raise TypeError('Training data must be an object of pandas.DataFrame')
+        train_data, target_column, test_data = self.__validate_data__(
+            train_data, target_column, test_data
+        )
 
-        if test_data is not None and not isinstance(test_data, pd.DataFrame):
-            raise TypeError('Testing data must be None or an object of pandas.DataFrame')
-
-        if target_column not in train_data.columns:
-            raise ValueError('target_column must be a column of train_data')
+        if self.needs_columns_casting:
+            for column in train_data.columns:
+                column_renamed = str(column)
+                self.columns_renaming_map[column] = column_renamed
+                self.columns_renaming_unmap[column_renamed] = column
+            train_data = train_data.rename(columns=self.columns_renaming_map)
+            if test_data is not None:
+                test_data = test_data.rename(columns=self.columns_renaming_map)
 
         self.interrupt()
         self.train_data = train_data
@@ -345,6 +353,35 @@ class Engine:
             self.mirai_seeker.reset()
         if restart:
             self.restart()
+
+    def __validate_data__(self, train_data, target_column, test_data=None):
+        """
+        Validates the input data.
+        """
+        if not isinstance(train_data, pd.DataFrame):
+            raise TypeError('Training data must be an object of pandas.DataFrame')
+
+        if test_data is not None and not isinstance(test_data, pd.DataFrame):
+            raise TypeError('Testing data must be None or an object of pandas.DataFrame')
+
+        if target_column not in train_data.columns:
+            raise ValueError('target_column must be a column of train_data')
+
+        train_columns = train_data.columns
+        if test_data is not None:
+            test_columns = test_data.columns
+
+            for column in train_columns:
+                if column != target_column and column not in test_columns:
+                    raise ValueError('All input columns in train data must be test data')
+
+        for column in train_columns:
+            if not isinstance(column, str):
+                if not isinstance(column, int):
+                    raise ValueError('All columns names must be either str or int')
+                self.needs_columns_casting = True
+
+        return train_data, target_column, test_data
 
     def shuffle_train_data(self, restart=False):
         """
@@ -581,9 +618,15 @@ class Engine:
             base_model = self.base_models[id]
             base_models[id] = dict(
                 model_class=base_model.model_class.__name__,
-                parameters=base_model.parameters.copy(),
-                features=base_model.features.copy()
+                parameters=base_model.parameters.copy()
             )
+
+            if self.needs_columns_casting:
+                base_models[id]["features"] = [
+                    self.columns_renaming_unmap[col] for col in base_model.features
+                ]
+            else:
+                base_models[id]["features"] = base_model.features.copy()
 
         return dict(
             best_id=self.best_id,

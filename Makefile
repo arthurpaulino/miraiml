@@ -10,7 +10,7 @@ flake:
 	@python -m flake8
 
 tests:
-	pytest tests/*
+	@pytest tests/*
 
 docs:
 	@cd docs && make clean && make html
