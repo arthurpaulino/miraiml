@@ -16,8 +16,8 @@ def test_sample_random_len():
 
 
 def test_is_valid_filename():
-    invalid_names = ['name*', 'a%', '$a', '', '..name', "log/log.ext"]
-    valid_names = ['log.log', 'lo(g)_log.log']
+    invalid_names = ['name*', 'a%', '$a', '', '..name', 'log/log.ext', ' ', '.']
+    valid_names = ['log', 'lo(g)_log', '(', '_', '-', '.a']
 
     for name in invalid_names:
         if is_valid_filename(name):

@@ -61,7 +61,21 @@ def test_run():
 
     engine.interrupt()
 
-    sleep(2)
-
     if engine.is_running():
         raise AssertionError()
+
+    engine.load_data(train_data, 'target', restart=True)
+
+    sleep(2)
+
+    if not engine.is_running():
+        raise AssertionError()
+
+    sleep(5)
+
+    status = engine.request_status()
+
+    if status["predictions"] is not None:
+        raise AssertionError()
+
+    engine.interrupt()

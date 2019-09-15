@@ -179,12 +179,8 @@ class Config:
         if not isinstance(local_dir, str):
             raise TypeError('local_dir must be a string')
 
-        local_dir_for_split = local_dir
-        if local_dir_for_split.endswith('/'):
-            local_dir_for_split = local_dir_for_split[:-1]
-        for dir_name in local_dir_for_split.split('/'):
-            if not is_valid_filename(dir_name):
-                raise ValueError('Invalid directory name: {}'.format(dir_name))
+        if not is_valid_filename(local_dir):
+            raise ValueError('Invalid directory name: {}'.format(local_dir))
 
         if not isinstance(problem_type, str):
             raise TypeError('problem_type must be a string')
@@ -354,7 +350,7 @@ class Engine:
         if restart:
             self.restart()
 
-    def __validate_data__(self, train_data, target_column, test_data=None):
+    def __validate_data__(self, train_data, target_column, test_data):
         """
         Validates the input data.
         """

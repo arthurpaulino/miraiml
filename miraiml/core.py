@@ -201,7 +201,7 @@ class MiraiSeeker:
             base_model.parameters,
             base_model.features, score)
 
-        self.histories[id] = pd.concat([self.histories[id], new_entry])
+        self.histories[id] = pd.concat([self.histories[id], new_entry], sort=True)
         self.histories[id].drop_duplicates(inplace=True)
         dump(self.histories[id], self.histories_paths[id])
 
@@ -362,10 +362,10 @@ class MiraiSeeker:
             guess_parameters, guess_features = self.random_search(id)
             guess_df = self.parameters_features_to_dataframe(
                 guess_parameters, guess_features, np.nan)
-            guesses_df = pd.concat([guesses_df, guess_df])
+            guesses_df = pd.concat([guesses_df, guess_df], sort=True)
 
         # Concatenating data to perform one-hot-encoding:
-        data = pd.concat([history, guesses_df])
+        data = pd.concat([history, guesses_df], sort=True)
         object_columns = [col for col in data.columns if data[col].dtype == object]
         data_ohe = pd.get_dummies(data, columns=object_columns, drop_first=True)
 
