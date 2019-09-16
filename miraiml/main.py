@@ -103,8 +103,9 @@ class Config:
     This class defines the general behavior of the engine.
 
     :type local_dir: str
-    :param local_dir: The path for the engine to save its internal files. If the
-        directory doesn't exist, it will be created automatically.
+    :param local_dir: The name of the folder in which the engine will save its
+        internal files. If the directory doesn't exist, it will be created
+        automatically. ``..`` and ``/`` are not allowed to compose ``local_dir``.
 
     :type problem_type: str
     :param problem_type: ``'classification'`` or ``'regression'``. The problem
@@ -631,3 +632,66 @@ class Engine:
             ensemble_weights=ensemble_weights,
             base_models=base_models
         )
+
+    def request_report(self, include_features=False):
+        """
+        Returns the report of the current status of the engine in a formatted
+        string.
+
+        :type include_features: bool, optional, default=False
+        :param include_features: Whether to include the list of features on the
+            report or not (may cause some visual mess).
+
+        :rtype: str
+        :returns: The formatted report.
+        """
+        status = self.request_status()
+
+        best_id = status['best_id']
+
+        score = status['scores'][best_id]
+
+        output = '########################\n'
+
+        output += ('best id: {}\n'.format(best_id))
+        output += ('score: {}\n'.format(score))
+
+        weights = status['ensemble_weights']
+
+        if weights is not None:
+            output += ('########################\n')
+            output += ('ensemble weights:\n')
+            weights_ = {}
+            for id in weights:
+                weights_[weights[id]] = id
+            for weight in reversed(sorted(weights_)):
+                id = weights_[weight]
+                output += ('    {}: {}\n'.format(id, weight))
+
+        output += ('########################\n')
+        output += ('all scores:\n')
+        scores = status['scores']
+        scores_ = {}
+        for id in scores:
+            scores_[scores[id]] = id
+        for score in reversed(sorted(scores_)):
+            id = scores_[score]
+            output += ('    {}: {}\n'.format(id, score))
+
+        base_models = status['base_models']
+        for id in sorted(base_models):
+            base_model = base_models[id]
+            features = sorted(base_model['features'])
+            output += ('########################\n')
+            output += ('id: {}\n'.format(id))
+            output += ('model class: {}\n'.format(base_model['model_class']))
+            output += ('n features: {}\n'.format(len(features)))
+            output += ('parameters:\n')
+            parameters = base_model['parameters']
+            for parameter in sorted(parameters):
+                value = parameters[parameter]
+                output += ('    {}: {}\n'.format(parameter, value))
+            if include_features:
+                output += ('features: {}\n'.format(", ".join(features)))
+
+        return output
