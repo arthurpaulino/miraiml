@@ -29,10 +29,10 @@ release:
 	@rm -rf dist && python setup.py sdist
 
 upload_test:
-	@twine upload --repository-url https://test.pypi.org/legacy/ dist/*
+	@python -m twine upload --repository-url https://test.pypi.org/legacy/ dist/*
 
 upload_pypi:
-	@twine upload dist/*
+	@python -m twine upload dist/*
 
 help:
 	@echo '	install'
