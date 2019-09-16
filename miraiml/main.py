@@ -329,9 +329,9 @@ class Engine:
         self.columns_renaming_map = {}
         self.columns_renaming_unmap = {}
 
-        train_data, target_column, test_data,
-        needs_columns_casting = self.__validate_data__(train_data, target_column,
-                                                       test_data)
+        train_data, target_column, test_data, needs_columns_casting = self.__validate_data__(
+            train_data, target_column, test_data
+        )
 
         if needs_columns_casting:
             for column in train_data.columns:
@@ -352,7 +352,8 @@ class Engine:
         if restart:
             self.restart()
 
-    def __validate_data__(self, train_data, target_column, test_data):
+    @staticmethod
+    def __validate_data__(train_data, target_column, test_data):
         """
         Validates the input data.
         """
