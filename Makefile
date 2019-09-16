@@ -1,7 +1,16 @@
-.PHONY: install docs major minor patch release upload_test upload_pypi help
+.PHONY: install develop flake tests docs major minor patch release upload_test upload_pypi help
 
 install:
-	@python setup.py install && rm -rf build
+	@pip install -r requirements.txt && pip install .
+
+develop:
+	@pip install -r requirements_develop.txt && make install
+
+flake:
+	@python -m flake8
+
+tests:
+	@pytest tests/*
 
 docs:
 	@cd docs && make clean && make html
@@ -28,10 +37,15 @@ upload_pypi:
 help:
 	@echo '	install'
 	@echo '		Builds and installs MiraiML'
-	@echo '		Cleans build files'
+	@echo '	develop'
+	@echo '		Builds and installs MiraiML along with development packages'
+	@echo '	flake'
+	@echo '		Runs flake8 checks'
+	@echo '	tests'
+	@echo '		Runs all tests'
 	@echo '	docs'
 	@echo '		Cleans and builds html files for MiraiML Docs'
-	@echo '		Outputs a clickable link for the index page'
+	@echo '		Outputs a clickable link for the local index page'
 	@echo '	major'
 	@echo '		Increments the MAJOR version identifier'
 	@echo '	minor'

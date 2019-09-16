@@ -179,9 +179,9 @@ class MiraiSeeker:
         """
         entry = {'score': score}
         for parameter in parameters:
-            entry[parameter+'(parameter)'] = parameters[parameter]
+            entry[parameter+'___(parameter)'] = parameters[parameter]
         for feature in self.all_features:
-            entry[feature+'(feature)'] = 1 if feature in features else 0
+            entry[feature+'___(feature)'] = 1 if feature in features else 0
         return pd.DataFrame([entry])
 
     def register_base_model(self, id, base_model, score):
@@ -201,7 +201,7 @@ class MiraiSeeker:
             base_model.parameters,
             base_model.features, score)
 
-        self.histories[id] = pd.concat([self.histories[id], new_entry])
+        self.histories[id] = pd.concat([self.histories[id], new_entry], sort=True)
         self.histories[id].drop_duplicates(inplace=True)
         dump(self.histories[id], self.histories_paths[id])
 
@@ -270,7 +270,10 @@ class MiraiSeeker:
         for parameter in hyper_search_space.parameters_values:
             parameters[parameter] = rnd.choice(
                 hyper_search_space.parameters_values[parameter])
-        features = sample_random_len(self.all_features)
+        if self.config.use_all_features:
+            features = self.all_features
+        else:
+            features = sample_random_len(self.all_features)
         return (parameters, features)
 
     def naive_search(self, id):
@@ -296,13 +299,16 @@ class MiraiSeeker:
             chosen_value = rnd.choices(
                 dist[column].values,
                 cum_weights=dist['score'].cumsum().values)[0]
-            if column.endswith('(parameter)'):
-                parameter = column.split('(')[0]
+            if column.endswith('___(parameter)'):
+                parameter = column.split('___(')[0]
                 parameters[parameter] = chosen_value
-            elif column.endswith('(feature)'):
-                feature = column.split('(')[0]
-                if chosen_value:
+            elif column.endswith('___(feature)'):
+                feature = column.split('___(')[0]
+                if self.config.use_all_features:
                     features.append(feature)
+                else:
+                    if chosen_value:
+                        features.append(feature)
         if len(features) == 0:
             features = sample_random_len(self.all_features)
         return (parameters, features)
@@ -324,11 +330,11 @@ class MiraiSeeker:
         for column in dataframe.columns:
             if column == 'score':
                 continue
-            column_filtered = column.split('(')[0]
+            column_filtered = column.split('___(')[0]
             value = dataframe[column].values[0]
-            if column.endswith('(parameter)'):
+            if column.endswith('___(parameter)'):
                 parameters[column_filtered] = value
-            elif column.endswith('(feature)'):
+            elif column.endswith('___(feature)'):
                 if value:
                     features.append(column_filtered)
         return (parameters, features)
@@ -356,10 +362,10 @@ class MiraiSeeker:
             guess_parameters, guess_features = self.random_search(id)
             guess_df = self.parameters_features_to_dataframe(
                 guess_parameters, guess_features, np.nan)
-            guesses_df = pd.concat([guesses_df, guess_df])
+            guesses_df = pd.concat([guesses_df, guess_df], sort=True)
 
         # Concatenating data to perform one-hot-encoding:
-        data = pd.concat([history, guesses_df])
+        data = pd.concat([history, guesses_df], sort=True)
         object_columns = [col for col in data.columns if data[col].dtype == object]
         data_ohe = pd.get_dummies(data, columns=object_columns, drop_first=True)
 
@@ -520,3 +526,79 @@ class Ensembler:
                 dump(self.weights, self.weights_path)
                 optimized = True
         return optimized
+
+
+class MiraiModel:
+    """
+    Represents an unified model optimized by MiraiML.
+    """
+    def __init__(self, base_models, weights, problem_type):
+        self.models = []
+        self.features_lists = []
+        for base_model in base_models:
+            self.models.append(base_model.model_class(**base_model.parameters))
+            self.features_lists.append(base_model.features)
+        self.weights = weights
+        self.problem_type = problem_type
+
+    def fit(self, X, y):
+        """
+        Fits all base models.
+
+        :type X: pandas.DataFrame
+        :param X: The training data.
+
+        :type y: pandas.Series or numpy.ndarray
+        :param y: The target.
+        """
+        for model, features in zip(self.models, self.features_lists):
+            model.fit(X[features], y)
+
+    def __predict__(self, X, method):
+        """
+        Generic prediction function.
+
+        :type X: pandas.DataFrame
+        :param X: The training data.
+
+        :type y: pandas.Series or numpy.ndarray
+        :param y: The target.
+
+        :type method: str
+        :param method: The name of the function to be called.
+        """
+        if self.weights is not None:
+            predictions_sum = [
+                getattr(model, method)(X[features]) for model, features in zip(
+                    self.models, self.features_lists
+                )
+            ]
+            predictions = np.average(predictions_sum, axis=0, weights=self.weights)
+            if self.problem_type == 'regression':
+                return predictions
+            return predictions.round().astype(int)
+        return getattr(self.models[0], method)(X[self.features_lists[0]])
+
+    def predict(self, X):
+        """
+        Predicts the classes for classification problems and the output for
+        regression problems.
+
+        :type X: pandas.DataFrame
+        :param X: The input for new predictions.
+        """
+        return self.__predict__(X, 'predict')
+
+    def predict_proba(self, X):
+        """
+        Predicts the probabilities for each class. Only available for classification
+        problems.
+
+        :type X: pandas.DataFrame
+        :param X: The input for new predictions.
+
+        :raises: ``RuntimeError``
+        """
+        if self.problem_type == 'regression':
+            raise RuntimeError("Cannot compute predict_proba for regressions")
+        return self.__predict__(X, 'predict_proba')

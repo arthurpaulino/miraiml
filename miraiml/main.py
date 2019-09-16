@@ -4,7 +4,7 @@ import time
 import os
 
 from .util import load, dump, is_valid_filename
-from .core import MiraiSeeker, Ensembler
+from .core import MiraiSeeker, Ensembler, MiraiModel
 
 
 class HyperSearchSpace:
@@ -103,8 +103,9 @@ class Config:
     This class defines the general behavior of the engine.
 
     :type local_dir: str
-    :param local_dir: The path for the engine to save its internal files. If the
-        directory doesn't exist, it will be created automatically.
+    :param local_dir: The name of the folder in which the engine will save its
+        internal files. If the directory doesn't exist, it will be created
+        automatically. ``..`` and ``/`` are not allowed to compose ``local_dir``.
 
     :type problem_type: str
     :param problem_type: ``'classification'`` or ``'regression'``. The problem
@@ -118,6 +119,10 @@ class Config:
     :type score_function: function
     :param score_function: A function that receives the "truth" and the predictions
         (in this order) and returns the score. Bigger scores must mean better models.
+
+    :type use_all_features: bool, optional, default=False
+    :param use_all_features: Whether to force MiraiML to always use all features
+        or not.
 
     :type n_folds: int, optional, default=5
     :param n_folds: The number of folds for the fitting/predicting process.
@@ -144,40 +149,39 @@ class Config:
             problem_type = 'classification',
             hyper_search_spaces = hyper_search_spaces,
             score_function = roc_auc_score,
+            use_all_features = False,
             n_folds = 5,
             stratified = True,
             ensemble_id = 'Ensemble'
         )
     """
     def __init__(self, local_dir, problem_type, hyper_search_spaces, score_function,
-                 n_folds=5, stratified=True, ensemble_id=None):
+                 use_all_features=False, n_folds=5, stratified=True, ensemble_id=None):
         self.__validate__(local_dir, problem_type, hyper_search_spaces, score_function,
-                          n_folds, stratified, ensemble_id)
+                          use_all_features, n_folds, stratified, ensemble_id)
         self.local_dir = local_dir
         if self.local_dir[-1] != '/':
             self.local_dir += '/'
         self.problem_type = problem_type
         self.hyper_search_spaces = hyper_search_spaces
         self.score_function = score_function
+        self.use_all_features = use_all_features
         self.n_folds = n_folds
         self.stratified = stratified
         self.ensemble_id = ensemble_id
 
     @staticmethod
     def __validate__(local_dir, problem_type, hyper_search_spaces,
-                     score_function, n_folds, stratified, ensemble_id):
+                     score_function, use_all_features, n_folds, stratified,
+                     ensemble_id):
         """
         Validates the constructor parameters.
         """
         if not isinstance(local_dir, str):
             raise TypeError('local_dir must be a string')
 
-        local_dir_for_split = local_dir
-        if local_dir_for_split.endswith('/'):
-            local_dir_for_split = local_dir_for_split[:-1]
-        for dir_name in local_dir_for_split.split('/'):
-            if not is_valid_filename(dir_name):
-                raise ValueError('Invalid directory name: {}'.format(dir_name))
+        if not is_valid_filename(local_dir):
+            raise ValueError('Invalid directory name: {}'.format(local_dir))
 
         if not isinstance(problem_type, str):
             raise TypeError('problem_type must be a string')
@@ -209,6 +213,9 @@ class Config:
 
         if not callable(score_function):
             raise TypeError('score_function must be a function')
+
+        if not isinstance(use_all_features, bool):
+            raise TypeError('use_all_features must be a boolean')
 
         if not isinstance(n_folds, int):
             raise TypeError('n_folds must be an integer')
@@ -262,6 +269,7 @@ class Engine:
         self.models_dir = config.local_dir + 'models/'
         self.train_data = None
         self.ensembler = None
+        self.n_cycles = 0
 
     @staticmethod
     def __validate__(config, on_improvement):
@@ -300,12 +308,13 @@ class Engine:
 
     def load_data(self, train_data, target_column, test_data=None, restart=False):
         """
-        Interrupts the engine and loads a new pair of train/test datasets.
+        Interrupts the engine and loads a new pair of train/test datasets. All of
+        their columns must be instances of str or int.
 
         :type train_data: pandas.DataFrame
         :param train_data: The training data.
 
-        :type target_column: object
+        :type target_column: str or int
         :param target_column: The target column identifier.
 
         :type test_data: pandas.DataFrame, optional, default=None
@@ -317,6 +326,37 @@ class Engine:
 
         :raises: ``TypeError``, ``ValueError``
         """
+        self.columns_renaming_map = {}
+        self.columns_renaming_unmap = {}
+
+        train_data, target_column, test_data, needs_columns_casting = self.__validate_data__(
+            train_data, target_column, test_data
+        )
+
+        if needs_columns_casting:
+            for column in train_data.columns:
+                column_renamed = str(column)
+                self.columns_renaming_map[column] = column_renamed
+                self.columns_renaming_unmap[column_renamed] = column
+            train_data = train_data.rename(columns=self.columns_renaming_map)
+            if test_data is not None:
+                test_data = test_data.rename(columns=self.columns_renaming_map)
+
+        self.interrupt()
+        self.train_data = train_data.drop(columns=target_column)
+        self.train_target = train_data[target_column]
+        self.all_features = list(self.train_data.columns)
+        self.test_data = test_data
+        if self.mirai_seeker is not None:
+            self.mirai_seeker.reset()
+        if restart:
+            self.restart()
+
+    @staticmethod
+    def __validate_data__(train_data, target_column, test_data):
+        """
+        Validates the input data.
+        """
         if not isinstance(train_data, pd.DataFrame):
             raise TypeError('Training data must be an object of pandas.DataFrame')
 
@@ -326,15 +366,22 @@ class Engine:
         if target_column not in train_data.columns:
             raise ValueError('target_column must be a column of train_data')
 
-        self.interrupt()
-        self.train_data = train_data
-        self.train_target = self.train_data.pop(target_column)
-        self.all_features = list(train_data.columns)
-        self.test_data = test_data
-        if self.mirai_seeker is not None:
-            self.mirai_seeker.reset()
-        if restart:
-            self.restart()
+        train_columns = train_data.columns
+        if test_data is not None:
+            test_columns = test_data.columns
+
+            for column in train_columns:
+                if column != target_column and column not in test_columns:
+                    raise ValueError('All input columns in train data must be test data')
+
+        needs_columns_casting = False
+        for column in train_columns:
+            if not isinstance(column, str):
+                if not isinstance(column, int):
+                    raise ValueError('All columns names must be either str or int')
+                needs_columns_casting = True
+
+        return train_data, target_column, test_data, needs_columns_casting
 
     def shuffle_train_data(self, restart=False):
         """
@@ -426,12 +473,15 @@ class Engine:
         self.scores = {}
         self.best_score = None
         self.best_id = None
+        self.ensembler = None
 
         self.mirai_seeker = MiraiSeeker(
             self.config.hyper_search_spaces,
             self.all_features,
             self.config
         )
+
+        self.n_cycles = 0
 
         start = time.time()
         for hyper_search_space in self.config.hyper_search_spaces:
@@ -455,7 +505,6 @@ class Engine:
             self.__update_best__(self.scores[id], id)
 
         total_cycles_duration = time.time() - start
-        n_cycles = 1
 
         will_ensemble = len(self.base_models) > 1 and\
             self.config.ensemble_id is not None
@@ -476,6 +525,8 @@ class Engine:
                 self.__update_best__(self.scores[ensemble_id], ensemble_id)
 
         self.__improvement_trigger__()
+
+        self.n_cycles = 1
 
         while not self.must_interrupt:
 
@@ -511,10 +562,10 @@ class Engine:
                     dump(base_model, self.models_dir + id)
 
             total_cycles_duration += time.time() - start
-            n_cycles += 1
+            self.n_cycles += 1
 
             if will_ensemble:
-                if self.ensembler.optimize(total_cycles_duration/n_cycles):
+                if self.ensembler.optimize(total_cycles_duration/self.n_cycles):
                     self.__update_best__(self.scores[ensemble_id], ensemble_id)
 
                     self.__improvement_trigger__()
@@ -571,9 +622,15 @@ class Engine:
             base_model = self.base_models[id]
             base_models[id] = dict(
                 model_class=base_model.model_class.__name__,
-                parameters=base_model.parameters.copy(),
-                features=base_model.features.copy()
+                parameters=base_model.parameters.copy()
             )
+
+            if len(self.columns_renaming_unmap) > 0:
+                base_models[id]["features"] = [
+                    self.columns_renaming_unmap[col] for col in base_model.features
+                ]
+            else:
+                base_models[id]["features"] = base_model.features.copy()
 
         return dict(
             best_id=self.best_id,
@@ -582,3 +639,95 @@ class Engine:
             ensemble_weights=ensemble_weights,
             base_models=base_models
         )
+
+    def request_report(self, include_features=False):
+        """
+        Returns the report of the current status of the engine in a formatted
+        string.
+
+        :type include_features: bool, optional, default=False
+        :param include_features: Whether to include the list of features on the
+            report or not (may cause some visual mess).
+
+        :rtype: str
+        :returns: The formatted report.
+        """
+        status = self.request_status()
+
+        best_id = status['best_id']
+
+        score = status['scores'][best_id]
+
+        output = '########################\n'
+
+        output += ('best id: {}\n'.format(best_id))
+        output += ('score: {}\n'.format(score))
+
+        weights = status['ensemble_weights']
+
+        if weights is not None:
+            output += ('########################\n')
+            output += ('ensemble weights:\n')
+            weights_ = {}
+            for id in weights:
+                weights_[weights[id]] = id
+            for weight in reversed(sorted(weights_)):
+                id = weights_[weight]
+                output += ('    {}: {}\n'.format(id, weight))
+
+        output += ('########################\n')
+        output += ('all scores:\n')
+        scores = status['scores']
+        scores_ = {}
+        for id in scores:
+            scores_[scores[id]] = id
+        for score in reversed(sorted(scores_)):
+            id = scores_[score]
+            output += ('    {}: {}\n'.format(id, score))
+
+        base_models = status['base_models']
+        for id in sorted(base_models):
+            base_model = base_models[id]
+            features = sorted(base_model['features'])
+            output += ('########################\n')
+            output += ('id: {}\n'.format(id))
+            output += ('model class: {}\n'.format(base_model['model_class']))
+            output += ('n features: {}\n'.format(len(features)))
+            output += ('parameters:\n')
+            parameters = base_model['parameters']
+            for parameter in sorted(parameters):
+                value = parameters[parameter]
+                output += ('    {}: {}\n'.format(parameter, value))
+            if include_features:
+                output += ('features: {}\n'.format(", ".join(features)))
+
+        return output
+
+    def extract_model(self):
+        """
+        Generates an **unfit** model object with methods similar to scikit-learn
+        models. The generated model is the result of the optimizations made by
+        MiraiML, which takes care of the choices of hyperparameters, features and
+        the ensembling weights.
+
+        After extracting the model, you can use it to fit new data.
+
+        :rtype: miraiml.core.MiraiModel
+        :returns: The optimized model object.
+        """
+        if self.n_cycles == 0:
+            return None
+
+        best_id = self.best_id
+        if self.ensembler is None or best_id != self.config.ensemble_id:
+            return MiraiModel([self.base_models[best_id]], None,
+                              self.config.problem_type)
+
+        ensembler = self.ensembler
+        base_models = []
+        weights = []
+        for id in self.base_models:
+            base_models.append(self.base_models[id])
+            weights.append(ensembler.weights[id])
+
+        return MiraiModel(base_models, weights, self.config.problem_type)
