@@ -526,3 +526,79 @@ class Ensembler:
                 dump(self.weights, self.weights_path)
                 optimized = True
         return optimized
+
+
+class MiraiModel:
+    """
+    Represents an unified model optimized by MiraiML.
+    """
+    def __init__(self, base_models, weights, problem_type):
+        self.models = []
+        self.features_lists = []
+        for base_model in base_models:
+            self.models.append(base_model.model_class(**base_model.parameters))
+            self.features_lists.append(base_model.features)
+        self.weights = weights
+        self.problem_type = problem_type
+
+    def fit(self, X, y):
+        """
+        Fits all base models.
+
+        :type X: pandas.DataFrame
+        :param X: The training data.
+
+        :type y: pandas.Series or numpy.ndarray
+        :param y: The target.
+        """
+        for model, features in zip(self.models, self.features_lists):
+            model.fit(X[features], y)
+
+    def __predict__(self, X, method):
+        """
+        Generic prediction function.
+
+        :type X: pandas.DataFrame
+        :param X: The training data.
+
+        :type y: pandas.Series or numpy.ndarray
+        :param y: The target.
+
+        :type method: str
+        :param method: The name of the function to be called.
+        """
+        if self.weights is not None:
+            predictions_sum = [
+                getattr(model, method)(X[features]) for model, features in zip(
+                    self.models, self.features_lists
+                )
+            ]
+            predictions = np.average(predictions_sum, axis=0, weights=self.weights)
+            if self.problem_type == 'regression':
+                return predictions
+            return predictions.round().astype(int)
+        return getattr(self.models[0], method)(X[self.features_lists[0]])
+
+    def predict(self, X):
+        """
+        Predicts the classes for classification problems and the output for
+        regression problems.
+
+        :type X: pandas.DataFrame
+        :param X: The input for new predictions.
+        """
+        return self.__predict__(X, 'predict')
+
+    def predict_proba(self, X):
+        """
+        Predicts the probabilities for each class. Only available for classification
+        problems.
+
+        :type X: pandas.DataFrame
+        :param X: The input for new predictions.
+
+        :raises: ``RuntimeError``
+        """
+        if self.problem_type == 'regression':
+            raise RuntimeError("Cannot compute predict_proba for regressions")
+        return self.__predict__(X, 'predict_proba')

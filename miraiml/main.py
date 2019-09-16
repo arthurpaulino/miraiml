@@ -4,7 +4,7 @@ import time
 import os
 
 from .util import load, dump, is_valid_filename
-from .core import MiraiSeeker, Ensembler
+from .core import MiraiSeeker, Ensembler, MiraiModel
 
 
 class HyperSearchSpace:
@@ -269,9 +269,7 @@ class Engine:
         self.models_dir = config.local_dir + 'models/'
         self.train_data = None
         self.ensembler = None
-        self.needs_columns_casting = False
-        self.columns_renaming_map = {}
-        self.columns_renaming_unmap = {}
+        self.n_cycles = 0
 
     @staticmethod
     def __validate__(config, on_improvement):
@@ -328,11 +326,14 @@ class Engine:
 
         :raises: ``TypeError``, ``ValueError``
         """
-        train_data, target_column, test_data = self.__validate_data__(
-            train_data, target_column, test_data
-        )
+        self.columns_renaming_map = {}
+        self.columns_renaming_unmap = {}
 
-        if self.needs_columns_casting:
+        train_data, target_column, test_data,
+        needs_columns_casting = self.__validate_data__(train_data, target_column,
+                                                       test_data)
+
+        if needs_columns_casting:
             for column in train_data.columns:
                 column_renamed = str(column)
                 self.columns_renaming_map[column] = column_renamed
@@ -342,9 +343,9 @@ class Engine:
                 test_data = test_data.rename(columns=self.columns_renaming_map)
 
         self.interrupt()
-        self.train_data = train_data
-        self.train_target = self.train_data.pop(target_column)
-        self.all_features = list(train_data.columns)
+        self.train_data = train_data.drop(columns=target_column)
+        self.train_target = train_data[target_column]
+        self.all_features = list(self.train_data.columns)
         self.test_data = test_data
         if self.mirai_seeker is not None:
             self.mirai_seeker.reset()
@@ -372,13 +373,14 @@ class Engine:
                 if column != target_column and column not in test_columns:
                     raise ValueError('All input columns in train data must be test data')
 
+        needs_columns_casting = False
         for column in train_columns:
             if not isinstance(column, str):
                 if not isinstance(column, int):
                     raise ValueError('All columns names must be either str or int')
-                self.needs_columns_casting = True
+                needs_columns_casting = True
 
-        return train_data, target_column, test_data
+        return train_data, target_column, test_data, needs_columns_casting
 
     def shuffle_train_data(self, restart=False):
         """
@@ -470,12 +472,15 @@ class Engine:
         self.scores = {}
         self.best_score = None
         self.best_id = None
+        self.ensembler = None
 
         self.mirai_seeker = MiraiSeeker(
             self.config.hyper_search_spaces,
             self.all_features,
             self.config
         )
+
+        self.n_cycles = 0
 
         start = time.time()
         for hyper_search_space in self.config.hyper_search_spaces:
@@ -499,7 +504,6 @@ class Engine:
             self.__update_best__(self.scores[id], id)
 
         total_cycles_duration = time.time() - start
-        n_cycles = 1
 
         will_ensemble = len(self.base_models) > 1 and\
             self.config.ensemble_id is not None
@@ -520,6 +524,8 @@ class Engine:
                 self.__update_best__(self.scores[ensemble_id], ensemble_id)
 
         self.__improvement_trigger__()
+
+        self.n_cycles = 1
 
         while not self.must_interrupt:
 
@@ -555,10 +561,10 @@ class Engine:
                     dump(base_model, self.models_dir + id)
 
             total_cycles_duration += time.time() - start
-            n_cycles += 1
+            self.n_cycles += 1
 
             if will_ensemble:
-                if self.ensembler.optimize(total_cycles_duration/n_cycles):
+                if self.ensembler.optimize(total_cycles_duration/self.n_cycles):
                     self.__update_best__(self.scores[ensemble_id], ensemble_id)
 
                     self.__improvement_trigger__()
@@ -618,7 +624,7 @@ class Engine:
                 parameters=base_model.parameters.copy()
             )
 
-            if self.needs_columns_casting:
+            if len(self.columns_renaming_unmap) > 0:
                 base_models[id]["features"] = [
                     self.columns_renaming_unmap[col] for col in base_model.features
                 ]
@@ -695,3 +701,32 @@ class Engine:
                 output += ('features: {}\n'.format(", ".join(features)))
 
         return output
+
+    def extract_model(self):
+        """
+        Generates an **unfit** model object with methods similar to scikit-learn
+        models. The generated model is the result of the optimizations made by
+        MiraiML, which takes care of the choices of hyperparameters, features and
+        the ensembling weights.
+
+        After extracting the model, you can use it to fit new data.
+
+        :rtype: miraiml.core.MiraiModel
+        :returns: The optimized model object.
+        """
+        if self.n_cycles == 0:
+            return None
+
+        best_id = self.best_id
+        if self.ensembler is None or best_id != self.config.ensemble_id:
+            return MiraiModel([self.base_models[best_id]], None,
+                              self.config.problem_type)
+
+        ensembler = self.ensembler
+        base_models = []
+        weights = []
+        for id in self.base_models:
+            base_models.append(self.base_models[id])
+            weights.append(ensembler.weights[id])
+
+        return MiraiModel(base_models, weights, self.config.problem_type)

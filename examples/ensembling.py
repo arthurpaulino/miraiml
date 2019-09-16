@@ -45,8 +45,8 @@ engine.load_data(train_data, 'target_class', test_data)
 print('Training...')
 engine.restart()
 
-# Let's wait 20 seconds and interrupt it
-sleep(20)
+# Let's wait 10 seconds and interrupt it
+sleep(10)
 engine.interrupt()
 
 # Let's explore the status object
