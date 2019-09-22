@@ -44,7 +44,7 @@ to work on (e.g.: `issue-42`)
 ~/miraiml$ git checkout -b issue-42
 ```
 
-Now you can start coding.
+Install the development dependencies with `make develop` and now you're all set.
 
 ### While coding
 
@@ -56,23 +56,27 @@ Remember to document everything you code. You can see the rendered version of th
 documentation by calling `~/miraiml$ make docs` (requires [Sphinx][sphinx] and
 [sphinx-rtd-theme][sphinx_rtd]).
 
-Before commiting your changes, remember to increment the package version according
-to the [Semantic Versioning][semver] specification. As a shortcut, the version can
-be incremented by calling `make` with one of the following directives: `major`,
-`minor` or `patch`.
+After coding the functionality, please write the respective unit test in the
+`tests` folder. In order to test it, you'll need to install the lib with your code
+by calling `make install` and then call `make tests`.
 
 Feel free to call `~/miraiml$ make help` for more information on *make* directives.
 
 ### After coding
 
-Commit your changes and push them to the `dev` branch of your own fork of the
-repository and then go to the [original repository page][repo]. You should be able
-to see a button to open a pull request.
+Before commiting your changes, remember to increment the package version according
+to the [Semantic Versioning][semver] specification. The version is defined as a
+string on `miraiml/__init__.py`.
+
+Commit your changes and push them to the corresponding branch (e.g.: `issue-42`)
+of your own fork of the repository and then go to the
+[original repository page][repo]. You should be able to see a button to open a
+pull request.
 
 Make sure you select the `dev` branch as the target of your merge request. Insert
 the link of to the issue on your pull request description and Github will
-automatically mention that reference on the issue. It will make things a lot easier
-to keep track of.
+automatically mention that reference on the issue after you open the pull request.
+It will make things a lot easier to keep track of.
 
 [issues]: https://github.com/arthurpaulino/miraiml/issues
 [pep8]: https://www.python.org/dev/peps/pep-0008/
