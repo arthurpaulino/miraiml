@@ -9,7 +9,6 @@ miraiml.core
 .. automodule:: miraiml.core
     :members:
     :undoc-members:
-    :show-inheritance:
 
 miraiml.util
 ------------
@@ -17,4 +16,3 @@ miraiml.util
 .. automodule:: miraiml.util
     :members:
     :undoc-members:
-    :show-inheritance:

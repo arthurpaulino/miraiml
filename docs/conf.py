@@ -32,6 +32,7 @@ author = 'Arthur Paulino'
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
+    'sphinx.ext.viewcode',
     'sphinx.ext.mathjax'
 ]
 
@@ -58,6 +59,7 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 html_theme = 'sphinx_rtd_theme'
+html_show_sourcelink = False
 
 
 # -- Extension configuration -------------------------------------------------

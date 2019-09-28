@@ -234,13 +234,15 @@ class MiraiSeeker:
 
         :raises: ``KeyError``
         """
-        if rnd.uniform(0, 1) > 0.5 or not self.is_ready(id):
+        if rnd.choice([0, 1]) == 1 or not self.is_ready(id):
             parameters, features = self.random_search(id)
         else:
-            if rnd.uniform(0, 1) > 0.5:
-                parameters, features = self.naive_search(id)
-            else:
-                parameters, features = self.linear_regression_search(id)
+            available_method_names = [method_name for method_name in dir(self)
+                                      if method_name.endswith("_search")
+                                      and method_name != "random_search"]
+
+            method_name = rnd.choice(available_method_names)
+            parameters, features = getattr(self, method_name)(id)
 
         hyper_search_space = self.hyper_search_spaces_dict[id]
         if len(parameters) > 0:
