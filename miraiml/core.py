@@ -543,7 +543,7 @@ class MiraiModel:
 
     def fit(self, X, y):
         """
-        Fits all base models.
+        Fits new data.
 
         :type X: pandas.DataFrame
         :param X: The training data.

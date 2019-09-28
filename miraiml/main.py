@@ -125,7 +125,8 @@ class Config:
         or not.
 
     :type n_folds: int, optional, default=5
-    :param n_folds: The number of folds for the fitting/predicting process.
+    :param n_folds: The number of folds for the fitting/predicting process. The
+        minimum value allowed is 2.
 
     :type stratified: bool, optional, default=True
     :param stratified: Whether to stratify folds on target or not. Only used if
@@ -220,7 +221,7 @@ class Config:
         if not isinstance(n_folds, int):
             raise TypeError('n_folds must be an integer')
         if n_folds < 2:
-            raise ValueError('n_folds greater than 1')
+            raise ValueError('n_folds must be greater than 1')
 
         if not isinstance(stratified, bool):
             raise TypeError('stratified must be a boolean')
@@ -708,9 +709,16 @@ class Engine:
         Generates an **unfit** model object with methods similar to scikit-learn
         models. The generated model is the result of the optimizations made by
         MiraiML, which takes care of the choices of hyperparameters, features and
-        the ensembling weights.
+        the ensembling weights. After extracting the model, you can use it to fit
+        new data.
 
-        After extracting the model, you can use it to fit new data.
+        This method may return `None` if the engine hasn't completed at least one
+        cycle of experiments.
+
+        .. warning::
+            The extracted model is likely to perform worse than the engine when
+            it comes down to making predictions due to the way that MiraiML
+            ensembles out-of-folds predictions even for each base model.
 
         :rtype: miraiml.core.MiraiModel
         :returns: The optimized model object.
