@@ -40,8 +40,10 @@ your own. Didactic tutorials can be found on the
 `examples <https://github.com/arthurpaulino/miraiml/tree/master/examples>`_
 directory.
 
-Base models: fitting, predicting and scoring
---------------------------------------------
+Base models
+-----------
+
+.. rubric:: Fitting, predicting and scoring
 
 .. _base_model:
 

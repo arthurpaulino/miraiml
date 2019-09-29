@@ -544,7 +544,8 @@ class Engine:
 
     def restart(self):
         """
-        Interrupts the engine and starts again from last checkpoint (if any).
+        Interrupts the engine and starts again from last checkpoint (if any). It
+        is also used to start the engine for the first time.
 
         :raises: ``RuntimeError``, ``KeyError``
         """
