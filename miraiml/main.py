@@ -1,5 +1,6 @@
 from threading import Thread
 import pandas as pd
+import warnings
 import time
 import os
 
@@ -22,7 +23,8 @@ class HyperSearchSpace:
 
     :type parameters_values: dict, optional, default=None
     :param parameters_values: A dictionary containing lists of values to be
-        tested as parameters when instantiating objects of ``model_class``.
+        tested as parameters when instantiating objects of ``model_class`` for
+        ``id``.
 
     :type parameters_rules: function, optional, default=lambda x: None
     :param parameters_rules: A function that constrains certain parameters because
@@ -492,6 +494,24 @@ class Engine:
             base_model_path = self.models_dir + id
             if os.path.exists(base_model_path):
                 base_model = load(base_model_path)
+                parameters = base_model.parameters
+                parameters_values = hyper_search_space.parameters_values
+                for key, value in zip(parameters.keys(), parameters.values()):
+                    if key not in parameters_values:
+                        warnings.warn(
+                            "Parameter " + str(key) + ", set with value " +
+                            str(value) + ", from checkpoint is not on the " +
+                            "provided hyper search space for the id " + str(id),
+                            RuntimeWarning
+                        )
+                    else:
+                        if value not in parameters_values[key]:
+                            warnings.warn(
+                                "Value " + str(value) + " for parameter " + str(key) +
+                                " from checkpoint is not on the provided hyper " +
+                                "search space for the id " + str(id),
+                                RuntimeWarning
+                            )
             else:
                 base_model = self.mirai_seeker.seek(hyper_search_space.id)
                 dump(base_model, base_model_path)
@@ -712,8 +732,8 @@ class Engine:
         the ensembling weights. After extracting the model, you can use it to fit
         new data.
 
-        This method may return `None` if the engine hasn't completed at least one
-        cycle of experiments.
+        This method may return ``None`` if the engine hasn't completed at least
+        one cycle of experiments.
 
         .. warning::
             The extracted model is likely to perform worse than the engine when
