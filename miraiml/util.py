@@ -52,7 +52,8 @@ def sample_random_len(lst):
     return rnd.sample(lst, max(1, math.ceil(rnd.random()*len(lst))))
 
 
-__valid_chars__ = frozenset("-_.() %s%s" % (string.ascii_letters, string.digits))
+__valid_filename_chars__ = frozenset("-_.() %s%s" % (string.ascii_letters,
+                                                     string.digits))
 
 
 def is_valid_filename(filename):
@@ -69,6 +70,29 @@ def is_valid_filename(filename):
     if len(filename) == 0 or '..' in filename or filename == '.':
         return False
     for char in filename:
-        if char not in __valid_chars__:
+        if char not in __valid_filename_chars__:
+            return False
+    return True
+
+
+__valid_pipeline_chars__ = frozenset("_%s%s" % (string.ascii_letters,
+                                                string.digits))
+
+
+def is_valid_pipeline_name(pipeline_name):
+    """
+    Tells whether a string can be used to compose pipelines or not.
+
+    :type pipeline_name: str
+    :param pipeline_name: The file name.
+
+    :rtype: bool
+    :returns: Whether ``pipeline_name`` is a valid name or not.
+    """
+    if len(pipeline_name) == 0 or '__' in pipeline_name \
+            or pipeline_name[0] in string.digits:
+        return False
+    for char in pipeline_name:
+        if char not in __valid_pipeline_chars__:
             return False
     return True

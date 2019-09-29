@@ -4,8 +4,9 @@ import warnings
 import time
 import os
 
-from .util import load, dump, is_valid_filename
-from .core import MiraiSeeker, Ensembler, MiraiModel
+from .util import is_valid_filename, is_valid_pipeline_name
+from .core import MiraiSeeker, Ensembler, MiraiModel, BasePipelineClass
+from .core import load_base_model, dump_base_model
 
 
 class HyperSearchSpace:
@@ -98,6 +99,118 @@ class HyperSearchSpace:
             raise TypeError('parameters_values must be None or a dictionary')
         if not callable(parameters_rules):
             raise TypeError('parameters_rules must be a function')
+
+
+def compose_pipeline_class(class_name, steps):
+    """
+    Builds a pipeline class that can be instantiated with particular parameters
+    for each of its transformers/estimator without needing to call ``set_params``
+    as you would do with scikit-learn's Pipeline when performing hyperparameters
+    optimizations.
+
+    As this function returns a ``type``, you can create as many classes as you
+    want as long as you provide a different ``class_name`` for each of them,
+    otherwise the definitions would overlap and past definitions would be
+    overwritten.
+
+    Similarly to scikit-learn's Pipeline, ``steps`` is a list of tuples
+    containing an alias and the respective pipeline element. Although, since
+    this function is a class factory, you shouldn't instantiate the
+    transformer/estimator as you would do with scikit-learn's Pipeline. Thus,
+    this is how ``compose_pipeline_class`` should be called:
+
+    :Example:
+
+    ::
+
+        from sklearn.ensemble import RandomForestClassifier
+        from sklearn.preprocessing import StandardScaler
+        from miraiml import HyperSearchSpace
+
+        MyPipelineClass = HyperSearchSpace.compose_pipeline_class(
+            class_name = 'MyPipelineClass',
+            steps = [
+                ('scaler', StandardScaler), # StandardScaler instead of StandardScaler()
+                ('rfc', RandomForestClassifier) # No instantiation either
+            ]
+        )
+
+    And then, in order to instantiate ``MyPipelineClass`` with the desired
+    parameters, you just need to refer to them as a concatenation of their
+    respective class aliases and their names, separated by ``'__'``.
+
+    :Example:
+
+    ::
+
+        pipeline = MyPipelineClass(scaler__with_mean=False, rfc__max_depth=3)
+
+    **The purpose** of such pipeline classes is that they can work as base
+    models to build instances of :class:`HyperSearchSpace`.
+
+    :Example:
+
+    ::
+
+        hyper_search_space = HyperSearchSpace(
+            model_class=MyPipelineClass,
+            id='MyPipelineClass',
+            parameters_values=dict(
+                scaler__with_mean=[True, False],
+                scaler__with_std=[True, False],
+                rfc__max_depth=[3, 4, 5, 6]
+            )
+        )
+
+    .. warning::
+        None of the strings used to compose pipeline classes can start with
+        numbers or contain ``'__'``. Also, repeated aliases are not allowed.
+
+    .. note::
+        You can check the documentation for the class from which the returned
+        class inherits here: :class:`miraiml.core.BasePipelineClass`.
+
+    :rtype: type
+    :returns: The composed pipeline class
+
+    :raises: ``ValueError``, ``TypeError``, ``NotImplementedError``
+    """
+
+    def validate_type_and_content(name):
+        if not isinstance(name, str):
+            raise TypeError('{} is not a string'.format(name))
+        if not is_valid_pipeline_name(name):
+            raise ValueError('{} is not allowed'.format(name))
+
+    validate_type_and_content(class_name)
+
+    aliases = []
+
+    for alias, class_type in steps:
+        validate_type_and_content(alias)
+
+        class_content = dir(class_type)
+
+        if 'fit' not in class_content:
+            raise NotImplementedError('{} must implement fit'.format(class_type.__name__))
+
+        aliases.append(alias)
+
+        if len(aliases) < len(steps):
+            if 'transform' not in class_content:
+                raise NotImplementedError(
+                    '{} must implement transform'.format(class_type.__name__)
+                )
+        else:
+            if 'predict' not in class_content and 'predict_proba' not in class_content:
+                raise NotImplementedError(
+                    '{} must implement predict or predict_proba'.format(class_type.__name__)
+                )
+
+    if len(set(aliases)) != len(aliases):
+        raise ValueError('Repeated aliases are not allowed')
+
+    return type(class_name, (BasePipelineClass,), dict(steps=steps))
 
 
 class Config:
@@ -299,8 +412,8 @@ class Engine:
         Makes the engine stop on the first opportunity.
 
         .. note::
-            This method is **not** asynchronous. It will wait for the engine to
-            stop.
+            This method is **not** asynchronous. It will wait until the engine
+            stops.
         """
         self.must_interrupt = True
         if self.ensembler is not None:
@@ -492,29 +605,30 @@ class Engine:
                 break
             id = hyper_search_space.id
             base_model_path = self.models_dir + id
+            base_model_class = hyper_search_space.model_class
             if os.path.exists(base_model_path):
-                base_model = load(base_model_path)
+                base_model = load_base_model(base_model_class, base_model_path)
                 parameters = base_model.parameters
                 parameters_values = hyper_search_space.parameters_values
                 for key, value in zip(parameters.keys(), parameters.values()):
                     if key not in parameters_values:
                         warnings.warn(
-                            "Parameter " + str(key) + ", set with value " +
-                            str(value) + ", from checkpoint is not on the " +
-                            "provided hyper search space for the id " + str(id),
+                            'Parameter ' + str(key) + ', set with value ' +
+                            str(value) + ', from checkpoint is not on the ' +
+                            'provided hyper search space for the id ' + str(id),
                             RuntimeWarning
                         )
                     else:
                         if value not in parameters_values[key]:
                             warnings.warn(
-                                "Value " + str(value) + " for parameter " + str(key) +
-                                " from checkpoint is not on the provided hyper " +
-                                "search space for the id " + str(id),
+                                'Value ' + str(value) + ' for parameter ' + str(key) +
+                                ' from checkpoint is not on the provided hyper ' +
+                                'search space for the id ' + str(id),
                                 RuntimeWarning
                             )
             else:
                 base_model = self.mirai_seeker.seek(hyper_search_space.id)
-                dump(base_model, base_model_path)
+                dump_base_model(base_model, base_model_path)
             self.base_models[id] = base_model
 
             train_predictions, test_predictions, score = base_model.predict(
@@ -580,7 +694,7 @@ class Engine:
 
                     self.__improvement_trigger__()
 
-                    dump(base_model, self.models_dir + id)
+                    dump_base_model(base_model, self.models_dir + id)
 
             total_cycles_duration += time.time() - start
             self.n_cycles += 1
@@ -647,11 +761,11 @@ class Engine:
             )
 
             if len(self.columns_renaming_unmap) > 0:
-                base_models[id]["features"] = [
+                base_models[id]['features'] = [
                     self.columns_renaming_unmap[col] for col in base_model.features
                 ]
             else:
-                base_models[id]["features"] = base_model.features.copy()
+                base_models[id]['features'] = base_model.features.copy()
 
         return dict(
             best_id=self.best_id,
@@ -720,7 +834,7 @@ class Engine:
                 value = parameters[parameter]
                 output += ('    {}: {}\n'.format(parameter, value))
             if include_features:
-                output += ('features: {}\n'.format(", ".join(features)))
+                output += ('features: {}\n'.format(', '.join(features)))
 
         return output
 

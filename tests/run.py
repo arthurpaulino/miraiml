@@ -1,11 +1,12 @@
 from sklearn.linear_model import LinearRegression, Lasso
+from sklearn.preprocessing import StandardScaler
 from sklearn.datasets import fetch_california_housing
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import r2_score
 from time import sleep
 import pandas as pd
 
-from miraiml import HyperSearchSpace, Config, Engine
+from miraiml import HyperSearchSpace, compose_pipeline_class, Config, Engine
 
 TEST_FOLDER = '.pytest_cache'
 
@@ -15,9 +16,24 @@ def test_run():
     data = pd.DataFrame(X)
     data['target'] = y
 
+    Pipeline = compose_pipeline_class(
+        'Pipeline',
+        [('scaler', StandardScaler), ('lin_reg', LinearRegression)]
+    )
+
     hyper_search_spaces = [
         HyperSearchSpace(model_class=LinearRegression, id='Linear Regression'),
-        HyperSearchSpace(model_class=Lasso, id='Lasso')
+        HyperSearchSpace(model_class=Lasso, id='Lasso'),
+        HyperSearchSpace(
+            model_class=Pipeline,
+            id='Pipeline',
+            parameters_values=dict(
+                scaler__with_mean=[True, False],
+                scaler__with_std=[True, False],
+                lin_reg__fit_intercept=[True, False],
+                lin_reg__normalize=[True, False]
+            )
+        )
     ]
 
     config = Config(
@@ -48,7 +64,8 @@ def test_run():
 
     status = engine.request_status()
 
-    if len(status['scores']) != 3 or len(status['ensemble_weights']) != 2:
+    if len(status['scores']) != len(hyper_search_spaces) + 1 or \
+            len(status['ensemble_weights']) != len(hyper_search_spaces):
         raise AssertionError()
 
     if status['predictions'].shape[0] != test_data.shape[0]:
@@ -66,7 +83,7 @@ def test_run():
 
     engine.load_data(train_data, 'target', restart=True)
 
-    sleep(2)
+    sleep(5)
 
     if not engine.is_running():
         raise AssertionError()

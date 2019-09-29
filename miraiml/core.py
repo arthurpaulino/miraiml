@@ -1,12 +1,6 @@
 """
 :mod:`miraiml.core` contains internal classes responsible for the optimization
 process.
-
-- :class:`miraiml.core.BaseModel` represents a solution
-- :class:`miraiml.core.MiraiSeeker` implements the strategies to search for good
-  solutions
-- :class:`miraiml.core.Ensembler` searches for smart ways of combining the current
-  solutions o generate a better one
 """
 
 import random as rnd
@@ -17,6 +11,7 @@ import os
 
 from sklearn.model_selection import StratifiedKFold, KFold
 from sklearn.linear_model import LinearRegression
+from sklearn.pipeline import Pipeline
 
 from .util import load, dump, sample_random_len
 
@@ -115,6 +110,43 @@ class BaseModel:
             test_predictions /= config.n_folds
         return (train_predictions, test_predictions,
                 config.score_function(y_train, train_predictions))
+
+
+def dump_base_model(base_model, path):
+    """
+    Saves the characteristics of a base model as a checkpoint.
+
+    :type base_model: miraiml.core.BaseModel
+    :param base_model: The base model to be saved
+
+    :type path: str
+    :param path: The path to save the base model
+
+    :rtype: tuple
+    :returns: ``(train_predictions, test_predictions, score)``
+    """
+    attributes = dict(parameters=base_model.parameters, features=base_model.features)
+    dump(attributes, path)
+
+
+def load_base_model(model_class, path):
+    """
+    Loads the characteristics of a base model from disk and returns its respective
+    instance of :class:`miraiml.core.BaseModel`.
+
+    :type model_class: type
+    :param model_class: The model class related to the base model
+
+    :type path: str
+    :param path: The path to load the base model from
+
+    :rtype: miraiml.core.BaseModel
+    :returns: The base model loaded from disk
+    """
+    attributes = load(path)
+    return BaseModel(model_class=model_class,
+                     parameters=attributes['parameters'],
+                     features=attributes['features'])
 
 
 class MiraiSeeker:
@@ -390,7 +422,7 @@ class MiraiSeeker:
 
 class Ensembler:
     """
-    Performs the ensemble of the base models.
+    Performs the ensemble of the base models and optimizes its weights.
 
     Read more in the :ref:`User Guide <ensemble>`.
 
@@ -533,6 +565,15 @@ class Ensembler:
 class MiraiModel:
     """
     Represents an unified model optimized by MiraiML.
+
+    :type base_models: list
+    :param base_models: The list of base_models that will be used.
+
+    :type weights: dict
+    :param weights: The set of weights for each base_model when ensembling.
+
+    :type problem_type: str
+    :param problem_type: The problem type: ``'regression'`` or ``'classification'``.
     """
     def __init__(self, base_models, weights, problem_type):
         self.models = []
@@ -552,9 +593,14 @@ class MiraiModel:
 
         :type y: pandas.Series or numpy.ndarray
         :param y: The target.
+
+        :rtype: miraiml.core.MiraiModel
+        :returns: self
         """
         for model, features in zip(self.models, self.features_lists):
             model.fit(X[features], y)
+
+        return self
 
     def __predict__(self, X, method):
         """
@@ -568,6 +614,9 @@ class MiraiModel:
 
         :type method: str
         :param method: The name of the function to be called.
+
+        :rtype: numpy.ndarray
+        :returns: Generic predictions
         """
         if self.weights is not None:
             predictions_sum = [
@@ -588,6 +637,9 @@ class MiraiModel:
 
         :type X: pandas.DataFrame
         :param X: The input for new predictions.
+
+        :rtype: numpy.ndarray
+        :returns: The set of predictions
         """
         return self.__predict__(X, 'predict')
 
@@ -599,8 +651,98 @@ class MiraiModel:
         :type X: pandas.DataFrame
         :param X: The input for new predictions.
 
+        :rtype: numpy.ndarray
+        :returns: The probabilities for each class
+
         :raises: ``RuntimeError``
         """
         if self.problem_type == 'regression':
             raise RuntimeError("Cannot compute predict_proba for regressions")
         return self.__predict__(X, 'predict_proba')
+
+
+class BasePipelineClass:
+    """
+    This is the base class for the custom pipeline classes.
+
+    .. warning::
+        Do not instantiate this class directly.
+    """
+    def __init__(self, **params):
+        self.pipeline = Pipeline(
+            # self.steps has been set from outside at this point!
+            [(alias, class_type()) for (alias, class_type) in self.steps]
+        )
+        self.set_params(**params)
+
+    def set_params(self, **params):
+        """
+        Sets the parameters for the pipeline.
+
+        :rtype: miraiml.core.BasePipelineClass
+        :returns: self
+        """
+        allowed_params = self.get_params()
+        for param in params:
+            if param not in allowed_params:
+                raise ValueError(
+                    "Parameter " + param + " is incompatible. The allowed " +
+                    "parameters are:\n" + ", ".join(allowed_params)
+                )
+        self.pipeline.set_params(**params)
+        return self
+
+    def get_params(self):
+        """
+        Gets the list of parameters that can be set.
+
+        :type X: iterable
+        :param X: Data to predict on.
+
+        :rtype: list
+        :returns: The list of allowed parameters
+        """
+        params = self.pipeline.get_params()
+        prefixes = [alias + "__" for alias, _ in self.steps]
+        return [param for param in params if
+                any([param.startswith(prefix) for prefix in prefixes])]
+
+    def fit(self, X, y):
+        """
+        Fits the pipeline.
+
+        :type X: iterable
+        :param X: The training data.
+
+        :type y: iterable
+        :param y: The target.
+
+        :rtype: miraiml.core.BasePipelineClass
+        :returns: self
+        """
+        self.pipeline.fit(X, y)
+        return self
+
+    def predict(self, X):
+        """
+        Returns the predictions.
+
+        :type X: iterable
+        :param X: Data to predict on.
+
+        :rtype: numpy.ndarray
+        :returns: The set of predictions
+        """
+        return self.pipeline.predict(X)
+
+    def predict_proba(self, X):
+        """
+        Returns the probabilities for each class.
+
+        :type X: iterable
+        :param X: Data to predict on.
+
+        :rtype: numpy.ndarray
+        :returns: The probabilities for each class
+        """
+        return self.pipeline.predict_proba(X)

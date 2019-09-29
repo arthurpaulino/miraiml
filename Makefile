@@ -1,4 +1,4 @@
-.PHONY: install develop flake tests docs release upload_test upload_pypi help
+.PHONY: install develop flake tests docs release upload_test upload_pypi clean help
 
 install:
 	@pip install -r requirements.txt && pip install .
@@ -15,6 +15,9 @@ tests:
 docs:
 	@cd docs && make clean && make html
 	@echo -e 'ctrl+click -> \e]8;;file://${PWD}/docs/_build/html/index.html\aMiraiML Docs\e]8;;\a'
+
+clean:
+	@rm -rf MANIFEST __pycache__ dist .pytest_cache docs/_build miraiml/__pycache__ tests/__pycache__
 
 release:
 	@rm -rf dist && python setup.py sdist
@@ -37,3 +40,5 @@ help:
 	@echo '	docs'
 	@echo '		Cleans and builds html files for MiraiML Docs'
 	@echo '		Outputs a clickable link for the local index page'
+	@echo '	clean'
+	@echo '		Removes all temporary files'
