@@ -9,11 +9,6 @@ miraiml.HyperSearchSpace
 .. autoclass:: miraiml.HyperSearchSpace
     :members:
 
-miraiml.compose_pipeline_class
-------------------------------
-
-.. autofunction:: miraiml.compose_pipeline_class
-
 miraiml.Config
 --------------
 
@@ -37,3 +32,8 @@ miraiml.Engine
         request_status
         request_report
         extract_model
+
+miraiml.extras
+--------------
+
+.. autofunction:: miraiml.extras.compose_pipeline_class

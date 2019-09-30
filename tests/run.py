@@ -6,7 +6,8 @@ from sklearn.metrics import r2_score
 from time import sleep
 import pandas as pd
 
-from miraiml import HyperSearchSpace, compose_pipeline_class, Config, Engine
+from miraiml import HyperSearchSpace, Config, Engine
+from miraiml.extras import compose_pipeline_class
 
 TEST_FOLDER = '.pytest_cache'
 

@@ -32,9 +32,9 @@ Usage
 -----
 
 1. Install: ``$ pip install miraiml``
-2. Now, inside a Python environment, import the main classes:
+2. Now, inside a Python environment, import the main components:
 
->>> from miraiml import HyperSearchSpace, Config, Engine
+>>> from miraiml import HyperSearchSpace, Config, Engine, extras
 
 Some didactic tutorials can be found in the examples_ directory. Or `Read the
 Docs`_ for a better understanding of MiraiML.
