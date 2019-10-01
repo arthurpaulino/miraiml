@@ -2,17 +2,12 @@ from .util import is_valid_pipeline_name
 from .core import BasePipelineClass
 
 
-def compose_pipeline_class(class_name, steps):
+def compose_pipeline_class(steps):
     """
     Builds a pipeline class that can be instantiated with particular parameters
     for each of its transformers/estimator without needing to call ``set_params``
     as you would do with scikit-learn's Pipeline when performing hyperparameters
     optimizations.
-
-    As this function returns a ``type``, you can create as many classes as you
-    want as long as you provide a different ``class_name`` for each of them,
-    otherwise the definitions would overlap and past definitions would be
-    overwritten.
 
     Similarly to scikit-learn's Pipeline, ``steps`` is a list of tuples
     containing an alias and the respective pipeline element. Although, since
@@ -29,7 +24,6 @@ def compose_pipeline_class(class_name, steps):
         from miraiml.extra import compose_pipeline_class
 
         MyPipelineClass = compose_pipeline_class(
-            class_name = 'MyPipelineClass',
             steps = [
                 ('scaler', StandardScaler), # StandardScaler instead of StandardScaler()
                 ('rfc', RandomForestClassifier) # No instantiation either
@@ -77,18 +71,14 @@ def compose_pipeline_class(class_name, steps):
     :raises: ``ValueError``, ``TypeError``, ``NotImplementedError``
     """
 
-    def validate_type_and_content(name):
-        if not isinstance(name, str):
-            raise TypeError('{} is not a string'.format(name))
-        if not is_valid_pipeline_name(name):
-            raise ValueError('{} is not allowed'.format(name))
-
-    validate_type_and_content(class_name)
-
     aliases = []
 
     for alias, class_type in steps:
-        validate_type_and_content(alias)
+        if not isinstance(alias, str):
+            raise TypeError('{} is not a string'.format(alias))
+
+        if not is_valid_pipeline_name(alias):
+            raise ValueError('{} is not allowed for an alias'.format(alias))
 
         class_content = dir(class_type)
 
@@ -111,4 +101,4 @@ def compose_pipeline_class(class_name, steps):
     if len(set(aliases)) != len(aliases):
         raise ValueError('Repeated aliases are not allowed')
 
-    return type(class_name, (BasePipelineClass,), dict(steps=steps))
+    return type('MiraiPipeline', (BasePipelineClass,), dict(steps=steps))

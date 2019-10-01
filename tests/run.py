@@ -18,7 +18,6 @@ def test_run():
     data['target'] = y
 
     Pipeline = compose_pipeline_class(
-        'Pipeline',
         [('scaler', StandardScaler), ('lin_reg', LinearRegression)]
     )
 
