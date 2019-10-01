@@ -65,6 +65,9 @@ def compose_pipeline_class(steps):
         You can check the documentation for the class from which the returned
         class inherits here: :class:`miraiml.core.BasePipelineClass`.
 
+    :type steps: list
+    :param steps: The list of pairs (alias, class) to define the pipeline.
+
     :rtype: type
     :returns: The composed pipeline class
 
