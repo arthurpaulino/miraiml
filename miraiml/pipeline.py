@@ -1,3 +1,6 @@
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.preprocessing import StandardScaler
+
 from .util import is_valid_pipeline_name
 from .core import BasePipelineClass
 
@@ -105,3 +108,12 @@ def compose_pipeline_class(steps):
         raise ValueError('Repeated aliases are not allowed')
 
     return type('MiraiPipeline', (BasePipelineClass,), dict(steps=steps))
+
+
+class Test(compose_pipeline_class([('scaler', StandardScaler),
+                                   ('rfc', RandomForestClassifier)])):
+    """
+    Testing doc.
+    """
+    def __init__(self):
+        super().__init__()

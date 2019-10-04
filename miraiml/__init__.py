@@ -12,7 +12,7 @@ You can import them by doing
 """
 
 __version__ = '2.2.0'
-__all__ = ['HyperSearchSpace', 'Config', 'Engine', 'extras']
+__all__ = ['HyperSearchSpace', 'Config', 'Engine', 'pipeline']
 
 from .main import HyperSearchSpace, Config, Engine
-from . import extras
+from . import pipeline

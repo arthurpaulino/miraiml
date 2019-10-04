@@ -33,7 +33,9 @@ miraiml.Engine
         request_report
         extract_model
 
-miraiml.extras
---------------
+miraiml.pipeline
+----------------
 
-.. autofunction:: miraiml.extras.compose_pipeline_class
+.. autofunction:: miraiml.pipeline.compose_pipeline_class
+
+.. autoclass:: miraiml.pipeline.Test
