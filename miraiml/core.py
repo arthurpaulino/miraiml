@@ -663,10 +663,10 @@ class MiraiModel:
 
 class BasePipelineClass:
     """
-    This is the base class for the custom pipeline classes.
+    This is the base class for your custom pipeline classes.
 
     .. warning::
-        Do not instantiate this class directly.
+        Instantiating this class directly **does not work**.
     """
     def __init__(self, **params):
         self.pipeline = Pipeline(
@@ -674,23 +674,6 @@ class BasePipelineClass:
             [(alias, class_type()) for (alias, class_type) in self.steps]
         )
         self.set_params(**params)
-
-    def set_params(self, **params):
-        """
-        Sets the parameters for the pipeline.
-
-        :rtype: miraiml.core.BasePipelineClass
-        :returns: self
-        """
-        allowed_params = self.get_params()
-        for param in params:
-            if param not in allowed_params:
-                raise ValueError(
-                    "Parameter " + param + " is incompatible. The allowed " +
-                    "parameters are:\n" + ", ".join(allowed_params)
-                )
-        self.pipeline.set_params(**params)
-        return self
 
     def get_params(self):
         """
@@ -707,9 +690,27 @@ class BasePipelineClass:
         return [param for param in params if
                 any([param.startswith(prefix) for prefix in prefixes])]
 
+    def set_params(self, **params):
+        """
+        Sets the parameters for the pipeline. You can check the parameters that
+        are allowed to be set by calling :func:`get_params`.
+
+        :rtype: miraiml.core.BasePipelineClass
+        :returns: self
+        """
+        allowed_params = self.get_params()
+        for param in params:
+            if param not in allowed_params:
+                raise ValueError(
+                    "Parameter " + param + " is incompatible. The allowed " +
+                    "parameters are:\n" + ", ".join(allowed_params)
+                )
+        self.pipeline.set_params(**params)
+        return self
+
     def fit(self, X, y):
         """
-        Fits the pipeline.
+        Fits the pipeline to ``X`` using ``y`` as the target.
 
         :type X: iterable
         :param X: The training data.
@@ -725,7 +726,8 @@ class BasePipelineClass:
 
     def predict(self, X):
         """
-        Returns the predictions.
+        Predicts the class for each element of ``X`` in case of classification
+        problems or the estimated target value in case of regression problems.
 
         :type X: iterable
         :param X: Data to predict on.
@@ -737,7 +739,8 @@ class BasePipelineClass:
 
     def predict_proba(self, X):
         """
-        Returns the probabilities for each class.
+        Returns the probabilities for each class. Available only if your end
+        estimator implements it.
 
         :type X: iterable
         :param X: Data to predict on.

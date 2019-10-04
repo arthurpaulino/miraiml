@@ -7,7 +7,7 @@ from time import sleep
 import pandas as pd
 
 from miraiml import HyperSearchSpace, Config, Engine
-from miraiml.extras import compose_pipeline_class
+from miraiml.pipeline import compose
 
 TEST_FOLDER = '.pytest_cache'
 
@@ -17,7 +17,7 @@ def test_run():
     data = pd.DataFrame(X)
     data['target'] = y
 
-    Pipeline = compose_pipeline_class(
+    Pipeline = compose(
         [('scaler', StandardScaler), ('lin_reg', LinearRegression)]
     )
 

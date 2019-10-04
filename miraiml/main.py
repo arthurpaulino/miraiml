@@ -729,11 +729,10 @@ class Engine:
 
     def extract_model(self):
         """
-        Generates an **unfit** model object with methods similar to scikit-learn
-        models. The generated model is the result of the optimizations made by
-        MiraiML, which takes care of the choices of hyperparameters, features and
-        the ensembling weights. After extracting the model, you can use it to fit
-        new data.
+        Generates an **unfit** model object similar to scikit-learn's models. The
+        generated model is the result of the optimizations made by MiraiML, which
+        takes care of the choices of hyperparameters, features and the ensembling
+        weights. After extracting the model, you can use it to fit new data.
 
         This method may return ``None`` if the engine hasn't completed at least
         one cycle of experiments.

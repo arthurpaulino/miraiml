@@ -36,6 +36,10 @@ miraiml.Engine
 miraiml.pipeline
 ----------------
 
-.. autofunction:: miraiml.pipeline.compose_pipeline_class
+.. automodule:: miraiml.pipeline
+    :members:
 
-.. autoclass:: miraiml.pipeline.Test
+    .. autosummary::
+
+        compose
+        Test

@@ -1,3 +1,8 @@
+"""
+:mod:`miraiml.pipeline` contains a function that lets you build your own
+pipeline classes as well as some pre-defined pipelines to facilitate your work.
+"""
+
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import StandardScaler
 
@@ -5,18 +10,18 @@ from .util import is_valid_pipeline_name
 from .core import BasePipelineClass
 
 
-def compose_pipeline_class(steps):
+def compose(steps):
     """
-    Builds a pipeline class that can be instantiated with particular parameters
-    for each of its transformers/estimator without needing to call ``set_params``
-    as you would do with scikit-learn's Pipeline when performing hyperparameters
-    optimizations.
+    A pipeline class factory. Builds a pipeline class that can be instantiated
+    with particular parameters for each of its transformers/estimator without
+    needing to call ``set_params`` as you would do with scikit-learn's Pipeline
+    when performing hyperparameters optimizations.
 
     Similarly to scikit-learn's Pipeline, ``steps`` is a list of tuples
     containing an alias and the respective pipeline element. Although, since
     this function is a class factory, you shouldn't instantiate the
     transformer/estimator as you would do with scikit-learn's Pipeline. Thus,
-    this is how ``compose_pipeline_class`` should be called:
+    this is how ``compose`` should be called:
 
     :Example:
 
@@ -24,9 +29,9 @@ def compose_pipeline_class(steps):
 
         from sklearn.ensemble import RandomForestClassifier
         from sklearn.preprocessing import StandardScaler
-        from miraiml.extra import compose_pipeline_class
+        from miraiml.pipeline import compose
 
-        MyPipelineClass = compose_pipeline_class(
+        MyPipelineClass = compose(
             steps = [
                 ('scaler', StandardScaler), # StandardScaler instead of StandardScaler()
                 ('rfc', RandomForestClassifier) # No instantiation either
@@ -43,8 +48,12 @@ def compose_pipeline_class(steps):
 
         pipeline = MyPipelineClass(scaler__with_mean=False, rfc__max_depth=3)
 
-    **The purpose** of such pipeline classes is that they can work as base
-    models to build instances of :class:`HyperSearchSpace`.
+    You can check the available methods for your instantiated pipelines on the
+    documentation for :class:`miraiml.core.BasePipelineClass`, which is the
+    class from which the composed classes inherit from.
+
+    **The intended purpose** of such pipeline classes is that they can work as
+    base models to build instances of :class:`HyperSearchSpace`.
 
     :Example:
 
@@ -60,16 +69,12 @@ def compose_pipeline_class(steps):
             )
         )
 
-    .. warning::
-        None of the strings used to compose pipeline classes can start with
-        numbers or contain ``'__'``. Also, repeated aliases are not allowed.
-
-    .. note::
-        You can check the documentation for the class from which the returned
-        class inherits here: :class:`miraiml.core.BasePipelineClass`.
-
     :type steps: list
     :param steps: The list of pairs (alias, class) to define the pipeline.
+
+        .. warning::
+            None of the aliases can start with numbers or contain ``'__'``.
+            Also, repeated aliases are not allowed.
 
     :rtype: type
     :returns: The composed pipeline class
@@ -110,8 +115,8 @@ def compose_pipeline_class(steps):
     return type('MiraiPipeline', (BasePipelineClass,), dict(steps=steps))
 
 
-class Test(compose_pipeline_class([('scaler', StandardScaler),
-                                   ('rfc', RandomForestClassifier)])):
+class Test(compose([('scaler', StandardScaler),
+                    ('rfc', RandomForestClassifier)])):
     """
     Testing doc.
     """
