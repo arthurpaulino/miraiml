@@ -64,14 +64,14 @@ def test_run():
 
     status = engine.request_status()
 
-    if len(status['scores']) != len(hyper_search_spaces) + 1 or \
-            len(status['ensemble_weights']) != len(hyper_search_spaces):
+    if len(status.scores) != len(hyper_search_spaces) + 1 or \
+            len(status.ensemble_weights) != len(hyper_search_spaces):
         raise AssertionError()
 
-    if status['predictions'].shape[0] != test_data.shape[0]:
+    if status.predictions.shape[0] != test_data.shape[0]:
         raise AssertionError()
 
-    for base_model in status['base_models'].values():
+    for base_model in status.base_models.values():
         for feature in base_model['features']:
             if feature not in test_data.columns or feature not in train_data.columns:
                 raise AssertionError()
@@ -92,7 +92,15 @@ def test_run():
 
     status = engine.request_status()
 
-    if status["predictions"] is not None:
+    if status.predictions is not None:
         raise AssertionError()
 
     engine.interrupt()
+
+    status.build_report()
+    status.build_report(include_features=True)
+
+    model = engine.extract_model()
+
+    model.fit(train_data.drop(columns="target"), train_data['target'])
+    model.predict(test_data)

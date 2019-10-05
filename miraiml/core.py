@@ -576,12 +576,14 @@ class MiraiModel:
     :type problem_type: str
     :param problem_type: The problem type: ``'regression'`` or ``'classification'``.
     """
-    def __init__(self, base_models, weights, problem_type):
+    def __init__(self, base_models, weights, problem_type, columns_renaming_unmap):
         self.models = []
         self.features_lists = []
         for base_model in base_models:
             self.models.append(base_model.model_class(**base_model.parameters))
-            self.features_lists.append(base_model.features)
+            self.features_lists.append(
+                [columns_renaming_unmap[feature] for feature in base_model.features]
+            )
         self.weights = weights
         self.problem_type = problem_type
 

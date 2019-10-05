@@ -640,35 +640,9 @@ class Engine:
         """
         Queries the current status of the engine.
 
-        :rtype: dict or None
+        :rtype: miraiml.Status
         :returns: The current status of the engine in the form of a dictionary.
-            If no score has been computed yet, returns ``None``. The available
-            keys and their respective values on the status dictionary are:
-
-            * ``'best_id'``: The current best id
-
-            * ``'scores'``: A dictionary containing the score of each id
-
-            * ``'predictions'``: A ``pandas.DataFrame`` object containing the\
-                predictions from each id for the testing dataset. If no testing\
-                dataset was provided, the value associated with this key is\
-                ``None``
-
-            * ``'ensemble_weights'``: A dictionary containing the ensemble weights\
-                for each base model. If no ensembling cycle has been executed,\
-                the value associated with this key is ``None``
-
-            * ``'base_models'``: A dictionary containing the current description\
-                of each base model, which can be accessed by their ids
-
-            The dictionary associated with the ``'base_models'`` key contains the
-            following keys and respective values:
-
-            * ``'model_class'``: The name of the base model's class
-
-            * ``'parameters'``: The dictionary of hyperparameters
-
-            * ``'features'``: The list of features
+            If no score has been computed yet, returns ``None``.
         """
         if self.best_id is None:
             return None
@@ -696,76 +670,13 @@ class Engine:
             else:
                 base_models[id]['features'] = base_model.features.copy()
 
-        return dict(
+        return Status(
             best_id=self.best_id,
             scores=self.scores.copy(),
             predictions=predictions,
             ensemble_weights=ensemble_weights,
             base_models=base_models
         )
-
-    def request_report(self, include_features=False):
-        """
-        Returns the report of the current status of the engine in a formatted
-        string.
-
-        :type include_features: bool, optional, default=False
-        :param include_features: Whether to include the list of features on the
-            report or not (may cause some visual mess).
-
-        :rtype: str
-        :returns: The formatted report.
-        """
-        status = self.request_status()
-
-        best_id = status['best_id']
-
-        score = status['scores'][best_id]
-
-        output = '########################\n'
-
-        output += ('best id: {}\n'.format(best_id))
-        output += ('score: {}\n'.format(score))
-
-        weights = status['ensemble_weights']
-
-        if weights is not None:
-            output += ('########################\n')
-            output += ('ensemble weights:\n')
-            weights_ = {}
-            for id in weights:
-                weights_[weights[id]] = id
-            for weight in reversed(sorted(weights_)):
-                id = weights_[weight]
-                output += ('    {}: {}\n'.format(id, weight))
-
-        output += ('########################\n')
-        output += ('all scores:\n')
-        scores = status['scores']
-        scores_ = {}
-        for id in scores:
-            scores_[scores[id]] = id
-        for score in reversed(sorted(scores_)):
-            id = scores_[score]
-            output += ('    {}: {}\n'.format(id, score))
-
-        base_models = status['base_models']
-        for id in sorted(base_models):
-            base_model = base_models[id]
-            features = sorted(base_model['features'])
-            output += ('########################\n')
-            output += ('id: {}\n'.format(id))
-            output += ('model class: {}\n'.format(base_model['model_class']))
-            output += ('n features: {}\n'.format(len(features)))
-            output += ('parameters:\n')
-            parameters = base_model['parameters']
-            for parameter in sorted(parameters):
-                value = parameters[parameter]
-                output += ('    {}: {}\n'.format(parameter, value))
-            if include_features:
-                output += ('features: {}\n'.format(', '.join(features)))
-
-        return output
 
     def extract_model(self):
         """
@@ -800,4 +711,92 @@ class Engine:
             base_models.append(self.base_models[id])
             weights.append(ensembler.weights[id])
 
-        return MiraiModel(base_models, weights, self.config.problem_type)
+        return MiraiModel(base_models, weights, self.config.problem_type,
+                          self.columns_renaming_unmap)
+
+
+class Status:
+    """
+    Represents the current status of the engine. Objects of this class are
+    not supposed to be instantiated by the user. Rather, they are returned
+    by the :func:`miraiml.Engine.request_status()` method.
+
+    The following attributes are accessible:
+
+    * ``best_id``: the id of the best base model (or ensemble)
+
+    * ``scores``: a dictionary containing the current score of each id
+
+    * ``predictions``: a ``pandas.DataFrame`` object containing the predictions\
+        for the test data for each id
+
+    * ``ensemble_weights``: a dictionary containing the ensemble weights for\
+        each base model id
+
+    * ``base_models``: a dictionary containing the characteristics of each base\
+        model (accessed by its respective id)
+
+    The characteristics of each base model are represent by dictionaries, containing
+    the following keys:
+
+    * ``'model_class'``: The name of the base model's modeling class
+
+    * ``'parameters'``: The dictionary of hyperparameters values
+
+    * ``'features'``: The list of features used
+    """
+    def __init__(self, **kwargs):
+        self.__dict__ = kwargs
+
+    def build_report(self, include_features=False):
+        """
+        Returns the report of the current status of the engine in a formatted
+        string.
+
+        :type include_features: bool, optional, default=False
+        :param include_features: Whether to include the list of features on the
+            report or not (may cause some visual mess).
+
+        :rtype: str
+        :returns: The formatted report.
+        """
+        output = '########################\n'
+
+        output += ('best id: {}\n'.format(self.best_id))
+        output += ('best score: {}\n'.format(self.scores[self.best_id]))
+
+        if self.ensemble_weights is not None:
+            output += ('########################\n')
+            output += ('ensemble weights:\n')
+            weights_ = {}
+            for id in self.ensemble_weights:
+                weights_[self.ensemble_weights[id]] = id
+            for weight in reversed(sorted(weights_)):
+                id = weights_[weight]
+                output += ('    {}: {}\n'.format(id, weight))
+
+        output += ('########################\n')
+        output += ('all scores:\n')
+        scores_ = {}
+        for id in self.scores:
+            scores_[self.scores[id]] = id
+        for score in reversed(sorted(scores_)):
+            id = scores_[score]
+            output += ('    {}: {}\n'.format(id, score))
+
+        for id in sorted(self.base_models):
+            base_model = self.base_models[id]
+            features = sorted([str(feature) for feature in base_model['features']])
+            output += ('########################\n')
+            output += ('id: {}\n'.format(id))
+            output += ('model class: {}\n'.format(base_model['model_class']))
+            output += ('n features: {}\n'.format(len(features)))
+            output += ('parameters:\n')
+            parameters = base_model['parameters']
+            for parameter in sorted(parameters):
+                value = parameters[parameter]
+                output += ('    {}: {}\n'.format(parameter, value))
+            if include_features:
+                output += ('features: {}\n'.format(', '.join(features)))
+
+        return output

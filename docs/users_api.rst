@@ -31,8 +31,13 @@ miraiml.Engine
         reconfigure
         restart
         request_status
-        request_report
         extract_model
+
+miraiml.Status
+--------------
+
+.. autoclass:: miraiml.Status
+    :members:
 
 miraiml.pipeline
 ----------------

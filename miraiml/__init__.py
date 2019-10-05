@@ -7,8 +7,8 @@
 - :mod:`miraiml.pipeline` has some features related to pipelines **(hot!)**
 """
 
-__version__ = '2.2.0'
-__all__ = ['HyperSearchSpace', 'Config', 'Engine', 'pipeline']
+__version__ = '3.0.0'
+__all__ = ['HyperSearchSpace', 'Config', 'Engine', 'Status', 'pipeline']
 
-from miraiml.main import HyperSearchSpace, Config, Engine
+from miraiml.main import HyperSearchSpace, Config, Engine, Status
 from miraiml import pipeline
