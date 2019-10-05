@@ -49,7 +49,7 @@ def compose(steps):
         >>> pipeline = MyPipelineClass(scaler__with_mean=False, rfc__max_depth=3)
 
     If you want to know which parameters you're allowed to play with, just call
-    :func:`get_params`:
+    ``get_params``:
 
     ::
 
@@ -151,15 +151,74 @@ __initial_steps__ = [('ohe', OneHotEncoder), ('inpute', SimpleImputer)]
 
 class NaiveBayesBaseliner(compose(__initial_steps__ + [('naive', GaussianNB)])):
     """
-    Testing doc.
+    This is a baseline pipeline for classification problems. It's composed by
+    the following transformers/estimator:
+
+    1. ``sklearn.preprocessing.OneHotEncoder``
+    2. ``sklearn.impute.SimpleImputer``
+    3. ``sklearn.naive_bayes.GaussianNB``
+
+    The available parameters to tweak are:
+
+    ::
+
+        >>> from miraiml.pipeline import NaiveBayesBaseliner
+
+        >>> for param in NaiveBayesBaseliner().get_params():
+        ...     print(param)
+        ...
+        ohe__categorical_features
+        ohe__categories
+        ohe__drop
+        ohe__dtype
+        ohe__handle_unknown
+        ohe__n_values
+        ohe__sparse
+        inpute__add_indicator
+        inpute__fill_value
+        inpute__missing_values
+        inpute__strategy
+        inpute__verbose
+        naive__priors
+        naive__var_smoothing
     """
     def __init__(self):
         super().__init__()
 
 
-class LinearRegressionBaseliner(compose(__initial_steps__ + [('linear', LinearRegression)])):
+class LinearRegressionBaseliner(compose(__initial_steps__ + [('lin_reg', LinearRegression)])):
     """
-    Testing doc.
+    This is a baseline pipeline for regression problems. It's composed by the
+    following transformers/estimator:
+
+    1. ``sklearn.preprocessing.OneHotEncoder``
+    2. ``sklearn.impute.SimpleImputer``
+    3. ``sklearn.linear_model.LinearRegression``
+
+    The available parameters to tweak are:
+
+    ::
+
+        >>> from miraiml.pipeline import LinearRegressionBaseliner
+
+        >>> for param in LinearRegressionBaseliner().get_params():
+        ...     print(param)
+        ...
+        ohe__categorical_features
+        ohe__categories
+        ohe__drop
+        ohe__dtype
+        ohe__handle_unknown
+        ohe__n_values
+        ohe__sparse
+        inpute__add_indicator
+        inpute__fill_value
+        inpute__missing_values
+        inpute__strategy
+        inpute__verbose
+        lin_reg__fit_intercept
+        lin_reg__n_jobs
+        lin_reg__normalize
     """
     def __init__(self):
         super().__init__()

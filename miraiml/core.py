@@ -686,7 +686,7 @@ class BasePipelineClass:
         :returns: The list of allowed parameters
         """
         params = [param for param in self.pipeline.get_params() if
-                  not param.endswith("copy")]
+                  "copy" not in param]
         prefixes = [alias + "__" for alias, _ in self.steps]
         return [param for param in params if
                 any([param.startswith(prefix) for prefix in prefixes])]
