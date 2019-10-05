@@ -22,6 +22,7 @@ miraiml.Engine
     :members:
 
     .. autosummary::
+        :nosignatures:
 
         is_running
         interrupt
@@ -40,6 +41,8 @@ miraiml.pipeline
     :members:
 
     .. autosummary::
+        :nosignatures:
 
         compose
-        Test
+        NaiveBayesBaseliner
+        LinearRegressionBaseliner

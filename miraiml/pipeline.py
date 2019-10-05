@@ -1,10 +1,12 @@
 """
 :mod:`miraiml.pipeline` contains a function that lets you build your own
-pipeline classes as well as some pre-defined pipelines to facilitate your work.
+pipeline classes and a few pre-defined pipelines to facilitate your work.
 """
 
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.impute import SimpleImputer
+from sklearn.naive_bayes import GaussianNB
+from sklearn.linear_model import LinearRegression
 
 from .util import is_valid_pipeline_name
 from .core import BasePipelineClass
@@ -12,16 +14,17 @@ from .core import BasePipelineClass
 
 def compose(steps):
     """
-    A pipeline class factory. Builds a pipeline class that can be instantiated
-    with particular parameters for each of its transformers/estimator without
-    needing to call ``set_params`` as you would do with scikit-learn's Pipeline
-    when performing hyperparameters optimizations.
+    A function that can be used to define pipeline classes dinamically. Builds a
+    pipeline class that can be instantiated with particular parameters for each
+    of its transformers/estimator without needing to call ``set_params`` as you
+    would do with scikit-learn's Pipeline when performing hyperparameters
+    optimizations.
 
     Similarly to scikit-learn's Pipeline, ``steps`` is a list of tuples
     containing an alias and the respective pipeline element. Although, since
     this function is a class factory, you shouldn't instantiate the
     transformer/estimator as you would do with scikit-learn's Pipeline. Thus,
-    this is how ``compose`` should be called:
+    this is how :func:`compose` should be called:
 
     :Example:
 
@@ -29,6 +32,7 @@ def compose(steps):
 
         from sklearn.ensemble import RandomForestClassifier
         from sklearn.preprocessing import StandardScaler
+
         from miraiml.pipeline import compose
 
         MyPipelineClass = compose(
@@ -53,7 +57,7 @@ def compose(steps):
     class from which the composed classes inherit from.
 
     **The intended purpose** of such pipeline classes is that they can work as
-    base models to build instances of :class:`HyperSearchSpace`.
+    base models to build instances of :class:`miraiml.HyperSearchSpace`.
 
     :Example:
 
@@ -73,8 +77,12 @@ def compose(steps):
     :param steps: The list of pairs (alias, class) to define the pipeline.
 
         .. warning::
-            None of the aliases can start with numbers or contain ``'__'``.
-            Also, repeated aliases are not allowed.
+            Repeated aliases are not allowed and none of the aliases can start
+            with numbers or contain ``'__'``.
+
+            The classes used to compose a pipeline **must** implement ``get_params``
+            and ``set_params``, such as scikit-learn's classes, or :func:`compose`
+            **will break**.
 
     :rtype: type
     :returns: The composed pipeline class
@@ -115,8 +123,18 @@ def compose(steps):
     return type('MiraiPipeline', (BasePipelineClass,), dict(steps=steps))
 
 
-class Test(compose([('scaler', StandardScaler),
-                    ('rfc', RandomForestClassifier)])):
+__initial_steps__ = [('ohe', OneHotEncoder), ('inpute', SimpleImputer)]
+
+
+class NaiveBayesBaseliner(compose(__initial_steps__ + [('naive', GaussianNB)])):
+    """
+    Testing doc.
+    """
+    def __init__(self):
+        super().__init__()
+
+
+class LinearRegressionBaseliner(compose(__initial_steps__ + [('linear', LinearRegression)])):
     """
     Testing doc.
     """
