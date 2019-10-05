@@ -38,7 +38,12 @@ class HyperSearchSpace:
              in the set of parameters defined on ``parameters_values``, otherwise
              the engine will attempt to access an invalid key.
 
-    :raises: ``NotImplementedError``, ``TypeError``, ``ValueError``
+    :raises: ``NotImplementedError`` if a model class does not implement ``fit``
+        or none of ``predict`` or ``predict_proba``.
+
+    :raises: ``TypeError`` if some parameter is of a prohibited type.
+
+    :raises: ``ValueError`` if a provided ``id`` is not allowed.
 
     :Example:
 
@@ -92,6 +97,8 @@ class HyperSearchSpace:
         dir_model_class = dir(model_class)
         if 'fit' not in dir_model_class:
             raise NotImplementedError('model_class must implement fit')
+        if 'predict' not in dir_model_class and 'predict_proba' not in dir_model_class:
+            raise NotImplementedError('model_class must implement predict or predict_proba')
         if not isinstance(id, str):
             raise TypeError('id must be a string')
         if not is_valid_filename(id):
@@ -140,7 +147,12 @@ class Config:
     :param ensemble_id: The id for the ensemble. If none is given, the engine will
         not ensemble base models.
 
-    :raises: ``NotImplementedError``, ``TypeError``, ``ValueError``
+    :raises: ``NotImplementedError`` if a model class does not implement the proper
+        method for prediction.
+
+    :raises: ``TypeError`` if some parameter is not of its allowed type.
+
+    :raises: ``ValueError`` if some parameter has an invalid value.
 
     :Example:
 
@@ -258,7 +270,8 @@ class Engine:
         finds an improvement for some id. It must receive a ``status`` parameter,
         which is the return of the method :func:`request_status`.
 
-    :raises: ``TypeError``
+    :raises: ``TypeError`` if ``config`` is not an instance of :class:`miraiml.Config`
+        or ``on_improvement`` is not callable.
 
     :Example:
 
@@ -352,7 +365,10 @@ class Engine:
         :type restart: bool, optional, default=False
         :param restart: Whether to restart the engine after updating data or not.
 
-        :raises: ``TypeError``, ``ValueError``
+        :raises: ``TypeError`` if the provided dataframes are not instances of
+            ``pandas.DataFrame``.
+
+        :raises: ``ValueError`` if the column names are not consistent.
         """
         self.columns_renaming_map = {}
         self.columns_renaming_unmap = {}
@@ -418,7 +434,7 @@ class Engine:
         :type restart: bool, optional, default=False
         :param restart: Whether to restart the engine after shuffling data or not.
 
-        :raises: ``RuntimeError``
+        :raises: ``RuntimeError`` if the engine has no data loaded.
 
         .. note::
             It's a good practice to shuffle the training data periodically to avoid
@@ -459,7 +475,7 @@ class Engine:
         Interrupts the engine and starts again from last checkpoint (if any). It
         is also used to start the engine for the first time.
 
-        :raises: ``RuntimeError``, ``KeyError``
+        :raises: ``RuntimeError`` if no data is loaded.
         """
         if self.train_data is None:
             raise RuntimeError('No data to train')

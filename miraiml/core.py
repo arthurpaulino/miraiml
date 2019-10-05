@@ -66,7 +66,7 @@ class BaseModel:
             * ``test_predictions``: The predictions for the testing dataset
             * ``score``: The score of the model on the training dataset
 
-        :raises: ``RuntimeError``
+        :raises: ``RuntimeError`` when fitting or predicting don't work.
         """
         X_train = X_train[self.features]
         train_predictions = np.zeros(X_train.shape[0])
@@ -264,7 +264,8 @@ class MiraiSeeker:
         :rtype: miraiml.core.BaseModel
         :returns: The next base model for exploration.
 
-        :raises: ``KeyError``
+        :raises: ``KeyError`` if ``parameters_rules`` tries to access an invalid
+            key.
         """
         if rnd.choice([0, 1]) == 1 or not self.is_ready(id):
             parameters, features = self.random_search(id)
@@ -654,7 +655,7 @@ class MiraiModel:
         :rtype: numpy.ndarray
         :returns: The probabilities for each class
 
-        :raises: ``RuntimeError``
+        :raises: ``RuntimeError`` if called for regression problems.
         """
         if self.problem_type == 'regression':
             raise RuntimeError("Cannot compute predict_proba for regressions")

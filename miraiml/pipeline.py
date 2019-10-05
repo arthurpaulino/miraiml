@@ -110,7 +110,12 @@ def compose(steps):
     :rtype: type
     :returns: The composed pipeline class
 
-    :raises: ``ValueError``, ``TypeError``, ``NotImplementedError``
+    :raises: ``TypeError`` if an alias is not a string.
+
+    :raises: ``ValueError`` if an alias has an invalid name.
+
+    :raises: ``NotImplementedError`` if some class of the pipeline does not implement
+        the required methods.
     """
 
     aliases = []
