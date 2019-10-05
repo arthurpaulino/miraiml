@@ -1,6 +1,6 @@
 """
 :mod:`miraiml.pipeline` contains a function that lets you build your own
-pipeline classes and a few pre-defined pipelines to facilitate your work.
+pipeline classes and a few pre-defined pipelines for baselines.
 """
 
 from sklearn.preprocessing import OneHotEncoder
@@ -8,8 +8,8 @@ from sklearn.impute import SimpleImputer
 from sklearn.naive_bayes import GaussianNB
 from sklearn.linear_model import LinearRegression
 
-from .util import is_valid_pipeline_name
-from .core import BasePipelineClass
+from miraiml.util import is_valid_pipeline_name
+from miraiml.core import BasePipelineClass
 
 
 def compose(steps):
@@ -26,31 +26,54 @@ def compose(steps):
     transformer/estimator as you would do with scikit-learn's Pipeline. Thus,
     this is how :func:`compose` should be called:
 
-    :Example:
-
     ::
 
-        from sklearn.ensemble import RandomForestClassifier
-        from sklearn.preprocessing import StandardScaler
+        >>> from sklearn.ensemble import RandomForestClassifier
+        >>> from sklearn.preprocessing import StandardScaler
 
-        from miraiml.pipeline import compose
+        >>> from miraiml.pipeline import compose
 
-        MyPipelineClass = compose(
-            steps = [
-                ('scaler', StandardScaler), # StandardScaler instead of StandardScaler()
-                ('rfc', RandomForestClassifier) # No instantiation either
-            ]
-        )
+        >>> MyPipelineClass = compose(
+        ...     steps = [
+        ...         ('scaler', StandardScaler), # StandardScaler instead of StandardScaler()
+        ...         ('rfc', RandomForestClassifier) # No instantiation either
+        ...     ]
+        ... )
 
     And then, in order to instantiate ``MyPipelineClass`` with the desired
     parameters, you just need to refer to them as a concatenation of their
     respective class aliases and their names, separated by ``'__'``.
 
-    :Example:
+    ::
+
+        >>> pipeline = MyPipelineClass(scaler__with_mean=False, rfc__max_depth=3)
+
+    If you want to know which parameters you're allowed to play with, just call
+    :func:`get_params`:
 
     ::
 
-        pipeline = MyPipelineClass(scaler__with_mean=False, rfc__max_depth=3)
+        >>> params = pipeline.get_params()
+        >>> print("\\n".join(params))
+        scaler__with_mean
+        scaler__with_std
+        rfc__bootstrap
+        rfc__class_weight
+        rfc__criterion
+        rfc__max_depth
+        rfc__max_features
+        rfc__max_leaf_nodes
+        rfc__min_impurity_decrease
+        rfc__min_impurity_split
+        rfc__min_samples_leaf
+        rfc__min_samples_split
+        rfc__min_weight_fraction_leaf
+        rfc__n_estimators
+        rfc__n_jobs
+        rfc__oob_score
+        rfc__random_state
+        rfc__verbose
+        rfc__warm_start
 
     You can check the available methods for your instantiated pipelines on the
     documentation for :class:`miraiml.core.BasePipelineClass`, which is the
@@ -59,19 +82,19 @@ def compose(steps):
     **The intended purpose** of such pipeline classes is that they can work as
     base models to build instances of :class:`miraiml.HyperSearchSpace`.
 
-    :Example:
-
     ::
 
-        hyper_search_space = HyperSearchSpace(
-            model_class=MyPipelineClass,
-            id='MyPipelineClass',
-            parameters_values=dict(
-                scaler__with_mean=[True, False],
-                scaler__with_std=[True, False],
-                rfc__max_depth=[3, 4, 5, 6]
-            )
-        )
+        >>> from miraiml import HyperSearchSpace
+
+        >>> hyper_search_space = HyperSearchSpace(
+        ...     model_class=MyPipelineClass,
+        ...     id='MyPipelineClass',
+        ...     parameters_values=dict(
+        ...         scaler__with_mean=[True, False],
+        ...         scaler__with_std=[True, False],
+        ...         rfc__max_depth=[3, 4, 5, 6]
+        ...     )
+        ... )
 
     :type steps: list
     :param steps: The list of pairs (alias, class) to define the pipeline.

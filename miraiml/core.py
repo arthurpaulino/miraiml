@@ -13,7 +13,7 @@ from sklearn.model_selection import StratifiedKFold, KFold
 from sklearn.linear_model import LinearRegression
 from sklearn.pipeline import Pipeline
 
-from .util import load, dump, sample_random_len
+from miraiml.util import load, dump, sample_random_len
 
 
 class BaseModel:

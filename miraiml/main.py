@@ -4,9 +4,9 @@ import warnings
 import time
 import os
 
-from .util import is_valid_filename
-from .core import MiraiSeeker, Ensembler, MiraiModel
-from .core import load_base_model, dump_base_model
+from miraiml.util import is_valid_filename
+from miraiml.core import MiraiSeeker, Ensembler, MiraiModel
+from miraiml.core import load_base_model, dump_base_model
 
 
 class HyperSearchSpace:
@@ -44,25 +44,26 @@ class HyperSearchSpace:
 
     ::
 
-        from sklearn.linear_model import LogisticRegression
-        from miraiml import HyperSearchSpace
+        >>> import numpy as np
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from miraiml import HyperSearchSpace
 
-        def logistic_regression_parameters_rules(parameters):
-            if parameters['solver'] in ['newton-cg', 'sag', 'lbfgs']:
-                parameters['penalty'] = 'l2'
+        >>> def logistic_regression_parameters_rules(parameters):
+        ...     if parameters['solver'] in ['newton-cg', 'sag', 'lbfgs']:
+        ...         parameters['penalty'] = 'l2'
 
-        hyper_search_space = HyperSearchSpace(
-            model_class = LogisticRegression,
-            id = 'Logistic Regression',
-            parameters_values = {
-                'penalty': ['l1', 'l2'],
-                'C': np.arange(0.1, 2, 0.1),
-                'max_iter': np.arange(50, 300),
-                'solver': ['newton-cg', 'lbfgs', 'liblinear', 'sag', 'saga'],
-                'random_state': [0]
-            },
-            parameters_rules = logistic_regression_parameters_rules
-        )
+        >>> hyper_search_space = HyperSearchSpace(
+        ...     model_class = LogisticRegression,
+        ...     id = 'Logistic Regression',
+        ...     parameters_values = {
+        ...         'penalty': ['l1', 'l2'],
+        ...         'C': np.arange(0.1, 2, 0.1),
+        ...         'max_iter': np.arange(50, 300),
+        ...         'solver': ['newton-cg', 'lbfgs', 'liblinear', 'sag', 'saga'],
+        ...         'random_state': [0]
+        ...     },
+        ...     parameters_rules = logistic_regression_parameters_rules
+        ... )
 
     .. warning::
         **Do not** allow ``random_state`` assume multiple values. If ``model_class``
@@ -145,19 +146,26 @@ class Config:
 
     ::
 
-        from sklearn.metrics import roc_auc_score
-        from miraiml import Config
+        >>> from sklearn.metrics import roc_auc_score
+        >>> from sklearn.naive_bayes import GaussianNB
+        >>> from sklearn.tree import DecisionTreeClassifier
+        >>> from miraiml import HyperSearchSpace, Config
 
-        config = Config(
-            local_dir = 'miraiml_local',
-            problem_type = 'classification',
-            hyper_search_spaces = hyper_search_spaces,
-            score_function = roc_auc_score,
-            use_all_features = False,
-            n_folds = 5,
-            stratified = True,
-            ensemble_id = 'Ensemble'
-        )
+        >>> hyper_search_spaces = [
+        ...     HyperSearchSpace(GaussianNB, "Naive Bayes"),
+        ...     HyperSearchSpace(DecisionTreeClassifier, "Decicion Tree")
+        ... ]
+
+        >>> config = Config(
+        ...    local_dir = 'miraiml_local',
+        ...    problem_type = 'classification',
+        ...    hyper_search_spaces = hyper_search_spaces,
+        ...    score_function = roc_auc_score,
+        ...    use_all_features = False,
+        ...    n_folds = 5,
+        ...    stratified = True,
+        ...    ensemble_id = 'Ensemble'
+        ... )
     """
     def __init__(self, local_dir, problem_type, hyper_search_spaces, score_function,
                  use_all_features=False, n_folds=5, stratified=True, ensemble_id=None):
@@ -256,12 +264,28 @@ class Engine:
 
     ::
 
-        from miraiml import Engine
+        >>> from sklearn.metrics import roc_auc_score
+        >>> from sklearn.naive_bayes import GaussianNB
+        >>> from sklearn.tree import DecisionTreeClassifier
+        >>> from miraiml import HyperSearchSpace, Config, Engine
 
-        def on_improvement(status):
-            print('Scores:', status['scores'])
+        >>> hyper_search_spaces = [
+        ...     HyperSearchSpace(GaussianNB, "Naive Bayes"),
+        ...     HyperSearchSpace(DecisionTreeClassifier, "Decicion Tree")
+        ... ]
 
-        engine = Engine(config, on_improvement=on_improvement)
+        >>> config = Config(
+        ...    local_dir = 'miraiml_local',
+        ...    problem_type = 'classification',
+        ...    hyper_search_spaces = hyper_search_spaces,
+        ...    score_function = roc_auc_score,
+        ...    ensemble_id = 'Ensemble'
+        ... )
+
+        >>> def on_improvement(status):
+        ...     print('Scores:', status['scores'])
+
+        >>> engine = Engine(config, on_improvement=on_improvement)
     """
     def __init__(self, config, on_improvement=None):
         self.__validate__(config, on_improvement)

@@ -10,7 +10,7 @@ flake:
 	@python -m flake8
 
 tests:
-	@python -m pytest tests/*
+	@python -m doctest -v README.rst miraiml/*.py && python -m pytest tests/*
 
 docs:
 	@cd docs && make clean && make html
