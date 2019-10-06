@@ -740,12 +740,9 @@ class Engine:
                 parameters=base_model.parameters.copy()
             )
 
-            if len(self.columns_renaming_unmap) > 0:
-                base_models[id]['features'] = [
-                    self.columns_renaming_unmap[col] for col in base_model.features
-                ]
-            else:
-                base_models[id]['features'] = base_model.features.copy()
+            base_models[id]['features'] = [
+                self.columns_renaming_unmap[col] for col in base_model.features
+            ]
 
         return Status(
             best_id=self.best_id,
@@ -783,9 +780,11 @@ class Engine:
 
         best_id = self.best_id
         if self.ensembler is None or best_id != self.config.ensemble_id:
-            return MiraiModel([self.base_models[best_id]], None,
-                              self.config.problem_type,
-                              self.columns_renaming_unmap, X_y)
+            return MiraiModel(base_models=[self.base_models[best_id]],
+                              weights=None,
+                              problem_type=self.config.problem_type,
+                              columns_renaming_unmap=self.columns_renaming_unmap,
+                              X_y=X_y)
 
         ensembler = self.ensembler
         base_models = []
@@ -794,10 +793,11 @@ class Engine:
             base_models.append(self.base_models[id])
             weights.append(ensembler.weights[id])
 
-
-
-        return MiraiModel(base_models, weights, self.config.problem_type,
-                          self.columns_renaming_unmap, X_y)
+        return MiraiModel(base_models=base_models,
+                          weights=weights,
+                          problem_type=self.config.problem_type,
+                          columns_renaming_unmap=self.columns_renaming_unmap,
+                          X_y=X_y)
 
 
 class Status:
