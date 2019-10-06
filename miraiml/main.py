@@ -305,11 +305,11 @@ class Engine:
         ... ]
 
         >>> config = Config(
-        ...    local_dir = 'miraiml_local',
-        ...    problem_type = 'classification',
-        ...    search_spaces = search_spaces,
-        ...    score_function = roc_auc_score,
-        ...    ensemble_id = 'Ensemble'
+        ...     local_dir = 'miraiml_local',
+        ...     problem_type = 'classification',
+        ...     search_spaces = search_spaces,
+        ...     score_function = roc_auc_score,
+        ...     ensemble_id = 'Ensemble'
         ... )
 
         >>> def on_improvement(status):
@@ -365,10 +365,14 @@ class Engine:
             time.sleep(.1)
         self.must_interrupt = False
 
-    def load_data(self, train_data, target_column, test_data=None, restart=False):
+    def load_train_data(self, train_data, target_column, restart=False):
         """
-        Interrupts the engine and loads a new pair of train/test datasets. All of
-        their columns must be instances of str or int.
+        Interrupts the engine and loads the train dataset. All of its columns must
+        be either instances of ``str`` or ``int``.
+
+        .. warning::
+            Loading new training data will **always** trigger the loss of history
+            for optimization.
 
         :type train_data: pandas.DataFrame
         :param train_data: The training data.
@@ -376,74 +380,111 @@ class Engine:
         :type target_column: str or int
         :param target_column: The target column identifier.
 
-        :type test_data: pandas.DataFrame, optional, default=None
-        :param test_data: The testing data. Use the default value if you don't
-            need to make predictions for data with unknown labels.
-
         :type restart: bool, optional, default=False
         :param restart: Whether to restart the engine after updating data or not.
 
-        :raises: ``TypeError`` if the provided dataframes are not instances of
+        :raises: ``TypeError`` if ``train_data`` is not an instance of
             ``pandas.DataFrame``.
 
-        :raises: ``ValueError`` if the column names are not consistent.
+        :raises: ``ValueError`` if ``target_column`` is not a column of
+            ``train_data`` or if some column name is of a prohibited type.
         """
+        self.__validate_train_data__(train_data, target_column)
         self.columns_renaming_map = {}
         self.columns_renaming_unmap = {}
 
-        train_data, target_column, test_data, needs_columns_casting = self.__validate_data__(
-            train_data, target_column, test_data
-        )
+        for column in train_data.columns:
+            column_renamed = str(column)
+            self.columns_renaming_map[column] = column_renamed
+            self.columns_renaming_unmap[column_renamed] = column
 
-        if needs_columns_casting:
-            for column in train_data.columns:
-                column_renamed = str(column)
-                self.columns_renaming_map[column] = column_renamed
-                self.columns_renaming_unmap[column_renamed] = column
-            train_data = train_data.rename(columns=self.columns_renaming_map)
-            if test_data is not None:
-                test_data = test_data.rename(columns=self.columns_renaming_map)
+        self.target_column = target_column
+        train_data = train_data.rename(columns=self.columns_renaming_map)
 
         self.interrupt()
         self.train_data = train_data.drop(columns=target_column)
         self.train_target = train_data[target_column]
         self.all_features = list(self.train_data.columns)
-        self.test_data = test_data
+
         if self.mirai_seeker is not None:
             self.mirai_seeker.reset()
+
         if restart:
             self.restart()
 
     @staticmethod
-    def __validate_data__(train_data, target_column, test_data):
+    def __validate_train_data__(train_data, target_column):
         """
-        Validates the input data.
+        Validates the train data.
         """
         if not isinstance(train_data, pd.DataFrame):
             raise TypeError('Training data must be an object of pandas.DataFrame')
 
-        if test_data is not None and not isinstance(test_data, pd.DataFrame):
-            raise TypeError('Testing data must be None or an object of pandas.DataFrame')
+        train_columns = train_data.columns
 
-        if target_column not in train_data.columns:
+        if target_column not in train_columns:
             raise ValueError('target_column must be a column of train_data')
 
-        train_columns = train_data.columns
-        if test_data is not None:
-            test_columns = test_data.columns
-
-            for column in train_columns:
-                if column != target_column and column not in test_columns:
-                    raise ValueError('All input columns in train data must be test data')
-
-        needs_columns_casting = False
         for column in train_columns:
-            if not isinstance(column, str):
-                if not isinstance(column, int):
-                    raise ValueError('All columns names must be either str or int')
-                needs_columns_casting = True
+            if not isinstance(column, str) and not isinstance(column, int):
+                raise ValueError('All columns names must be either str or int')
 
-        return train_data, target_column, test_data, needs_columns_casting
+    def load_test_data(self, test_data, restart=False):
+        """
+        Interrupts the engine and loads the test dataset. All of its columns must
+        be columns in the train data.
+
+        .. warning::
+            This method can only be called after
+            :func:`miraiml.Engine.load_train_data`
+
+        :type test_data: pandas.DataFrame, optional, default=None
+        :param test_data: The testing data. Use the default value if you don't
+            need to make predictions for data with unknown labels.
+
+        :type restart: bool, optional, default=False
+        :param restart: Whether to restart the engine after loading data or not.
+
+        :raises: ``RuntimeError`` if this method is called before loading the
+            train data.
+
+        :raises: ``ValueError`` if the column names are not consistent.
+        """
+        if self.train_data is None:
+            raise RuntimeError("This method cannot be called before load_train_data")
+
+        self.__validate_test_data__(test_data)
+        self.test_data = test_data.rename(columns=self.columns_renaming_map)
+        if restart:
+            self.restart()
+
+    def __validate_test_data__(self, test_data):
+        """
+        Validates the test data.
+        """
+        for column in self.columns_renaming_map:
+            if column != self.target_column and column not in test_data.columns:
+                raise ValueError(
+                    'Column {} is not a column in the train data'.format(column)
+                )
+
+    def clean_test_data(self, restart=False):
+        """
+        Cleans the test data from the buffer.
+
+        .. note::
+            Keep in mind that if you don't intend to make predictions for
+            unlabeled data, the engine will run faster with a clean test data
+            buffer.
+
+        :type restart: bool, optional, default=False
+        :param restart: Whether to restart the engine after cleaning test data or
+            not.
+        """
+        self.interrupt()
+        self.test_data = None
+        if restart:
+            self.restart()
 
     def shuffle_train_data(self, restart=False):
         """
@@ -456,7 +497,7 @@ class Engine:
 
         .. note::
             It's a good practice to shuffle the training data periodically to avoid
-            overfitting on a certain folding pattern.
+            overfitting on a particular folding pattern.
         """
         if self.train_data is None:
             raise RuntimeError('No data to shuffle')

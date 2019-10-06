@@ -26,7 +26,8 @@ miraiml.Engine
 
         is_running
         interrupt
-        load_data
+        load_train_data
+        load_test_data
         shuffle_train_data
         reconfigure
         restart

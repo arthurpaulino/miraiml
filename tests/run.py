@@ -51,7 +51,8 @@ def test_run():
 
     train_data_original, test_data_original = train_data.copy(), test_data.copy()
 
-    engine.load_data(train_data, 'target', test_data)
+    engine.load_train_data(train_data, 'target')
+    engine.load_test_data(test_data)
 
     if engine.is_running():
         raise AssertionError()
@@ -84,7 +85,7 @@ def test_run():
     if engine.is_running():
         raise AssertionError()
 
-    engine.load_data(train_data, 'target', restart=True)
+    engine.clean_test_data(restart=True)
 
     sleep(5)
 
