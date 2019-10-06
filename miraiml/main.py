@@ -147,6 +147,16 @@ class Config:
     :param ensemble_id: The id for the ensemble. If none is given, the engine will
         not ensemble base models.
 
+    :type stagnation: int or float, optional, default=60
+    :param stagnation: The amount of time (in minutes) for the engine to
+        automatically interrupt itself if no improvement happens. Negative numbers
+        are interpreted as "infinite".
+
+        .. warning::
+            Stagnation checks only happen after the engine finishes at least one
+            optimization cycle. In other words, every base model and the ensemble
+            (if set) must be scored at least once.
+
     :raises: ``NotImplementedError`` if a model class does not implement the proper
         method for prediction.
 
@@ -169,20 +179,23 @@ class Config:
         ... ]
 
         >>> config = Config(
-        ...    local_dir = 'miraiml_local',
-        ...    problem_type = 'classification',
-        ...    search_spaces = search_spaces,
-        ...    score_function = roc_auc_score,
-        ...    use_all_features = False,
-        ...    n_folds = 5,
-        ...    stratified = True,
-        ...    ensemble_id = 'Ensemble'
+        ...     local_dir = 'miraiml_local',
+        ...     problem_type = 'classification',
+        ...     search_spaces = search_spaces,
+        ...     score_function = roc_auc_score,
+        ...     use_all_features = False,
+        ...     n_folds = 5,
+        ...     stratified = True,
+        ...     ensemble_id = 'Ensemble',
+        ...     stagnation = -1
         ... )
     """
     def __init__(self, local_dir, problem_type, search_spaces, score_function,
-                 use_all_features=False, n_folds=5, stratified=True, ensemble_id=None):
+                 use_all_features=False, n_folds=5, stratified=True,
+                 ensemble_id=None, stagnation=60):
         self.__validate__(local_dir, problem_type, search_spaces, score_function,
-                          use_all_features, n_folds, stratified, ensemble_id)
+                          use_all_features, n_folds, stratified, ensemble_id,
+                          stagnation)
         self.local_dir = local_dir
         if self.local_dir[-1] != '/':
             self.local_dir += '/'
@@ -193,11 +206,12 @@ class Config:
         self.n_folds = n_folds
         self.stratified = stratified
         self.ensemble_id = ensemble_id
+        self.stagnation = stagnation
 
     @staticmethod
     def __validate__(local_dir, problem_type, search_spaces,
                      score_function, use_all_features, n_folds, stratified,
-                     ensemble_id):
+                     ensemble_id, stagnation):
         """
         Validates the constructor parameters.
         """
@@ -256,6 +270,8 @@ class Config:
         if ensemble_id in ids:
             raise ValueError('ensemble_id cannot have the same id of a ' +
                              'search space')
+        if not isinstance(stagnation, int) and not isinstance(stagnation, float):
+            raise TypeError('stagnation must be an integer or a float')
 
 
 class Engine:
@@ -266,13 +282,13 @@ class Engine:
     :param config: The configurations for the behavior of the engine.
 
     :type on_improvement: function, optional, default=None
-    :param on_improvement: A function that will be executed everytime the engine
-        finds an improvement for some id. It must receive a ``status`` parameter,
-        which is the return of the method :func:`request_status` (an instance of
-        :class:`miraiml.Status`).
+    :param on_improvement: A function that will be executed asynchronously everytime
+        the engine finds an improvement for some id. It must receive a ``status``
+        parameter, which is the return of the method :func:`request_status` (an
+        instance of :class:`miraiml.Status`).
 
     :raises: ``TypeError`` if ``config`` is not an instance of :class:`miraiml.Config`
-        or ``on_improvement`` is not callable.
+        or ``on_improvement`` (if provided) is not callable.
 
     :Example:
 
@@ -297,7 +313,7 @@ class Engine:
         ... )
 
         >>> def on_improvement(status):
-        ...     print('Scores:', status['scores'])
+        ...     print('Scores:', status.scores)
 
         >>> engine = Engine(config, on_improvement=on_improvement)
     """
@@ -312,6 +328,7 @@ class Engine:
         self.train_data = None
         self.ensembler = None
         self.n_cycles = 0
+        self.last_improvement_timestamp = None
 
     @staticmethod
     def __validate__(config, on_improvement):
@@ -457,6 +474,10 @@ class Engine:
         """
         Interrupts the engine and loads a new configuration.
 
+        .. warning::
+            Reconfiguring the engine will **always** trigger the loss of history
+            for optimization.
+
         :type config: miraiml.Config
         :param config: The configurations for the behavior of the engine.
 
@@ -493,10 +514,12 @@ class Engine:
 
     def __improvement_trigger__(self):
         """
-        Called when an improvement happens.
+        Called when an improvement happens. The asynchronous call to `on_improvement`
+        happens here.
         """
+        self.last_improvement_timestamp = time.time()
         if self.on_improvement is not None:
-            self.on_improvement(self.request_status())
+            Thread(target=lambda: self.on_improvement(self.request_status())).start()
 
     def __update_best__(self, score, id):
         """
@@ -505,6 +528,16 @@ class Engine:
         if self.best_score is None or score > self.best_score:
             self.best_score = score
             self.best_id = id
+
+    def __check_stagnation__(self):
+        """
+        Checks whether the engine has reached stagnation or not. If so, the
+        engine is interrupted.
+        """
+        if self.config.stagnation >= 0:
+            diff_in_seconds = time.time() - self.last_improvement_timestamp
+            if diff_in_seconds/60 > self.config.stagnation:
+                self.interrupt()
 
     def __main_loop__(self):
         """
@@ -528,6 +561,7 @@ class Engine:
         )
 
         self.n_cycles = 0
+        self.last_improvement_timestamp = time.time()
 
         start = time.time()
         for search_space in self.config.search_spaces:
@@ -597,6 +631,7 @@ class Engine:
 
             start = time.time()
             for search_space in self.config.search_spaces:
+                self.__check_stagnation__()
                 if self.must_interrupt:
                     break
                 id = search_space.id

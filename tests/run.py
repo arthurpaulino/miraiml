@@ -41,7 +41,8 @@ def test_run():
         problem_type='regression',
         search_spaces=search_spaces,
         score_function=r2_score,
-        ensemble_id='Ensemble'
+        ensemble_id='Ensemble',
+        stagnation=1
     )
 
     engine = Engine(config)

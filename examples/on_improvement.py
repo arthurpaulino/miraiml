@@ -5,15 +5,15 @@ from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import GaussianNB
 from sklearn.metrics import roc_auc_score
 
-from miraiml import HyperSearchSpace, Config, Engine
+from miraiml import SearchSpace, Config, Engine
 
 # Let's use a single Naive Bayes classifier for this example.
-hyper_search_spaces = [HyperSearchSpace(model_class=GaussianNB, id='Gaussian NB')]
+search_spaces = [SearchSpace(model_class=GaussianNB, id='Gaussian NB')]
 
 config = Config(
     local_dir='miraiml_local_on_improvement',
     problem_type='classification',
-    hyper_search_spaces=hyper_search_spaces,
+    search_spaces=search_spaces,
     score_function=roc_auc_score
 )
 
@@ -21,7 +21,7 @@ config = Config(
 # Simply printing the best score on improvement. This function must receive a
 # dictionary, which is the return of the request_status method.
 def on_improvement(status):
-    print('Scores:', status['scores'])
+    print('Scores:', status.scores)
 
 
 # Instantiating the engine
