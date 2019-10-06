@@ -9,7 +9,7 @@ from miraiml.core import MiraiSeeker, Ensembler, MiraiModel
 from miraiml.core import load_base_model, dump_base_model
 
 
-class HyperSearchSpace:
+class SearchSpace:
     """
     This class represents the search space of hyperparameters for a base model.
 
@@ -51,13 +51,13 @@ class HyperSearchSpace:
 
         >>> import numpy as np
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from miraiml import HyperSearchSpace
+        >>> from miraiml import SearchSpace
 
         >>> def logistic_regression_parameters_rules(parameters):
         ...     if parameters['solver'] in ['newton-cg', 'sag', 'lbfgs']:
         ...         parameters['penalty'] = 'l2'
 
-        >>> hyper_search_space = HyperSearchSpace(
+        >>> search_space = SearchSpace(
         ...     model_class = LogisticRegression,
         ...     id = 'Logistic Regression',
         ...     parameters_values = {
@@ -122,9 +122,9 @@ class Config:
     :param problem_type: ``'classification'`` or ``'regression'``. The problem
         type. Multi-class classification problems are not supported.
 
-    :type hyper_search_spaces: list
-    :param hyper_search_spaces: The list of :class:`miraiml.HyperSearchSpace`
-        objects to optimize. If ``hyper_search_spaces`` has length 1, the engine
+    :type search_spaces: list
+    :param search_spaces: The list of :class:`miraiml.SearchSpace`
+        objects to optimize. If ``search_spaces`` has length 1, the engine
         will not run ensemble cycles.
 
     :type score_function: function
@@ -161,17 +161,17 @@ class Config:
         >>> from sklearn.metrics import roc_auc_score
         >>> from sklearn.naive_bayes import GaussianNB
         >>> from sklearn.tree import DecisionTreeClassifier
-        >>> from miraiml import HyperSearchSpace, Config
+        >>> from miraiml import SearchSpace, Config
 
-        >>> hyper_search_spaces = [
-        ...     HyperSearchSpace(GaussianNB, "Naive Bayes"),
-        ...     HyperSearchSpace(DecisionTreeClassifier, "Decicion Tree")
+        >>> search_spaces = [
+        ...     SearchSpace(GaussianNB, "Naive Bayes"),
+        ...     SearchSpace(DecisionTreeClassifier, "Decicion Tree")
         ... ]
 
         >>> config = Config(
         ...    local_dir = 'miraiml_local',
         ...    problem_type = 'classification',
-        ...    hyper_search_spaces = hyper_search_spaces,
+        ...    search_spaces = search_spaces,
         ...    score_function = roc_auc_score,
         ...    use_all_features = False,
         ...    n_folds = 5,
@@ -179,15 +179,15 @@ class Config:
         ...    ensemble_id = 'Ensemble'
         ... )
     """
-    def __init__(self, local_dir, problem_type, hyper_search_spaces, score_function,
+    def __init__(self, local_dir, problem_type, search_spaces, score_function,
                  use_all_features=False, n_folds=5, stratified=True, ensemble_id=None):
-        self.__validate__(local_dir, problem_type, hyper_search_spaces, score_function,
+        self.__validate__(local_dir, problem_type, search_spaces, score_function,
                           use_all_features, n_folds, stratified, ensemble_id)
         self.local_dir = local_dir
         if self.local_dir[-1] != '/':
             self.local_dir += '/'
         self.problem_type = problem_type
-        self.hyper_search_spaces = hyper_search_spaces
+        self.search_spaces = search_spaces
         self.score_function = score_function
         self.use_all_features = use_all_features
         self.n_folds = n_folds
@@ -195,7 +195,7 @@ class Config:
         self.ensemble_id = ensemble_id
 
     @staticmethod
-    def __validate__(local_dir, problem_type, hyper_search_spaces,
+    def __validate__(local_dir, problem_type, search_spaces,
                      score_function, use_all_features, n_folds, stratified,
                      ensemble_id):
         """
@@ -212,21 +212,21 @@ class Config:
         if problem_type not in ('classification', 'regression'):
             raise ValueError('Invalid problem type')
 
-        if not isinstance(hyper_search_spaces, list):
-            raise TypeError('hyper_search_spaces must be a list')
-        if len(hyper_search_spaces) == 0:
+        if not isinstance(search_spaces, list):
+            raise TypeError('search_spaces must be a list')
+        if len(search_spaces) == 0:
             raise ValueError('No search spaces')
 
         ids = []
-        for hyper_search_space in hyper_search_spaces:
-            if not isinstance(hyper_search_space, HyperSearchSpace):
-                raise TypeError('All hyper search spaces must be objects of ' +
-                                'miraiml.HyperSearchSpace')
-            id = hyper_search_space.id
+        for search_space in search_spaces:
+            if not isinstance(search_space, SearchSpace):
+                raise TypeError('All search spaces must be objects of ' +
+                                'miraiml.SearchSpace')
+            id = search_space.id
             if id in ids:
                 raise ValueError('Duplicated search space id: {}'.format(id))
             ids.append(id)
-            dir_model_class = dir(hyper_search_space.model_class)
+            dir_model_class = dir(search_space.model_class)
             if problem_type == 'classification' and 'predict_proba' not in dir_model_class:
                 raise NotImplementedError('Model class of id {} '.format(id) +
                                           'must implement predict_proba for ' +
@@ -254,7 +254,7 @@ class Config:
         if isinstance(ensemble_id, str) and not is_valid_filename(ensemble_id):
             raise ValueError('invalid ensemble_id')
         if ensemble_id in ids:
-            raise ValueError('ensemble_id cannot have the same id of a hyper ' +
+            raise ValueError('ensemble_id cannot have the same id of a ' +
                              'search space')
 
 
@@ -268,7 +268,8 @@ class Engine:
     :type on_improvement: function, optional, default=None
     :param on_improvement: A function that will be executed everytime the engine
         finds an improvement for some id. It must receive a ``status`` parameter,
-        which is the return of the method :func:`request_status`.
+        which is the return of the method :func:`request_status` (an instance of
+        :class:`miraiml.Status`).
 
     :raises: ``TypeError`` if ``config`` is not an instance of :class:`miraiml.Config`
         or ``on_improvement`` is not callable.
@@ -280,17 +281,17 @@ class Engine:
         >>> from sklearn.metrics import roc_auc_score
         >>> from sklearn.naive_bayes import GaussianNB
         >>> from sklearn.tree import DecisionTreeClassifier
-        >>> from miraiml import HyperSearchSpace, Config, Engine
+        >>> from miraiml import SearchSpace, Config, Engine
 
-        >>> hyper_search_spaces = [
-        ...     HyperSearchSpace(GaussianNB, "Naive Bayes"),
-        ...     HyperSearchSpace(DecisionTreeClassifier, "Decicion Tree")
+        >>> search_spaces = [
+        ...     SearchSpace(GaussianNB, "Naive Bayes"),
+        ...     SearchSpace(DecisionTreeClassifier, "Decicion Tree")
         ... ]
 
         >>> config = Config(
         ...    local_dir = 'miraiml_local',
         ...    problem_type = 'classification',
-        ...    hyper_search_spaces = hyper_search_spaces,
+        ...    search_spaces = search_spaces,
         ...    score_function = roc_auc_score,
         ...    ensemble_id = 'Ensemble'
         ... )
@@ -521,7 +522,7 @@ class Engine:
         self.ensembler = None
 
         self.mirai_seeker = MiraiSeeker(
-            self.config.hyper_search_spaces,
+            self.config.search_spaces,
             self.all_features,
             self.config
         )
@@ -529,34 +530,34 @@ class Engine:
         self.n_cycles = 0
 
         start = time.time()
-        for hyper_search_space in self.config.hyper_search_spaces:
+        for search_space in self.config.search_spaces:
             if self.must_interrupt:
                 break
-            id = hyper_search_space.id
+            id = search_space.id
             base_model_path = self.models_dir + id
-            base_model_class = hyper_search_space.model_class
+            base_model_class = search_space.model_class
             if os.path.exists(base_model_path):
                 base_model = load_base_model(base_model_class, base_model_path)
                 parameters = base_model.parameters
-                parameters_values = hyper_search_space.parameters_values
+                parameters_values = search_space.parameters_values
                 for key, value in zip(parameters.keys(), parameters.values()):
                     if key not in parameters_values:
                         warnings.warn(
                             'Parameter ' + str(key) + ', set with value ' +
                             str(value) + ', from checkpoint is not on the ' +
-                            'provided hyper search space for the id ' + str(id),
+                            'provided search space for the id ' + str(id),
                             RuntimeWarning
                         )
                     else:
                         if value not in parameters_values[key]:
                             warnings.warn(
                                 'Value ' + str(value) + ' for parameter ' + str(key) +
-                                ' from checkpoint is not on the provided hyper ' +
+                                ' from checkpoint is not on the provided ' +
                                 'search space for the id ' + str(id),
                                 RuntimeWarning
                             )
             else:
-                base_model = self.mirai_seeker.seek(hyper_search_space.id)
+                base_model = self.mirai_seeker.seek(search_space.id)
                 dump_base_model(base_model, base_model_path)
             self.base_models[id] = base_model
 
@@ -595,10 +596,10 @@ class Engine:
         while not self.must_interrupt:
 
             start = time.time()
-            for hyper_search_space in self.config.hyper_search_spaces:
+            for search_space in self.config.search_spaces:
                 if self.must_interrupt:
                     break
-                id = hyper_search_space.id
+                id = search_space.id
 
                 base_model = self.mirai_seeker.seek(id)
 
@@ -678,12 +679,12 @@ class Engine:
             base_models=base_models
         )
 
-    def extract_model(self):
+    def extract_model(self, fit=True):
         """
-        Generates an **unfit** model object similar to scikit-learn's models. The
-        generated model is the result of the optimizations made by MiraiML, which
-        takes care of the choices of hyperparameters, features and the ensembling
-        weights. After extracting the model, you can use it to fit new data.
+        Generates a model object similar to scikit-learn's models. The generated
+        model is the result of the optimizations made by MiraiML, which takes
+        care of the choices of hyperparameters, features and the ensembling
+        weights.
 
         This method may return ``None`` if the engine hasn't completed at least
         one cycle of experiments.
@@ -692,6 +693,9 @@ class Engine:
             The extracted model is likely to perform worse than the engine when
             it comes down to making predictions due to the way that MiraiML
             ensembles out-of-folds predictions even for each base model.
+
+        :type fit: bool, optional, default=True
+        :param fit: Whether to return a model fit to the loaded train data or not.
 
         :rtype: miraiml.core.MiraiModel
         :returns: The optimized model object.
@@ -711,8 +715,10 @@ class Engine:
             base_models.append(self.base_models[id])
             weights.append(ensembler.weights[id])
 
+        X_y = (self.train_data, self.train_target) if fit else None
+
         return MiraiModel(base_models, weights, self.config.problem_type,
-                          self.columns_renaming_unmap)
+                          self.columns_renaming_unmap, X_y)
 
 
 class Status:

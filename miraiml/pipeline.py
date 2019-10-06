@@ -80,13 +80,13 @@ def compose(steps):
     class from which the composed classes inherit from.
 
     **The intended purpose** of such pipeline classes is that they can work as
-    base models to build instances of :class:`miraiml.HyperSearchSpace`.
+    base models to build instances of :class:`miraiml.SearchSpace`.
 
     ::
 
-        >>> from miraiml import HyperSearchSpace
+        >>> from miraiml import SearchSpace
 
-        >>> hyper_search_space = HyperSearchSpace(
+        >>> search_space = SearchSpace(
         ...     model_class=MyPipelineClass,
         ...     id='MyPipelineClass',
         ...     parameters_values=dict(

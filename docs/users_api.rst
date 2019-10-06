@@ -3,10 +3,10 @@ The User's API
 
 .. automodule:: miraiml
 
-miraiml.HyperSearchSpace
+miraiml.SearchSpace
 ------------------------
 
-.. autoclass:: miraiml.HyperSearchSpace
+.. autoclass:: miraiml.SearchSpace
     :members:
 
 miraiml.Config

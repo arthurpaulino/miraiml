@@ -6,7 +6,7 @@ from sklearn.metrics import r2_score
 from time import sleep
 import pandas as pd
 
-from miraiml import HyperSearchSpace, Config, Engine
+from miraiml import SearchSpace, Config, Engine
 from miraiml.pipeline import compose
 
 TEST_FOLDER = '.pytest_cache'
@@ -21,10 +21,10 @@ def test_run():
         [('scaler', StandardScaler), ('lin_reg', LinearRegression)]
     )
 
-    hyper_search_spaces = [
-        HyperSearchSpace(model_class=LinearRegression, id='Linear Regression'),
-        HyperSearchSpace(model_class=Lasso, id='Lasso'),
-        HyperSearchSpace(
+    search_spaces = [
+        SearchSpace(model_class=LinearRegression, id='Linear Regression'),
+        SearchSpace(model_class=Lasso, id='Lasso'),
+        SearchSpace(
             model_class=Pipeline,
             id='Pipeline',
             parameters_values=dict(
@@ -39,7 +39,7 @@ def test_run():
     config = Config(
         local_dir=TEST_FOLDER,
         problem_type='regression',
-        hyper_search_spaces=hyper_search_spaces,
+        search_spaces=search_spaces,
         score_function=r2_score,
         ensemble_id='Ensemble'
     )
@@ -47,6 +47,8 @@ def test_run():
     engine = Engine(config)
 
     train_data, test_data = train_test_split(data, test_size=0.2)
+
+    train_data_original, test_data_original = train_data.copy(), test_data.copy()
 
     engine.load_data(train_data, 'target', test_data)
 
@@ -64,8 +66,8 @@ def test_run():
 
     status = engine.request_status()
 
-    if len(status.scores) != len(hyper_search_spaces) + 1 or \
-            len(status.ensemble_weights) != len(hyper_search_spaces):
+    if len(status.scores) != len(search_spaces) + 1 or \
+            len(status.ensemble_weights) != len(search_spaces):
         raise AssertionError()
 
     if status.predictions.shape[0] != test_data.shape[0]:
@@ -88,6 +90,8 @@ def test_run():
     if not engine.is_running():
         raise AssertionError()
 
+    engine.shuffle_train_data(restart=True)
+
     sleep(5)
 
     status = engine.request_status()
@@ -100,7 +104,13 @@ def test_run():
     status.build_report()
     status.build_report(include_features=True)
 
-    model = engine.extract_model()
+    model = engine.extract_model(fit=False)
 
     model.fit(train_data.drop(columns="target"), train_data['target'])
     model.predict(test_data)
+
+    model = engine.extract_model()
+    model.predict(test_data)
+
+    pd.testing.assert_frame_equal(train_data, train_data_original)
+    pd.testing.assert_frame_equal(test_data, test_data_original)

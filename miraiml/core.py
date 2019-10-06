@@ -19,7 +19,7 @@ from miraiml.util import load, dump, sample_random_len
 class BaseModel:
     """
     Represents an element from the search space, defined by an instance of
-    :class:`miraiml.HyperSearchSpace` and a set of features.
+    :class:`miraiml.SearchSpace` and a set of features.
 
     Read more in the :ref:`User Guide <base_model>`.
 
@@ -66,7 +66,7 @@ class BaseModel:
             * ``test_predictions``: The predictions for the testing dataset
             * ``score``: The score of the model on the training dataset
 
-        :raises: ``RuntimeError`` when fitting or predicting don't work.
+        :raises: ``RuntimeError`` when fitting or predicting doesn't work.
         """
         X_train = X_train[self.features]
         train_predictions = np.zeros(X_train.shape[0])
@@ -165,7 +165,7 @@ class MiraiSeeker:
     :param config: The configuration of the engine.
     :type config: miraiml.Config
     """
-    def __init__(self, hyper_search_spaces, all_features, config):
+    def __init__(self, search_spaces, all_features, config):
         self.all_features = all_features
         self.config = config
 
@@ -174,12 +174,12 @@ class MiraiSeeker:
         if not os.path.exists(histories_path):
             os.makedirs(histories_path)
 
-        self.hyper_search_spaces_dict = {}
+        self.search_spaces_dict = {}
         self.histories = {}
         self.histories_paths = {}
-        for hyper_search_space in hyper_search_spaces:
-            id = hyper_search_space.id
-            self.hyper_search_spaces_dict[id] = hyper_search_space
+        for search_space in search_spaces:
+            id = search_space.id
+            self.search_spaces_dict[id] = search_space
 
             self.histories_paths[id] = histories_path + id
             if os.path.exists(self.histories_paths[id]):
@@ -192,7 +192,7 @@ class MiraiSeeker:
         """
         Deletes all base models registries.
         """
-        for id in self.hyper_search_spaces_dict:
+        for id in self.search_spaces_dict:
             self.histories[id] = pd.DataFrame()
             dump(self.histories[id], self.histories_paths[id])
 
@@ -277,14 +277,14 @@ class MiraiSeeker:
             method_name = rnd.choice(available_method_names)
             parameters, features = getattr(self, method_name)(id)
 
-        hyper_search_space = self.hyper_search_spaces_dict[id]
+        search_space = self.search_spaces_dict[id]
         if len(parameters) > 0:
             try:
-                hyper_search_space.parameters_rules(parameters)
+                search_space.parameters_rules(parameters)
             except Exception:
                 raise KeyError('Error on parameters rules for the id {}'.format(id))
 
-        model_class = hyper_search_space.model_class
+        model_class = search_space.model_class
 
         return BaseModel(model_class, parameters, features)
 
@@ -300,11 +300,11 @@ class MiraiSeeker:
             Respectively, the dictionary of parameters and the list of features
             that can be used to generate a new base model.
         """
-        hyper_search_space = self.hyper_search_spaces_dict[id]
+        search_space = self.search_spaces_dict[id]
         parameters = {}
-        for parameter in hyper_search_space.parameters_values:
+        for parameter in search_space.parameters_values:
             parameters[parameter] = rnd.choice(
-                hyper_search_space.parameters_values[parameter])
+                search_space.parameters_values[parameter])
         if self.config.use_all_features:
             features = self.all_features
         else:
@@ -575,8 +575,16 @@ class MiraiModel:
 
     :type problem_type: str
     :param problem_type: The problem type: ``'regression'`` or ``'classification'``.
+
+    :type columns_renaming_unmap: dict
+    :param problem_type: A dictionary to map internal column names to the actual
+        column names.
+
+    :type X_y: tuple, optional, default=None
+    :param X_y: The (X, y) pair to fit the model on instantiation.
     """
-    def __init__(self, base_models, weights, problem_type, columns_renaming_unmap):
+    def __init__(self, base_models, weights, problem_type,
+                 columns_renaming_unmap, X_y=None):
         self.models = []
         self.features_lists = []
         for base_model in base_models:
@@ -586,6 +594,10 @@ class MiraiModel:
             )
         self.weights = weights
         self.problem_type = problem_type
+
+        if X_y is not None:
+            X, y = X_y
+            self.fit(X.rename(columns=columns_renaming_unmap), y)
 
     def fit(self, X, y):
         """
@@ -605,7 +617,7 @@ class MiraiModel:
 
         return self
 
-    def __predict__(self, X, method):
+    def __generic_predict__(self, X, method):
         """
         Generic prediction function.
 
@@ -622,12 +634,12 @@ class MiraiModel:
         :returns: Generic predictions
         """
         if self.weights is not None:
-            predictions_sum = [
+            predictions_all = [
                 getattr(model, method)(X[features]) for model, features in zip(
                     self.models, self.features_lists
                 )
             ]
-            predictions = np.average(predictions_sum, axis=0, weights=self.weights)
+            predictions = np.average(predictions_all, axis=0, weights=self.weights)
             if self.problem_type == 'regression':
                 return predictions
             return predictions.round().astype(int)
@@ -644,7 +656,7 @@ class MiraiModel:
         :rtype: numpy.ndarray
         :returns: The set of predictions
         """
-        return self.__predict__(X, 'predict')
+        return self.__generic_predict__(X, 'predict')
 
     def predict_proba(self, X):
         """
@@ -661,7 +673,7 @@ class MiraiModel:
         """
         if self.problem_type == 'regression':
             raise RuntimeError("Cannot compute predict_proba for regressions")
-        return self.__predict__(X, 'predict_proba')
+        return self.__generic_predict__(X, 'predict_proba')
 
 
 class BasePipelineClass:
