@@ -779,10 +779,13 @@ class Engine:
         if self.n_cycles == 0:
             return None
 
+        X_y = (self.train_data, self.train_target) if fit else None
+
         best_id = self.best_id
         if self.ensembler is None or best_id != self.config.ensemble_id:
             return MiraiModel([self.base_models[best_id]], None,
-                              self.config.problem_type)
+                              self.config.problem_type,
+                              self.columns_renaming_unmap, X_y)
 
         ensembler = self.ensembler
         base_models = []
@@ -791,7 +794,7 @@ class Engine:
             base_models.append(self.base_models[id])
             weights.append(ensembler.weights[id])
 
-        X_y = (self.train_data, self.train_target) if fit else None
+
 
         return MiraiModel(base_models, weights, self.config.problem_type,
                           self.columns_renaming_unmap, X_y)
