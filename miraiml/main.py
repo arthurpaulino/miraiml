@@ -13,14 +13,14 @@ class SearchSpace:
     """
     This class represents the search space of hyperparameters for a base model.
 
+    :type id: str
+    :param id: The id that will be associated with the models generated within
+        this search space.
+
     :type model_class: type
     :param model_class: Any class that represents a statistical model. It must
         implement the methods ``fit`` as well as ``predict`` for regression or
         ``predict_proba`` for classification problems.
-
-    :type id: str
-    :param id: The id that will be associated with the models generated within
-        this search space.
 
     :type parameters_values: dict, optional, default=None
     :param parameters_values: A dictionary containing lists of values to be
@@ -58,8 +58,8 @@ class SearchSpace:
         ...         parameters['penalty'] = 'l2'
 
         >>> search_space = SearchSpace(
-        ...     model_class = LogisticRegression,
         ...     id = 'Logistic Regression',
+        ...     model_class = LogisticRegression,
         ...     parameters_values = {
         ...         'penalty': ['l1', 'l2'],
         ...         'C': np.arange(0.1, 2, 0.1),
@@ -79,9 +79,9 @@ class SearchSpace:
         because the scores will be unstable even with the same choice of
         hyperparameters and features.
     """
-    def __init__(self, model_class, id, parameters_values=None,
+    def __init__(self, id, model_class, parameters_values=None,
                  parameters_rules=lambda x: None):
-        self.__validate__(model_class, id, parameters_values, parameters_rules)
+        self.__validate__(id, model_class, parameters_values, parameters_rules)
         self.model_class = model_class
         self.id = id
         if parameters_values is None:
@@ -90,19 +90,19 @@ class SearchSpace:
         self.parameters_rules = parameters_rules
 
     @staticmethod
-    def __validate__(model_class, id, parameters_values, parameters_rules):
+    def __validate__(id, model_class, parameters_values, parameters_rules):
         """
         Validates the constructor parameters.
         """
+        if not isinstance(id, str):
+            raise TypeError('id must be a string')
+        if not is_valid_filename(id):
+            raise ValueError('Invalid id: {}'.format(id))
         dir_model_class = dir(model_class)
         if 'fit' not in dir_model_class:
             raise NotImplementedError('model_class must implement fit')
         if 'predict' not in dir_model_class and 'predict_proba' not in dir_model_class:
             raise NotImplementedError('model_class must implement predict or predict_proba')
-        if not isinstance(id, str):
-            raise TypeError('id must be a string')
-        if not is_valid_filename(id):
-            raise ValueError('Invalid id: {}'.format(id))
         if parameters_values is not None and not isinstance(parameters_values, dict):
             raise TypeError('parameters_values must be None or a dictionary')
         if not callable(parameters_rules):
@@ -174,15 +174,15 @@ class Config:
         >>> from miraiml import SearchSpace, Config
 
         >>> search_spaces = [
-        ...     SearchSpace(GaussianNB, "Naive Bayes"),
-        ...     SearchSpace(DecisionTreeClassifier, "Decicion Tree")
+        ...     SearchSpace('Naive Bayes', GaussianNB),
+        ...     SearchSpace('Decicion Tree', DecisionTreeClassifier)
         ... ]
 
         >>> config = Config(
         ...     local_dir = 'miraiml_local',
         ...     problem_type = 'classification',
-        ...     search_spaces = search_spaces,
         ...     score_function = roc_auc_score,
+        ...     search_spaces = search_spaces,
         ...     use_all_features = False,
         ...     n_folds = 5,
         ...     stratified = True,
@@ -190,10 +190,10 @@ class Config:
         ...     stagnation = -1
         ... )
     """
-    def __init__(self, local_dir, problem_type, search_spaces, score_function,
+    def __init__(self, local_dir, problem_type, score_function, search_spaces,
                  use_all_features=False, n_folds=5, stratified=True,
                  ensemble_id=None, stagnation=60):
-        self.__validate__(local_dir, problem_type, search_spaces, score_function,
+        self.__validate__(local_dir, problem_type, score_function, search_spaces,
                           use_all_features, n_folds, stratified, ensemble_id,
                           stagnation)
         self.local_dir = local_dir
@@ -209,9 +209,9 @@ class Config:
         self.stagnation = stagnation
 
     @staticmethod
-    def __validate__(local_dir, problem_type, search_spaces,
-                     score_function, use_all_features, n_folds, stratified,
-                     ensemble_id, stagnation):
+    def __validate__(local_dir, problem_type, score_function, search_spaces,
+                     use_all_features, n_folds, stratified, ensemble_id,
+                     stagnation):
         """
         Validates the constructor parameters.
         """
@@ -225,6 +225,9 @@ class Config:
             raise TypeError('problem_type must be a string')
         if problem_type not in ('classification', 'regression'):
             raise ValueError('Invalid problem type')
+
+        if not callable(score_function):
+            raise TypeError('score_function must be a function')
 
         if not isinstance(search_spaces, list):
             raise TypeError('search_spaces must be a list')
@@ -248,9 +251,6 @@ class Config:
             if problem_type == 'regression' and 'predict' not in dir_model_class:
                 raise NotImplementedError('Model class of id {} '.format(id) +
                                           'must implement predict for regression problems')
-
-        if not callable(score_function):
-            raise TypeError('score_function must be a function')
 
         if not isinstance(use_all_features, bool):
             raise TypeError('use_all_features must be a boolean')
@@ -300,15 +300,15 @@ class Engine:
         >>> from miraiml import SearchSpace, Config, Engine
 
         >>> search_spaces = [
-        ...     SearchSpace(GaussianNB, "Naive Bayes"),
-        ...     SearchSpace(DecisionTreeClassifier, "Decicion Tree")
+        ...     SearchSpace('Naive Bayes', GaussianNB),
+        ...     SearchSpace('Decision Tree', DecisionTreeClassifier)
         ... ]
 
         >>> config = Config(
         ...     local_dir = 'miraiml_local',
         ...     problem_type = 'classification',
-        ...     search_spaces = search_spaces,
         ...     score_function = roc_auc_score,
+        ...     search_spaces = search_spaces,
         ...     ensemble_id = 'Ensemble'
         ... )
 
@@ -451,7 +451,7 @@ class Engine:
         :raises: ``ValueError`` if the column names are not consistent.
         """
         if self.train_data is None:
-            raise RuntimeError("This method cannot be called before load_train_data")
+            raise RuntimeError('This method cannot be called before load_train_data')
 
         self.__validate_test_data__(test_data)
         self.test_data = test_data.rename(columns=self.columns_renaming_map)

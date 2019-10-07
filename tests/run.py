@@ -22,11 +22,11 @@ def test_run():
     )
 
     search_spaces = [
-        SearchSpace(model_class=LinearRegression, id='Linear Regression'),
-        SearchSpace(model_class=Lasso, id='Lasso'),
+        SearchSpace(id='Linear Regression', model_class=LinearRegression),
+        SearchSpace(id='Lasso', model_class=Lasso),
         SearchSpace(
-            model_class=Pipeline,
             id='Pipeline',
+            model_class=Pipeline,
             parameters_values=dict(
                 scaler__with_mean=[True, False],
                 scaler__with_std=[True, False],
@@ -39,8 +39,8 @@ def test_run():
     config = Config(
         local_dir=TEST_FOLDER,
         problem_type='regression',
-        search_spaces=search_spaces,
         score_function=r2_score,
+        search_spaces=search_spaces,
         ensemble_id='Ensemble',
         stagnation=1
     )
@@ -108,7 +108,7 @@ def test_run():
 
     model = engine.extract_model(fit=False)
 
-    model.fit(train_data.drop(columns="target"), train_data['target'])
+    model.fit(train_data.drop(columns='target'), train_data['target'])
     model.predict(test_data)
 
     model = engine.extract_model()

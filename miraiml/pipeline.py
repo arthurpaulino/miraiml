@@ -87,8 +87,8 @@ def compose(steps):
         >>> from miraiml import SearchSpace
 
         >>> search_space = SearchSpace(
-        ...     model_class=MyPipelineClass,
         ...     id='MyPipelineClass',
+        ...     model_class=MyPipelineClass,
         ...     parameters_values=dict(
         ...         scaler__with_mean=[True, False],
         ...         scaler__with_std=[True, False],

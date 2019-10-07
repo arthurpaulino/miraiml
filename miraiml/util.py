@@ -52,7 +52,7 @@ def sample_random_len(lst):
     return rnd.sample(lst, max(1, math.ceil(rnd.random()*len(lst))))
 
 
-__valid_filename_chars__ = frozenset("-_.() %s%s" % (string.ascii_letters,
+__valid_filename_chars__ = frozenset('-_.() %s%s' % (string.ascii_letters,
                                                      string.digits))
 
 
@@ -75,7 +75,7 @@ def is_valid_filename(filename):
     return True
 
 
-__valid_pipeline_chars__ = frozenset("_%s%s" % (string.ascii_letters,
+__valid_pipeline_chars__ = frozenset('_%s%s' % (string.ascii_letters,
                                                 string.digits))
 
 

@@ -271,8 +271,8 @@ class MiraiSeeker:
             parameters, features = self.random_search(id)
         else:
             available_method_names = [method_name for method_name in dir(self)
-                                      if method_name.endswith("_search")
-                                      and method_name != "random_search"]
+                                      if method_name.endswith('_search')
+                                      and method_name != 'random_search']
 
             method_name = rnd.choice(available_method_names)
             parameters, features = getattr(self, method_name)(id)
@@ -672,7 +672,7 @@ class MiraiModel:
         :raises: ``RuntimeError`` if called for regression problems.
         """
         if self.problem_type == 'regression':
-            raise RuntimeError("Cannot compute predict_proba for regressions")
+            raise RuntimeError('Cannot compute predict_proba for regressions')
         return self.__generic_predict__(X, 'predict_proba')
 
 
@@ -701,8 +701,8 @@ class BasePipelineClass:
         :returns: The list of allowed parameters
         """
         params = [param for param in self.pipeline.get_params() if
-                  "copy" not in param]
-        prefixes = [alias + "__" for alias, _ in self.steps]
+                  'copy' not in param]
+        prefixes = [alias + '__' for alias, _ in self.steps]
         return [param for param in params if
                 any([param.startswith(prefix) for prefix in prefixes])]
 
@@ -718,8 +718,8 @@ class BasePipelineClass:
         for param in params:
             if param not in allowed_params:
                 raise ValueError(
-                    "Parameter " + param + " is incompatible. The allowed " +
-                    "parameters are:\n" + ", ".join(allowed_params)
+                    'Parameter ' + param + ' is incompatible. The allowed ' +
+                    'parameters are:\n' + ', '.join(allowed_params)
                 )
         self.pipeline.set_params(**params)
         return self

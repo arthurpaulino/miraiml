@@ -1,4 +1,4 @@
-.PHONY: install develop flake tests docs release upload_test upload_pypi clean help
+.PHONY: install develop flake doctest tests docs release upload_test upload_pypi clean help
 
 install:
 	@pip install -r requirements.txt && pip install .
@@ -9,8 +9,11 @@ develop:
 flake:
 	@python -m flake8
 
+doctest:
+	@python -m doctest -v README.rst docs/*.rst miraiml/*.py
+
 tests:
-	@python -m doctest -v README.rst miraiml/*.py && python -m pytest tests/*
+	@make doctest && python -m pytest tests/*
 
 docs:
 	@cd docs && make clean && make html
@@ -35,6 +38,8 @@ help:
 	@echo '		Builds and installs MiraiML along with development packages'
 	@echo '	flake'
 	@echo '		Runs flake8 checks'
+	@echo '	doctest'
+	@echo '		Runs doctest on all files that matter'
 	@echo '	tests'
 	@echo '		Runs all tests'
 	@echo '	docs'

@@ -13,7 +13,7 @@ built for real-time usage.
   Python code as you interact with the engine;
 
 - It's continuous because it can run "forever", always looking for solutions that
-  can achieve better accuracies;
+  can achieve better performances;
 
 - It's autonomous because it does not wander on the search space blindly and does
   not perform exhaustive grid searches. Instead, it combines past attempts to guide
@@ -32,18 +32,116 @@ MiraiML usability
 
 Tired of coding the same grid searches, cross-validations, training and predicting
 scripts over and over? I was. MiraiML does it all with a simple API, so you can
-spend less time on such mechanical tasks.
+spend less time on such mechanical tasks. MiraiML works on the typical train/test
+scenario, when the data can fit in the RAM. Let's explore the API from a bottom-up
+perspective.
 
-MiraiML works on the typical train/test scenario, when the data can fit in the
-RAM. No models are provided, thus you need to import external models or implement
-your own. Didactic tutorials can be found on the
-`examples <https://github.com/arthurpaulino/miraiml/tree/master/examples>`_
-directory.
+Search spaces
+*************
+
+MiraiML requires that you define the search spaces in which it will look for
+solution candidates. In order to instantiate a search space, you need to use the
+:class:`miraiml.SearchSpace` class. A search space is a combination of an id, a
+model class and a dictionary of hyperparameters values to be tested. The only
+requirement is that the model class must implement a ``fit`` method as well as a
+``predict`` method for regression problems or a ``predict_proba`` for
+classification problems. For instance, you can use scikit-learn's models:
+
+::
+
+    >>> from sklearn.linear_model import LinearRegression
+    >>> from miraiml import SearchSpace
+
+    >>> search_space = SearchSpace(
+    ...     id = 'Linear Regression',
+    ...     model_class = LinearRegression,
+    ...     parameters_values = dict(
+    ...         fit_intercept = [True, False],
+    ...         normalize = [True, False]
+    ...     )
+    ... )
+
+:class:`miraiml.SearchSpace` also allows you to provide a `parameters_rules`
+function to deal with prohibitive combinations of hyperparameters. Please refer
+to its documentation for further understanding.
+
+After you've defined your search spaces, the next step is building the
+configuration object.
+
+Configuration
+*************
+
+The configuration for MiraiML's Engine is defined by an instance of the
+:class:`miraiml.Config` class, which tells the Engine where to save its local
+files, the problem type, the function to score the candidate solutions, the search
+spaces that should be used and a few other things. For instance:
+
+::
+
+    >>> from sklearn.metrics import r2_score
+    >>> from miraiml import Config
+
+    >>> config = Config(
+    ...     local_dir = 'miraiml_local',
+    ...     problem_type = 'regression',
+    ...     score_function = r2_score,
+    ...     search_spaces = [search_space]
+    ... )
+
+Alright, now we're all set to use the Engine.
+
+Triggering the Engine
+*********************
+
+:class:`miraiml.Engine` provides a straightforward interface to access its
+functionalities. The instantiation only requires a configuration object:
+
+::
+
+    >>> from miraiml import Engine
+
+    >>> engine = Engine(config)
+
+.. note::
+    You can also provide a ``on_improvement`` function that will be executed
+    everytime the engine finds a better modeling solution. Check out the API
+    documentation for more information.
+
+Let's use scikit-learn's classic `California Housing` dataset as an example:
+
+::
+
+    >>> from sklearn.datasets import fetch_california_housing
+    >>> import pandas as pd
+
+    >>> X, y = fetch_california_housing(return_X_y=True)
+    >>> data = pd.DataFrame(X)
+    >>> data['target'] = y
+
+    >>> engine.load_train_data(train_data=data, target_column='target')
+
+After the training data is loaded, you can trigger the optimization process with:
+
+::
+
+    >>> engine.restart()
+
+And to interrupt it:
+
+::
+
+    >>> engine.interrupt()
+
+MiraiML workflow
+----------------
+
+Deeper aspects
+--------------
 
 Base models
------------
+***********
 
-.. rubric:: Fitting, predicting and scoring
+    `Fit, predict and validate with a single button.`
 
 .. _base_model:
 
@@ -71,8 +169,16 @@ More precisely:
 Averaging the predictions for the testing dataset may result in slightly better
 accuracies than expected.
 
+.. rubric:: Pipelines
+
+Pipelines are a brand new feature of MiraiML. They can be used as base models
+when you want to test various ways of pre-processing your data before fitting it
+with a model.
+
+If that's your case, please check out the :mod:`miraiml.pipeline` module.
+
 Seeking good base models
-------------------------
+************************
 
 .. _mirai_seeker:
 
@@ -123,8 +229,9 @@ models are:
 
 - Linear Regression
     Uses a simple linear regression to model the score as a function of the other
-    history columns. Makes `n`/2 guesses and chooses the best guess according to
-    the model, where `n` is the size of the history dataframe.
+    history columns. Categorical columns are processed with One-Hot-Encoding. This
+    strategy makes `n`/2 guesses and chooses the best guess according to the linear
+    regression model, where `n` is the size of the history dataframe.
 
 The strategy is chosen stochastically according to the following priority rule:
 
@@ -132,7 +239,7 @@ The strategy is chosen stochastically according to the following priority rule:
     the other strategies will be chosen with equal probabilities.`
 
 Ensembling base models
-----------------------
+**********************
 
 .. _ensemble:
 
