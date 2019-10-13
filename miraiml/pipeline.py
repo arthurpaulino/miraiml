@@ -1,9 +1,9 @@
 """
 :mod:`miraiml.pipeline` contains a function that lets you build your own
-pipeline classes and a few pre-defined pipelines for baselines.
+pipeline classes. It also contains a few pre-defined pipelines for baselines.
 """
 
-from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import OneHotEncoder, MinMaxScaler
 from sklearn.impute import SimpleImputer
 from sklearn.naive_bayes import GaussianNB
 from sklearn.linear_model import LinearRegression
@@ -14,11 +14,10 @@ from miraiml.core import BasePipelineClass
 
 def compose(steps):
     """
-    A function that can be used to define pipeline classes dinamically. Builds a
-    pipeline class that can be instantiated with particular parameters for each
-    of its transformers/estimator without needing to call ``set_params`` as you
-    would do with scikit-learn's Pipeline when performing hyperparameters
-    optimizations.
+    A function that defines pipeline classes dinamically. It builds a pipeline
+    class that can be instantiated with particular parameters for each of its
+    transformers/estimator without needing to call ``set_params`` as you would
+    do with scikit-learn's Pipeline when performing hyperparameters optimizations.
 
     Similarly to scikit-learn's Pipeline, ``steps`` is a list of tuples
     containing an alias and the respective pipeline element. Although, since
@@ -151,7 +150,11 @@ def compose(steps):
     return type('MiraiPipeline', (BasePipelineClass,), dict(steps=steps))
 
 
-__initial_steps__ = [('ohe', OneHotEncoder), ('inpute', SimpleImputer)]
+__initial_steps__ = [
+    ('ohe', OneHotEncoder),
+    ('impute', SimpleImputer),
+    ('min_max', MinMaxScaler)
+]
 
 
 class NaiveBayesBaseliner(compose(__initial_steps__ + [('naive', GaussianNB)])):
@@ -161,7 +164,8 @@ class NaiveBayesBaseliner(compose(__initial_steps__ + [('naive', GaussianNB)])):
 
     1. ``sklearn.preprocessing.OneHotEncoder``
     2. ``sklearn.impute.SimpleImputer``
-    3. ``sklearn.naive_bayes.GaussianNB``
+    3. ``sklearn.preprocessing.MinMaxScaler``
+    4. ``sklearn.naive_bayes.GaussianNB``
 
     The available parameters to tweak are:
 
@@ -179,11 +183,12 @@ class NaiveBayesBaseliner(compose(__initial_steps__ + [('naive', GaussianNB)])):
         ohe__handle_unknown
         ohe__n_values
         ohe__sparse
-        inpute__add_indicator
-        inpute__fill_value
-        inpute__missing_values
-        inpute__strategy
-        inpute__verbose
+        impute__add_indicator
+        impute__fill_value
+        impute__missing_values
+        impute__strategy
+        impute__verbose
+        min_max__feature_range
         naive__priors
         naive__var_smoothing
     """
@@ -198,7 +203,8 @@ class LinearRegressionBaseliner(compose(__initial_steps__ + [('lin_reg', LinearR
 
     1. ``sklearn.preprocessing.OneHotEncoder``
     2. ``sklearn.impute.SimpleImputer``
-    3. ``sklearn.linear_model.LinearRegression``
+    3. ``sklearn.preprocessing.MinMaxScaler``
+    4. ``sklearn.linear_model.LinearRegression``
 
     The available parameters to tweak are:
 
@@ -216,11 +222,12 @@ class LinearRegressionBaseliner(compose(__initial_steps__ + [('lin_reg', LinearR
         ohe__handle_unknown
         ohe__n_values
         ohe__sparse
-        inpute__add_indicator
-        inpute__fill_value
-        inpute__missing_values
-        inpute__strategy
-        inpute__verbose
+        impute__add_indicator
+        impute__fill_value
+        impute__missing_values
+        impute__strategy
+        impute__verbose
+        min_max__feature_range
         lin_reg__fit_intercept
         lin_reg__n_jobs
         lin_reg__normalize

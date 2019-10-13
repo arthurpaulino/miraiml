@@ -72,7 +72,10 @@ def test_run():
             len(status.ensemble_weights) != len(search_spaces):
         raise AssertionError()
 
-    if status.predictions.shape[0] != test_data.shape[0]:
+    if status.train_predictions.shape[0] != train_data.shape[0]:
+        raise AssertionError()
+
+    if status.test_predictions.shape[0] != test_data.shape[0]:
         raise AssertionError()
 
     for base_model in status.base_models.values():
@@ -98,7 +101,7 @@ def test_run():
 
     status = engine.request_status()
 
-    if status.predictions is not None:
+    if status.test_predictions is not None:
         raise AssertionError()
 
     engine.interrupt()

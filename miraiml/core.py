@@ -334,6 +334,7 @@ class MiraiSeeker:
             chosen_value = rnd.choices(
                 dist[column].values,
                 cum_weights=dist['score'].cumsum().values)[0]
+            del dist
             if column.endswith('___(parameter)'):
                 parameter = column.split('___(')[0]
                 parameters[parameter] = chosen_value
@@ -417,6 +418,8 @@ class MiraiSeeker:
 
         # Choosing the best guess:
         best_guess = guesses_df.sort_values('score', ascending=False).head(1)
+
+        del guesses_df
 
         return self.__dataframe_to_parameters_features__(best_guess)
 
@@ -560,12 +563,14 @@ class Ensembler:
                 self.test_predictions_df[self.id] = test_predictions
                 dump(self.weights, self.weights_path)
                 optimized = True
+            else:
+                del weights, train_predictions, test_predictions
         return optimized
 
 
 class MiraiModel:
     """
-    Represents an unified model optimized by MiraiML.
+    Represents a model optimized by MiraiML.
 
     :type base_models: list
     :param base_models: The list of base_models that will be used.

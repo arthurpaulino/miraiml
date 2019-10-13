@@ -1,10 +1,8 @@
-.ipynb_checkpoints
 MiraiML.egg-info/*
 *miraiml_local*
 .pytest_cache
 __pycache__
 MANIFEST
 docs/_*
-*.csv
 build
 dist

@@ -3,6 +3,7 @@ import pandas as pd
 import warnings
 import time
 import os
+import gc
 
 from miraiml.util import is_valid_filename
 from miraiml.core import MiraiSeeker, Ensembler, MiraiModel
@@ -321,6 +322,8 @@ class Engine:
         self.__validate__(config, on_improvement)
         self.config = config
         self.on_improvement = on_improvement
+        self.train_predictions_df = None
+        self.test_predictions_df = None
         self.__is_running__ = False
         self.must_interrupt = False
         self.mirai_seeker = None
@@ -669,8 +672,9 @@ class Engine:
         self.n_cycles = 1
 
         while not self.must_interrupt:
-
+            gc.collect()
             start = time.time()
+
             for search_space in self.config.search_spaces:
                 self.__check_stagnation__()
                 if self.must_interrupt:
@@ -701,6 +705,8 @@ class Engine:
                     self.__improvement_trigger__()
 
                     dump_base_model(base_model, self.models_dir + id)
+                else:
+                    del train_predictions, test_predictions
 
             total_cycles_duration += time.time() - start
             self.n_cycles += 1
@@ -724,9 +730,13 @@ class Engine:
         if self.best_id is None:
             return None
 
-        predictions = None
-        if self.test_data is not None:
-            predictions = self.test_predictions_df.copy()
+        train_predictions = None
+        if self.train_predictions_df is not None:
+            train_predictions = self.train_predictions_df.copy()
+
+        test_predictions = None
+        if self.test_data is not None and self.test_predictions_df is not None:
+            test_predictions = self.test_predictions_df.copy()
 
         ensemble_weights = None
         if self.ensembler is not None:
@@ -747,7 +757,8 @@ class Engine:
         return Status(
             best_id=self.best_id,
             scores=self.scores.copy(),
-            predictions=predictions,
+            train_predictions=train_predictions,
+            test_predictions=test_predictions,
             ensemble_weights=ensemble_weights,
             base_models=base_models
         )
@@ -763,7 +774,7 @@ class Engine:
         one cycle of experiments.
 
         .. warning::
-            The extracted model is likely to perform worse than the engine when
+            The extracted model is likely to perform worse than the Engine when
             it comes down to making predictions due to the way that MiraiML
             ensembles out-of-folds predictions even for each base model.
 
@@ -812,7 +823,10 @@ class Status:
 
     * ``scores``: a dictionary containing the current score of each id
 
-    * ``predictions``: a ``pandas.DataFrame`` object containing the predictions\
+    * ``train_predictions``: a ``pandas.DataFrame`` object containing the predictions\
+        for the train data for each id
+
+    * ``test_predictions``: a ``pandas.DataFrame`` object containing the predictions\
         for the test data for each id
 
     * ``ensemble_weights``: a dictionary containing the ensemble weights for\
