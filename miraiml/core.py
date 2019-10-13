@@ -417,9 +417,9 @@ class MiraiSeeker:
         guesses_df['score'] = model.predict(data_ohe_test)
 
         # Choosing the best guess:
-        best_guess = guesses_df.sort_values('score', ascending=False).head(1)
+        best_guess = guesses_df.sort_values('score', ascending=False).head(1).copy()
 
-        del guesses_df
+        del guesses_df, data, data_ohe, data_ohe_train, data_ohe_test, y, model
 
         return self.__dataframe_to_parameters_features__(best_guess)
 
