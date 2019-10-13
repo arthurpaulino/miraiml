@@ -211,9 +211,9 @@ class MiraiSeeker:
         """
         entry = {'score': score}
         for parameter in parameters:
-            entry[parameter+'___(parameter)'] = parameters[parameter]
+            entry[parameter+'__(hyperparameter)'] = parameters[parameter]
         for feature in self.all_features:
-            entry[feature+'___(feature)'] = 1 if feature in features else 0
+            entry[feature+'__(feature)'] = 1 if feature in features else 0
         return pd.DataFrame([entry])
 
     def register_base_model(self, id, base_model, score):
@@ -335,11 +335,11 @@ class MiraiSeeker:
                 dist[column].values,
                 cum_weights=dist['score'].cumsum().values)[0]
             del dist
-            if column.endswith('___(parameter)'):
-                parameter = column.split('___(')[0]
+            if column.endswith('__(hyperparameter)'):
+                parameter = column.split('__(')[0]
                 parameters[parameter] = chosen_value
-            elif column.endswith('___(feature)'):
-                feature = column.split('___(')[0]
+            elif column.endswith('__(feature)'):
+                feature = column.split('__(')[0]
                 if self.config.use_all_features:
                     features.append(feature)
                 else:
@@ -366,11 +366,11 @@ class MiraiSeeker:
         for column in dataframe.columns:
             if column == 'score':
                 continue
-            column_filtered = column.split('___(')[0]
+            column_filtered = column.split('__(')[0]
             value = dataframe[column].values[0]
-            if column.endswith('___(parameter)'):
+            if column.endswith('__(hyperparameter)'):
                 parameters[column_filtered] = value
-            elif column.endswith('___(feature)'):
+            elif column.endswith('__(feature)'):
                 if value:
                     features.append(column_filtered)
         return (parameters, features)

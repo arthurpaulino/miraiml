@@ -78,8 +78,9 @@ Configuration
 
 The configuration for MiraiML's Engine is defined by an instance of the
 :class:`miraiml.Config` class, which tells the Engine where to save its local
-files, the problem type, the function to score the candidate solutions, the search
-spaces that should be used and a few other things. For instance:
+files (checkpoints), the problem type, the function to score the candidate
+solutions, the search spaces that should be used and a few other things. For
+instance:
 
 ::
 

@@ -754,13 +754,20 @@ class Engine:
                 self.columns_renaming_unmap[col] for col in base_model.features
             ]
 
+        histories = None
+        if self.mirai_seeker is not None:
+            histories = {}
+            for id in self.mirai_seeker.histories:
+                histories[id] = self.mirai_seeker.histories[id].copy()
+
         return Status(
             best_id=self.best_id,
             scores=self.scores.copy(),
             train_predictions=train_predictions,
             test_predictions=test_predictions,
             ensemble_weights=ensemble_weights,
-            base_models=base_models
+            base_models=base_models,
+            histories=histories
         )
 
     def extract_model(self, fit=True):
@@ -834,6 +841,13 @@ class Status:
 
     * ``base_models``: a dictionary containing the characteristics of each base\
         model (accessed by its respective id)
+
+    * ``histories``: a dictionary of ``pandas.DataFrame`` objects for each id,\
+        containing the history of base models attempts and their respective scores.\
+        Hyperparameters columns end with the ``'__(hyperparameter)'`` suffix and\
+        features columns end with the ``'__(feature)'`` suffix. The score column\
+        can be accessed with the key ``'score'``. For more information, please\
+        check the :ref:`User Guide <mirai_seeker>`.
 
     The characteristics of each base model are represent by dictionaries, containing
     the following keys:
