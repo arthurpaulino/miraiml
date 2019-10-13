@@ -20,7 +20,7 @@ docs:
 	@echo -e 'ctrl+click -> \e]8;;file://${PWD}/docs/_build/html/index.html\aMiraiML Docs\e]8;;\a'
 
 clean:
-	@rm -rf MANIFEST */__pycache__ dist .pytest_cache docs/_build
+	@rm -rf MANIFEST */__pycache__ dist .pytest_cache docs/_build miraiml_local
 
 release:
 	@rm -rf dist && python setup.py sdist
