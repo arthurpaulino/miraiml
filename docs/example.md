@@ -65,7 +65,7 @@ search_spaces = [
 
 ## Configuring the Engine
 
-For this test, let's use `r2_score` to evaluate our modeling.
+For this demonstration, let's use `r2_score` to evaluate our modeling.
 
 
 ```python
@@ -84,7 +84,7 @@ config = Config(
 
 ## Triggering the Engine
 
-Let's also print the scores everytime the Engine finds a better solution for any base model.
+Let's also print the scores everytime the Engine finds a better solution.
 
 
 ```python
@@ -107,7 +107,7 @@ engine.load_train_data(train_data, 'target')
 engine.load_test_data(test_data)
 ```
 
-Let's leave it running for 2 minutes and then interrupt it.
+Let's leave it running for 2 minutes, shuffle the train data, let it run for 2 more minutes and then interrupt it.
 
 
 ```python
@@ -117,33 +117,79 @@ engine.restart()
 
 sleep(120)
 
+print('\nShuffling train data')
+engine.shuffle_train_data(restart=True)
+
+sleep(120)
+
 engine.interrupt()
 ```
 
-    Ensemble: 0.606; Pipeline: 0.402; k-NN Regressor: 0.567; 
-    Ensemble: 0.606; Pipeline: 0.402; k-NN Regressor: 0.567; 
-    Ensemble: 0.622; Pipeline: 0.601; k-NN Regressor: 0.567; 
-    Ensemble: 0.638; Pipeline: 0.601; k-NN Regressor: 0.567; 
-    Ensemble: 0.638; Pipeline: 0.601; k-NN Regressor: 0.567; 
-    Ensemble: 0.67; Pipeline: 0.601; k-NN Regressor: 0.598; 
-    Ensemble: 0.671; Pipeline: 0.609; k-NN Regressor: 0.598; 
-    Ensemble: 0.672; Pipeline: 0.609; k-NN Regressor: 0.598; 
-    Ensemble: 0.672; Pipeline: 0.609; k-NN Regressor: 0.598; 
-    Ensemble: 0.672; Pipeline: 0.609; k-NN Regressor: 0.598; 
-    Ensemble: 0.733; Pipeline: 0.609; k-NN Regressor: 0.727; 
-    Ensemble: 0.749; Pipeline: 0.609; k-NN Regressor: 0.727; 
-    Ensemble: 0.749; Pipeline: 0.609; k-NN Regressor: 0.727; 
-    Ensemble: 0.759; Pipeline: 0.609; k-NN Regressor: 0.759; 
-    Ensemble: 0.763; Pipeline: 0.609; k-NN Regressor: 0.759; 
-    Ensemble: 0.763; Pipeline: 0.609; k-NN Regressor: 0.759; 
-    Ensemble: 0.763; Pipeline: 0.609; k-NN Regressor: 0.759; 
-    Ensemble: 0.769; Pipeline: 0.609; k-NN Regressor: 0.768; 
-    Ensemble: 0.769; Pipeline: 0.609; k-NN Regressor: 0.768; 
-    Ensemble: 0.769; Pipeline: 0.609; k-NN Regressor: 0.768; 
-    Ensemble: 0.769; Pipeline: 0.609; k-NN Regressor: 0.768; 
+    Ensemble: 0.118; Pipeline: -3.214; k-NN Regressor: 0.118; 
+    Ensemble: 0.142; Pipeline: -3.214; k-NN Regressor: 0.142; 
+    Ensemble: 0.143; Pipeline: 0.467; k-NN Regressor: 0.142; 
+    Ensemble: 0.474; Pipeline: 0.467; k-NN Regressor: 0.142; 
+    Ensemble: 0.473; Pipeline: 0.467; k-NN Regressor: 0.172; 
+    Ensemble: 0.509; Pipeline: 0.503; k-NN Regressor: 0.172; 
+    Ensemble: 0.509; Pipeline: 0.503; k-NN Regressor: 0.172; 
+    Ensemble: 0.525; Pipeline: 0.503; k-NN Regressor: 0.321; 
+    Ensemble: 0.539; Pipeline: 0.503; k-NN Regressor: 0.321; 
+    Ensemble: 0.552; Pipeline: 0.503; k-NN Regressor: 0.521; 
+    Ensemble: 0.566; Pipeline: 0.503; k-NN Regressor: 0.521; 
+    Ensemble: 0.565; Pipeline: 0.503; k-NN Regressor: 0.538; 
+    Ensemble: 0.566; Pipeline: 0.503; k-NN Regressor: 0.538; 
+    Ensemble: 0.566; Pipeline: 0.503; k-NN Regressor: 0.538; 
+    Ensemble: 0.566; Pipeline: 0.512; k-NN Regressor: 0.538; 
+    Ensemble: 0.566; Pipeline: 0.512; k-NN Regressor: 0.538; 
+    Ensemble: 0.566; Pipeline: 0.512; k-NN Regressor: 0.538; 
+    Ensemble: 0.587; Pipeline: 0.512; k-NN Regressor: 0.544; 
+    Ensemble: 0.597; Pipeline: 0.536; k-NN Regressor: 0.544; 
+    Ensemble: 0.598; Pipeline: 0.536; k-NN Regressor: 0.544; 
+    Ensemble: 0.648; Pipeline: 0.536; k-NN Regressor: 0.659; 
+    Ensemble: 0.666; Pipeline: 0.536; k-NN Regressor: 0.659; 
+    Ensemble: 0.68; Pipeline: 0.536; k-NN Regressor: 0.665; 
+    Ensemble: 0.681; Pipeline: 0.536; k-NN Regressor: 0.665; 
+    Ensemble: 0.681; Pipeline: 0.536; k-NN Regressor: 0.665; 
+    Ensemble: 0.681; Pipeline: 0.536; k-NN Regressor: 0.665; 
+    Ensemble: 0.695; Pipeline: 0.584; k-NN Regressor: 0.665; 
+    Ensemble: 0.698; Pipeline: 0.584; k-NN Regressor: 0.665; 
+    Ensemble: 0.698; Pipeline: 0.597; k-NN Regressor: 0.665; 
+    Ensemble: 0.698; Pipeline: 0.597; k-NN Regressor: 0.665; 
+    Ensemble: 0.698; Pipeline: 0.597; k-NN Regressor: 0.665; 
+    Ensemble: 0.698; Pipeline: 0.597; k-NN Regressor: 0.665; 
+    Ensemble: 0.698; Pipeline: 0.597; k-NN Regressor: 0.665; 
+    Ensemble: 0.698; Pipeline: 0.597; k-NN Regressor: 0.665; 
+    Ensemble: 0.698; Pipeline: 0.597; k-NN Regressor: 0.665; 
+    Ensemble: 0.698; Pipeline: 0.597; k-NN Regressor: 0.687; 
+    Ensemble: 0.7; Pipeline: 0.597; k-NN Regressor: 0.687; 
+    Ensemble: 0.7; Pipeline: 0.597; k-NN Regressor: 0.687; 
+    Ensemble: 0.738; Pipeline: 0.597; k-NN Regressor: 0.72; 
+    Ensemble: 0.738; Pipeline: 0.597; k-NN Regressor: 0.72; 
+    Ensemble: 0.738; Pipeline: 0.597; k-NN Regressor: 0.72; 
+    Ensemble: 0.754; Pipeline: 0.597; k-NN Regressor: 0.753; 
+    Ensemble: 0.757; Pipeline: 0.597; k-NN Regressor: 0.753; 
+    Ensemble: 0.757; Pipeline: 0.597; k-NN Regressor: 0.753; 
+    Ensemble: 0.757; Pipeline: 0.597; k-NN Regressor: 0.753; 
+    Ensemble: 0.757; Pipeline: 0.597; k-NN Regressor: 0.753; 
+    
+    Shuffling train data
+    Ensemble: 0.757; Pipeline: 0.596; k-NN Regressor: 0.753; 
+    Ensemble: 0.757; Pipeline: 0.596; k-NN Regressor: 0.753; 
+    Ensemble: 0.757; Pipeline: 0.596; k-NN Regressor: 0.753; 
+    Ensemble: 0.758; Pipeline: 0.596; k-NN Regressor: 0.755; 
+    Ensemble: 0.758; Pipeline: 0.596; k-NN Regressor: 0.755; 
+    Ensemble: 0.758; Pipeline: 0.596; k-NN Regressor: 0.755; 
+    Ensemble: 0.758; Pipeline: 0.596; k-NN Regressor: 0.755; 
+    Ensemble: 0.758; Pipeline: 0.596; k-NN Regressor: 0.755; 
+    Ensemble: 0.758; Pipeline: 0.596; k-NN Regressor: 0.755; 
+    Ensemble: 0.758; Pipeline: 0.596; k-NN Regressor: 0.755; 
+    Ensemble: 0.758; Pipeline: 0.596; k-NN Regressor: 0.755; 
+    Ensemble: 0.758; Pipeline: 0.596; k-NN Regressor: 0.755; 
+    Ensemble: 0.758; Pipeline: 0.596; k-NN Regressor: 0.755; 
+    Ensemble: 0.758; Pipeline: 0.596; k-NN Regressor: 0.755; 
 
 
-## Status analysis
+## Engine's status analysis
 
 
 ```python
@@ -159,38 +205,40 @@ print(status.build_report(include_features=True))
 
     ########################
     best id: Ensemble
-    best score: 0.769317652930817
+    best score: 0.7583702712570008
     ########################
     ensemble weights:
-        k-NN Regressor: 0.4315924504433665
-        Pipeline: 0.04186130925207794
+        k-NN Regressor: 0.4325346249356786
+        Pipeline: 0.06615069839850787
     ########################
     all scores:
-        Ensemble: 0.769317652930817
-        k-NN Regressor: 0.7678076788534821
-        Pipeline: 0.6088760916515874
+        Ensemble: 0.7583702712570008
+        k-NN Regressor: 0.7545806614607227
+        Pipeline: 0.5963819838101254
     ########################
     id: Pipeline
     model class: MiraiPipeline
-    n features: 7
+    n features: 8
     parameters:
         lin_reg__fit_intercept: True
         scaler__with_mean: False
-        scaler__with_std: True
-    features: 1, 2, 3, 4, 5, 6, 7
+        scaler__with_std: False
+    features: 0, 1, 2, 3, 4, 5, 6, 7
     ########################
     id: k-NN Regressor
     model class: KNeighborsRegressor
-    n features: 4
+    n features: 6
     parameters:
-        n_neighbors: 5
-        p: 4
-        weights: uniform
-    features: 0, 1, 2, 7
+        n_neighbors: 6
+        p: 2
+        weights: distance
+    features: 0, 2, 3, 5, 6, 7
     
 
 
-How does the k-NN Regressor's score changes with `n_neighbors`, on average?
+### k-NN Regressor's history
+
+How does the k-NN Regressor's scores change with `n_neighbors`, on average?
 
 
 ```python
@@ -199,10 +247,9 @@ import matplotlib.pyplot as plt
 
 knn_history = status.histories['k-NN Regressor']
 
-knn_history\
-.groupby('n_neighbors__(hyperparameter)').mean()\
-.reset_index()[['n_neighbors__(hyperparameter)', 'score']]\
-.plot.scatter(x='n_neighbors__(hyperparameter)', y='score')
+knn_history[['n_neighbors__(hyperparameter)', 'score']]\
+    .groupby('n_neighbors__(hyperparameter)').mean()\
+    .plot.bar()
 
 plt.show()
 ```
@@ -211,7 +258,26 @@ plt.show()
 ![png](example_files/example_19_0.png)
 
 
-Again, in practice we wouldn't have labels for `test_data`, but how would the Engine perform on the test dataset?
+We can also see how the presence of features (0 or 1) correlate with the score. These results can work as some sort of feature importance.
+
+
+```python
+knn_history[[col for col in knn_history if col.endswith('(feature)')] + ['score']]\
+    .corr()['score'][:-1]\
+    .sort_values()\
+    .plot.bar(label='Correlation')
+
+plt.legend()
+plt.show()
+```
+
+
+![png](example_files/example_21_0.png)
+
+
+### Theoretical performance in production
+
+Again, in practice we wouldn't have labels for `test_data`. But since we do have labels here, how would MiraiML perform on the test dataset?
 
 
 ```python
@@ -221,6 +287,6 @@ r2_score(test_data['target'], status.test_predictions['Ensemble'])
 
 
 
-    0.7686513420142499
+    0.7802410717298023
 
 
