@@ -309,6 +309,9 @@ The current rule is:
     `The time consumed by the ensemble is limited by the total time consumed by
     all base models, on average.`
 
+.. warning::
+    The score of the Ensemble *may* decrease when the engine finds a better base
+    model and updates its predictions.
 
 Optimization workflow
 ---------------------

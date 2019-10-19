@@ -109,13 +109,5 @@ def test_run():
     status.build_report()
     status.build_report(include_features=True)
 
-    model = engine.extract_model(fit=False)
-
-    model.fit(train_data.drop(columns='target'), train_data['target'])
-    model.predict(test_data)
-
-    model = engine.extract_model()
-    model.predict(test_data)
-
     pd.testing.assert_frame_equal(train_data, train_data_original)
     pd.testing.assert_frame_equal(test_data, test_data_original)

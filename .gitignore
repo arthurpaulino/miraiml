@@ -1,3 +1,4 @@
+.ipynb_checkpoints
 MiraiML.egg-info/*
 *miraiml_local*
 .pytest_cache

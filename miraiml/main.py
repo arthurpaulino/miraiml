@@ -6,7 +6,7 @@ import os
 import gc
 
 from miraiml.util import is_valid_filename
-from miraiml.core import MiraiSeeker, Ensembler, MiraiModel
+from miraiml.core import MiraiSeeker, Ensembler
 from miraiml.core import load_base_model, dump_base_model
 
 
@@ -283,10 +283,10 @@ class Engine:
     :param config: The configurations for the behavior of the engine.
 
     :type on_improvement: function, optional, default=None
-    :param on_improvement: A function that will be executed asynchronously everytime
-        the engine finds an improvement for some id. It must receive a ``status``
-        parameter, which is the return of the method :func:`request_status` (an
-        instance of :class:`miraiml.Status`).
+    :param on_improvement: A function that will be executed everytime the engine
+        finds an improvement for some id. It must receive a ``status`` parameter,
+        which is the return of the method :func:`request_status` (an instance of
+        :class:`miraiml.Status`).
 
     :raises: ``TypeError`` if ``config`` is not an instance of :class:`miraiml.Config`
         or ``on_improvement`` (if provided) is not callable.
@@ -437,6 +437,9 @@ class Engine:
         Interrupts the engine and loads the test dataset. All of its columns must
         be columns in the train data.
 
+        The test dataset is the one for which we don't have the values for the
+        target column. This method should be used to load data in production.
+
         .. warning::
             This method can only be called after
             :func:`miraiml.Engine.load_train_data`
@@ -558,12 +561,11 @@ class Engine:
 
     def __improvement_trigger__(self):
         """
-        Called when an improvement happens. The asynchronous call to `on_improvement`
-        happens here.
+        Called when an improvement happens.
         """
         self.last_improvement_timestamp = time.time()
         if self.on_improvement is not None:
-            Thread(target=lambda: self.on_improvement(self.request_status())).start()
+            self.on_improvement(self.request_status())
 
     def __update_best__(self, score, id):
         """
@@ -769,53 +771,6 @@ class Engine:
             base_models=base_models,
             histories=histories
         )
-
-    def extract_model(self, fit=True):
-        """
-        Generates a model object similar to scikit-learn's models. The generated
-        model is the result of the optimizations made by MiraiML, which takes
-        care of the choices of hyperparameters, features and the ensembling
-        weights.
-
-        This method may return ``None`` if the engine hasn't completed at least
-        one cycle of experiments.
-
-        .. warning::
-            The extracted model is likely to perform worse than the Engine when
-            it comes down to making predictions due to the way that MiraiML
-            ensembles out-of-folds predictions even for each base model.
-
-        :type fit: bool, optional, default=True
-        :param fit: Whether to return a model fit to the loaded train data or not.
-
-        :rtype: miraiml.core.MiraiModel
-        :returns: The optimized model object.
-        """
-        if self.n_cycles == 0:
-            return None
-
-        X_y = (self.train_data, self.train_target) if fit else None
-
-        best_id = self.best_id
-        if self.ensembler is None or best_id != self.config.ensemble_id:
-            return MiraiModel(base_models=[self.base_models[best_id]],
-                              weights=None,
-                              problem_type=self.config.problem_type,
-                              columns_renaming_unmap=self.columns_renaming_unmap,
-                              X_y=X_y)
-
-        ensembler = self.ensembler
-        base_models = []
-        weights = []
-        for id in self.base_models:
-            base_models.append(self.base_models[id])
-            weights.append(ensembler.weights[id])
-
-        return MiraiModel(base_models=base_models,
-                          weights=weights,
-                          problem_type=self.config.problem_type,
-                          columns_renaming_unmap=self.columns_renaming_unmap,
-                          X_y=X_y)
 
 
 class Status:

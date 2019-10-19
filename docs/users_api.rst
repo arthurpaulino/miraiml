@@ -32,7 +32,6 @@ miraiml.Engine
         reconfigure
         restart
         request_status
-        extract_model
 
 miraiml.Status
 --------------

@@ -7,3 +7,4 @@ MiraiML Docs
    user_guide
    users_api
    internal_modules_api
+   example
