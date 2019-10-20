@@ -13,7 +13,7 @@
 .. _travis: https://travis-ci.org/arthurpaulino/miraiml
 
 .. |codacy| image:: https://api.codacy.com/project/badge/Grade/983bcf3973094f20ba4f516d6891c5f7
-.. _codacy: https://www.codacy.com/app/arthurpaulino/miraiml?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=arthurpaulino/miraiml&amp;utm_campaign=Badge_Grade
+.. _codacy: https://www.codacy.com/app/arthurpaulino/miraiml
 
 .. |docs| image:: https://readthedocs.org/projects/miraiml/badge/?version=latest
 .. _docs: https://readthedocs.org/projects/miraiml/
