@@ -34,7 +34,7 @@ Usage
 1. Install: ``$ pip install miraiml``
 2. Now, inside a Python environment, you can import the main components:
 
->>> from miraiml import SearchSpace, Config, Engine, pipeline
+>>> from miraiml import SearchSpace, Config, Engine
 
 You might want to `Read the Docs`_ for a better understanding of MiraiML.
 
