@@ -1,5 +1,9 @@
 .. -*- mode: rst -*-
 
+.. image:: docs/img/MiraiML.svg
+
+....
+
 |license|_ |travis|_ |codacy|_ |docs|_ |pypi|_ |pepy|_
 
 .. |license| image:: https://img.shields.io/badge/License-MIT-yellow.svg

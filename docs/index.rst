@@ -1,5 +1,9 @@
-MiraiML Docs
-============
+.. image:: img/MiraiML.svg
+
+....
+
+Documentation
+=============
 
 .. toctree::
    :maxdepth: 2
