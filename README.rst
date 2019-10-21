@@ -1,6 +1,6 @@
 .. -*- mode: rst -*-
 
-.. image:: docs/img/MiraiML.svg
+.. image:: https://github.com/arthurpaulino/miraiml/raw/master/docs/img/MiraiML.svg?sanitize=true
 
 ....
 
