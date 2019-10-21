@@ -1,5 +1,9 @@
 .. -*- mode: rst -*-
 
+.. image:: docs/img/MiraiML.svg
+
+....
+
 |license|_ |travis|_ |codacy|_ |docs|_ |pypi|_ |pepy|_
 
 .. |license| image:: https://img.shields.io/badge/License-MIT-yellow.svg
@@ -9,7 +13,7 @@
 .. _travis: https://travis-ci.org/arthurpaulino/miraiml
 
 .. |codacy| image:: https://api.codacy.com/project/badge/Grade/983bcf3973094f20ba4f516d6891c5f7
-.. _codacy: https://www.codacy.com/app/arthurpaulino/miraiml?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=arthurpaulino/miraiml&amp;utm_campaign=Badge_Grade
+.. _codacy: https://www.codacy.com/app/arthurpaulino/miraiml
 
 .. |docs| image:: https://readthedocs.org/projects/miraiml/badge/?version=latest
 .. _docs: https://readthedocs.org/projects/miraiml/
@@ -32,12 +36,11 @@ Usage
 -----
 
 1. Install: ``$ pip install miraiml``
-2. Now, inside a Python environment, import the main classes:
+2. Now, inside a Python environment, you can import the main components:
 
->>> from miraiml import HyperSearchSpace, Config, Engine
+>>> from miraiml import SearchSpace, Config, Engine
 
-Some didactic tutorials can be found in the examples_ directory. Or `Read the
-Docs`_ for a better understanding of MiraiML.
+You might want to `Read the Docs`_ for a better understanding of MiraiML.
 
 Contributing
 ------------

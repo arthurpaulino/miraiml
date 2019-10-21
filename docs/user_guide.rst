@@ -13,7 +13,7 @@ built for real-time usage.
   Python code as you interact with the engine;
 
 - It's continuous because it can run "forever", always looking for solutions that
-  can achieve better accuracies;
+  can achieve better performances;
 
 - It's autonomous because it does not wander on the search space blindly and does
   not perform exhaustive grid searches. Instead, it combines past attempts to guide
@@ -32,18 +32,132 @@ MiraiML usability
 
 Tired of coding the same grid searches, cross-validations, training and predicting
 scripts over and over? I was. MiraiML does it all with a simple API, so you can
-spend less time on such mechanical tasks.
+spend less time on such mechanical tasks. MiraiML works on the typical train/test
+scenario, when the data can fit in the RAM. Let's explore the API from a bottom-up
+perspective.
 
-MiraiML works on the typical train/test scenario, when the data can fit in the
-RAM. No models are provided, thus you need to import external models or implement
-your own. Didactic tutorials can be found on the
-`examples <https://github.com/arthurpaulino/miraiml/tree/master/examples>`_
-directory.
+The basic usage flow is represented in the image below:
 
-Base models: fitting, predicting and scoring
---------------------------------------------
+.. https://docs.google.com/drawings/d/1NC2A2YtpNGOx8Tle0ElODIifIPXaQ-Ex5vi_pUvT_Vc/edit?usp=sharing
+.. image:: https://docs.google.com/drawings/d/e/2PACX-1vQOnR9eb3bAKqrPA9UqSrhdk17iXtFgb8ukqpqdUAal8wYHH3BFj2JowmqOaI1_xBrjn01fqw0lcMn-/pub?w=1051&h=150
+
+Search spaces
+*************
+
+MiraiML requires that you define the search spaces in which it will look for
+solution candidates. In order to instantiate a search space, you need to use the
+:class:`miraiml.SearchSpace` class. A search space is a combination of an id, a
+model class and a dictionary of hyperparameters values to be tested. The only
+requirement is that the model class must implement a ``fit`` method as well as a
+``predict`` method for regression problems or a ``predict_proba`` for
+classification problems. For instance, you can use scikit-learn's models:
+
+::
+
+    >>> from sklearn.linear_model import LinearRegression
+    >>> from miraiml import SearchSpace
+
+    >>> search_space = SearchSpace(
+    ...     id = 'Linear Regression',
+    ...     model_class = LinearRegression,
+    ...     parameters_values = dict(
+    ...         fit_intercept = [True, False],
+    ...         normalize = [True, False]
+    ...     )
+    ... )
+
+:class:`miraiml.SearchSpace` also allows you to provide a `parameters_rules`
+function to deal with prohibitive combinations of hyperparameters. Please refer
+to its documentation for further understanding.
+
+After you've defined your search spaces, the next step is building the
+configuration object.
+
+Configuration
+*************
+
+The configuration for MiraiML's Engine is defined by an instance of the
+:class:`miraiml.Config` class, which tells the Engine where to save its local
+files (checkpoints), the problem type, the function to score the candidate
+solutions, the search spaces that should be used and a few other things. For
+instance:
+
+::
+
+    >>> from sklearn.metrics import r2_score
+    >>> from miraiml import Config
+
+    >>> config = Config(
+    ...     local_dir = 'miraiml_local',
+    ...     problem_type = 'regression',
+    ...     score_function = r2_score,
+    ...     search_spaces = [search_space]
+    ... )
+
+Alright, now we're all set to use the Engine.
+
+The Engine
+**********
+
+:class:`miraiml.Engine` provides a straightforward interface to access its
+functionalities. The instantiation only requires a configuration object:
+
+::
+
+    >>> from miraiml import Engine
+
+    >>> engine = Engine(config)
+
+.. note::
+    You can also provide a ``on_improvement`` function that will be executed
+    everytime the engine finds a better modeling solution. Check out the API
+    documentation for more information.
+
+Let's use scikit-learn's classic `California Housing` dataset as an example:
+
+::
+
+    >>> from sklearn.datasets import fetch_california_housing
+    >>> import pandas as pd
+
+    >>> X, y = fetch_california_housing(return_X_y=True)
+    >>> data = pd.DataFrame(X)
+    >>> data['target'] = y
+
+    >>> engine.load_train_data(train_data=data, target_column='target')
+
+After the training data is loaded, you can trigger the optimization process with:
+
+::
+
+    >>> engine.restart()
+
+And to interrupt it:
+
+::
+
+    >>> engine.interrupt()
+
+The :class:`miraiml.Engine` documentation contains the full set of functionalities
+that are available for you.
+
+MiraiML internals
+-----------------
+
+MiraiML works in cycles. In each cycle, the Engine tries to find better solutions
+for each search space and for the ensemble. There are three main concepts at play
+here:
+
+* *Base models* represent solutions in the search space
+* *Mirai Seeker* manages the walk through the search spaces
+* *Ensembler* attempts weighted combinations of base models
+
+Base models
+***********
 
 .. _base_model:
+
+    `Fit, predict and validate with a single button.`
 
 Base models are the fundamental bricks of the optimization process. A base model
 is a combination of a model class, a set of parameters and a set of features.
@@ -69,8 +183,15 @@ More precisely:
 Averaging the predictions for the testing dataset may result in slightly better
 accuracies than expected.
 
-Seeking good base models
-------------------------
+.. rubric:: Pipelines
+
+Pipelines can be used as base models when you want to test various ways of
+pre-processing your data before fitting it with an estimator.
+
+If that's your case, please check out the :mod:`miraiml.pipeline` module.
+
+Mirai Seeker
+************
 
 .. _mirai_seeker:
 
@@ -80,7 +201,7 @@ mandatory.
 
 The engine registers optimization attempts on dataframes called `histories`. These
 dataframes have columns for each hyperparameter and each feature, as well as a
-column for the reported score. The values of the hyperparameters' columns are the
+column for the reported scores. The values of the hyperparameters' columns are the
 values of the hyperparameters themselves. The values of the features' columns are
 either 0 or 1, which indicate whether the features were used or not. An example
 of history dataframe for a K-NN classifier with three registries would be:
@@ -121,16 +242,17 @@ models are:
 
 - Linear Regression
     Uses a simple linear regression to model the score as a function of the other
-    history columns. Makes `n`/2 guesses and chooses the best guess according to
-    the model, where `n` is the size of the history dataframe.
+    history columns. Categorical columns are processed with One-Hot-Encoding. This
+    strategy makes `n`/2 guesses and chooses the best guess according to the linear
+    regression model, where `n` is the size of the history dataframe.
 
 The strategy is chosen stochastically according to the following priority rule:
 
     `The random strategy will be chosen with a probability of 0.5. If it's not,
     the other strategies will be chosen with equal probabilities.`
 
-Ensembling base models
-----------------------
+Ensembler
+*********
 
 .. _ensemble:
 
@@ -145,8 +267,9 @@ coefficients :math:`w` (weights), for which we can compute the combined predicti
 :math:`E_{tr}` and :math:`E_{ts}` for the training and testing datasets, respectively,
 according to the formula:
 
-    :math:`(E_{tr}, E_{ts}) = \left(\frac{\sum w_i tr_i}{\sum w_i},
-    \frac{\sum w_i ts_i}{\sum w_i}\right)`
+.. math::
+    (E_{tr}, E_{ts}) = \left(\frac{\sum w_i tr_i}{\sum w_i},
+    \frac{\sum w_i ts_i}{\sum w_i}\right)
 
 With a smart choice of :math:`w`, the score for :math:`E_{tr}` may be better than
 the score of any :math:`tr_i`.
@@ -185,3 +308,23 @@ The current rule is:
 
     `The time consumed by the ensemble is limited by the total time consumed by
     all base models, on average.`
+
+.. warning::
+    The score of the Ensemble *may* decrease when the engine finds a better base
+    model and updates its predictions.
+
+Optimization workflow
+---------------------
+
+The optimization cycle starts by looking for better base models for each search
+space. Mirai Seeker is responsible for keeping track of old base models attempts
+in order to provide good guesses for new attempts. If a better base model is found
+for some search space, the ensembler output is updated with the new predictions.
+Then, after a new solution is attempted for each search space, the Engine executes
+the ensembling cycles, looking for better ensembling weights.
+
+Wrapping it all up, the following diagram represents the workflow within an
+optimization loop:
+
+.. https://docs.google.com/drawings/d/1C1fwMzYXkawVbn_jloLIX_VNI_jl2bwq8wR3ogCckaQ/edit?usp=sharing
+.. image:: https://docs.google.com/drawings/d/e/2PACX-1vQP_qMIXETTJo7h04IfcHA9_N_GaO0hGZueBXbkpJcz1Of3cdZSaVkJejl4EKHIzDxDSVk2IPgGW7sh/pub?w=1689&h=797

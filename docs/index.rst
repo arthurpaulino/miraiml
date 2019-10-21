@@ -1,9 +1,14 @@
-MiraiML Docs
-============
+.. image:: img/MiraiML.svg
+
+....
+
+Documentation
+=============
 
 .. toctree::
    :maxdepth: 2
 
    user_guide
-   the_api
-   internal_modules
+   users_api
+   internal_modules_api
+   example

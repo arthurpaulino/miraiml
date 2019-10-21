@@ -1,12 +1,6 @@
 """
 :mod:`miraiml.core` contains internal classes responsible for the optimization
 process.
-
-- :class:`miraiml.core.BaseModel` represents a solution
-- :class:`miraiml.core.MiraiSeeker` implements the strategies to search for good
-  solutions
-- :class:`miraiml.core.Ensembler` searches for smart ways of combining the current
-  solutions o generate a better one
 """
 
 import random as rnd
@@ -17,14 +11,15 @@ import os
 
 from sklearn.model_selection import StratifiedKFold, KFold
 from sklearn.linear_model import LinearRegression
+from sklearn.pipeline import Pipeline
 
-from .util import load, dump, sample_random_len
+from miraiml.util import load, dump, sample_random_len
 
 
 class BaseModel:
     """
     Represents an element from the search space, defined by an instance of
-    :class:`miraiml.HyperSearchSpace` and a set of features.
+    :class:`miraiml.SearchSpace` and a set of features.
 
     Read more in the :ref:`User Guide <base_model>`.
 
@@ -71,7 +66,7 @@ class BaseModel:
             * ``test_predictions``: The predictions for the testing dataset
             * ``score``: The score of the model on the training dataset
 
-        :raises: ``RuntimeError``
+        :raises: ``RuntimeError`` when fitting or predicting doesn't work.
         """
         X_train = X_train[self.features]
         train_predictions = np.zeros(X_train.shape[0])
@@ -117,6 +112,43 @@ class BaseModel:
                 config.score_function(y_train, train_predictions))
 
 
+def dump_base_model(base_model, path):
+    """
+    Saves the characteristics of a base model as a checkpoint.
+
+    :type base_model: miraiml.core.BaseModel
+    :param base_model: The base model to be saved
+
+    :type path: str
+    :param path: The path to save the base model
+
+    :rtype: tuple
+    :returns: ``(train_predictions, test_predictions, score)``
+    """
+    attributes = dict(parameters=base_model.parameters, features=base_model.features)
+    dump(attributes, path)
+
+
+def load_base_model(model_class, path):
+    """
+    Loads the characteristics of a base model from disk and returns its respective
+    instance of :class:`miraiml.core.BaseModel`.
+
+    :type model_class: type
+    :param model_class: The model class related to the base model
+
+    :type path: str
+    :param path: The path to load the base model from
+
+    :rtype: miraiml.core.BaseModel
+    :returns: The base model loaded from disk
+    """
+    attributes = load(path)
+    return BaseModel(model_class=model_class,
+                     parameters=attributes['parameters'],
+                     features=attributes['features'])
+
+
 class MiraiSeeker:
     """
     This class implements a smarter way of searching good parameters and sets of
@@ -133,7 +165,7 @@ class MiraiSeeker:
     :param config: The configuration of the engine.
     :type config: miraiml.Config
     """
-    def __init__(self, hyper_search_spaces, all_features, config):
+    def __init__(self, search_spaces, all_features, config):
         self.all_features = all_features
         self.config = config
 
@@ -142,12 +174,12 @@ class MiraiSeeker:
         if not os.path.exists(histories_path):
             os.makedirs(histories_path)
 
-        self.hyper_search_spaces_dict = {}
+        self.search_spaces_dict = {}
         self.histories = {}
         self.histories_paths = {}
-        for hyper_search_space in hyper_search_spaces:
-            id = hyper_search_space.id
-            self.hyper_search_spaces_dict[id] = hyper_search_space
+        for search_space in search_spaces:
+            id = search_space.id
+            self.search_spaces_dict[id] = search_space
 
             self.histories_paths[id] = histories_path + id
             if os.path.exists(self.histories_paths[id]):
@@ -160,7 +192,7 @@ class MiraiSeeker:
         """
         Deletes all base models registries.
         """
-        for id in self.hyper_search_spaces_dict:
+        for id in self.search_spaces_dict:
             self.histories[id] = pd.DataFrame()
             dump(self.histories[id], self.histories_paths[id])
 
@@ -179,9 +211,9 @@ class MiraiSeeker:
         """
         entry = {'score': score}
         for parameter in parameters:
-            entry[parameter+'___(parameter)'] = parameters[parameter]
+            entry[parameter+'__(hyperparameter)'] = parameters[parameter]
         for feature in self.all_features:
-            entry[feature+'___(feature)'] = 1 if feature in features else 0
+            entry[feature+'__(feature)'] = 1 if feature in features else 0
         return pd.DataFrame([entry])
 
     def register_base_model(self, id, base_model, score):
@@ -232,24 +264,27 @@ class MiraiSeeker:
         :rtype: miraiml.core.BaseModel
         :returns: The next base model for exploration.
 
-        :raises: ``KeyError``
+        :raises: ``KeyError`` if ``parameters_rules`` tries to access an invalid
+            key.
         """
-        if rnd.uniform(0, 1) > 0.5 or not self.is_ready(id):
+        if rnd.choice([0, 1]) == 1 or not self.is_ready(id):
             parameters, features = self.random_search(id)
         else:
-            if rnd.uniform(0, 1) > 0.5:
-                parameters, features = self.naive_search(id)
-            else:
-                parameters, features = self.linear_regression_search(id)
+            available_method_names = [method_name for method_name in dir(self)
+                                      if method_name.endswith('_search')
+                                      and method_name != 'random_search']
 
-        hyper_search_space = self.hyper_search_spaces_dict[id]
+            method_name = rnd.choice(available_method_names)
+            parameters, features = getattr(self, method_name)(id)
+
+        search_space = self.search_spaces_dict[id]
         if len(parameters) > 0:
             try:
-                hyper_search_space.parameters_rules(parameters)
+                search_space.parameters_rules(parameters)
             except Exception:
                 raise KeyError('Error on parameters rules for the id {}'.format(id))
 
-        model_class = hyper_search_space.model_class
+        model_class = search_space.model_class
 
         return BaseModel(model_class, parameters, features)
 
@@ -265,11 +300,11 @@ class MiraiSeeker:
             Respectively, the dictionary of parameters and the list of features
             that can be used to generate a new base model.
         """
-        hyper_search_space = self.hyper_search_spaces_dict[id]
+        search_space = self.search_spaces_dict[id]
         parameters = {}
-        for parameter in hyper_search_space.parameters_values:
+        for parameter in search_space.parameters_values:
             parameters[parameter] = rnd.choice(
-                hyper_search_space.parameters_values[parameter])
+                search_space.parameters_values[parameter])
         if self.config.use_all_features:
             features = self.all_features
         else:
@@ -299,11 +334,12 @@ class MiraiSeeker:
             chosen_value = rnd.choices(
                 dist[column].values,
                 cum_weights=dist['score'].cumsum().values)[0]
-            if column.endswith('___(parameter)'):
-                parameter = column.split('___(')[0]
+            del dist
+            if column.endswith('__(hyperparameter)'):
+                parameter = column.split('__(')[0]
                 parameters[parameter] = chosen_value
-            elif column.endswith('___(feature)'):
-                feature = column.split('___(')[0]
+            elif column.endswith('__(feature)'):
+                feature = column.split('__(')[0]
                 if self.config.use_all_features:
                     features.append(feature)
                 else:
@@ -330,11 +366,11 @@ class MiraiSeeker:
         for column in dataframe.columns:
             if column == 'score':
                 continue
-            column_filtered = column.split('___(')[0]
+            column_filtered = column.split('__(')[0]
             value = dataframe[column].values[0]
-            if column.endswith('___(parameter)'):
+            if column.endswith('__(hyperparameter)'):
                 parameters[column_filtered] = value
-            elif column.endswith('___(feature)'):
+            elif column.endswith('__(feature)'):
                 if value:
                     features.append(column_filtered)
         return (parameters, features)
@@ -381,14 +417,16 @@ class MiraiSeeker:
         guesses_df['score'] = model.predict(data_ohe_test)
 
         # Choosing the best guess:
-        best_guess = guesses_df.sort_values('score', ascending=False).head(1)
+        best_guess = guesses_df.sort_values('score', ascending=False).head(1).copy()
+
+        del guesses_df, data, data_ohe, data_ohe_train, data_ohe_test, y, model
 
         return self.__dataframe_to_parameters_features__(best_guess)
 
 
 class Ensembler:
     """
-    Performs the ensemble of the base models.
+    Performs the ensemble of the base models and optimizes its weights.
 
     Read more in the :ref:`User Guide <ensemble>`.
 
@@ -525,80 +563,97 @@ class Ensembler:
                 self.test_predictions_df[self.id] = test_predictions
                 dump(self.weights, self.weights_path)
                 optimized = True
+            else:
+                del weights, train_predictions, test_predictions
         return optimized
 
 
-class MiraiModel:
+class BasePipelineClass:
     """
-    Represents an unified model optimized by MiraiML.
+    This is the base class for your custom pipeline classes.
+
+    .. warning::
+        Instantiating this class directly **does not work**.
     """
-    def __init__(self, base_models, weights, problem_type):
-        self.models = []
-        self.features_lists = []
-        for base_model in base_models:
-            self.models.append(base_model.model_class(**base_model.parameters))
-            self.features_lists.append(base_model.features)
-        self.weights = weights
-        self.problem_type = problem_type
+    def __init__(self, **params):
+        self.pipeline = Pipeline(
+            # self.steps has been set from outside at this point!
+            [(alias, class_type()) for (alias, class_type) in self.steps]
+        )
+        self.set_params(**params)
+
+    def get_params(self):
+        """
+        Gets the list of parameters that can be set.
+
+        :type X: iterable
+        :param X: Data to predict on.
+
+        :rtype: list
+        :returns: The list of allowed parameters
+        """
+        params = [param for param in self.pipeline.get_params() if
+                  'copy' not in param]
+        prefixes = [alias + '__' for alias, _ in self.steps]
+        return [param for param in params if
+                any([param.startswith(prefix) for prefix in prefixes])]
+
+    def set_params(self, **params):
+        """
+        Sets the parameters for the pipeline. You can check the parameters that
+        are allowed to be set by calling :func:`get_params`.
+
+        :rtype: miraiml.core.BasePipelineClass
+        :returns: self
+        """
+        allowed_params = self.get_params()
+        for param in params:
+            if param not in allowed_params:
+                raise ValueError(
+                    'Parameter ' + param + ' is incompatible. The allowed ' +
+                    'parameters are:\n' + ', '.join(allowed_params)
+                )
+        self.pipeline.set_params(**params)
+        return self
 
     def fit(self, X, y):
         """
-        Fits all base models.
+        Fits the pipeline to ``X`` using ``y`` as the target.
 
-        :type X: pandas.DataFrame
+        :type X: iterable
         :param X: The training data.
 
-        :type y: pandas.Series or numpy.ndarray
-        :param y: The target.
-        """
-        for model, features in zip(self.models, self.features_lists):
-            model.fit(X[features], y)
-
-    def __predict__(self, X, method):
-        """
-        Generic prediction function.
-
-        :type X: pandas.DataFrame
-        :param X: The training data.
-
-        :type y: pandas.Series or numpy.ndarray
+        :type y: iterable
         :param y: The target.
 
-        :type method: str
-        :param method: The name of the function to be called.
+        :rtype: miraiml.core.BasePipelineClass
+        :returns: self
         """
-        if self.weights is not None:
-            predictions_sum = [
-                getattr(model, method)(X[features]) for model, features in zip(
-                    self.models, self.features_lists
-                )
-            ]
-            predictions = np.average(predictions_sum, axis=0, weights=self.weights)
-            if self.problem_type == 'regression':
-                return predictions
-            return predictions.round().astype(int)
-        return getattr(self.models[0], method)(X[self.features_lists[0]])
+        self.pipeline.fit(X, y)
+        return self
 
     def predict(self, X):
         """
-        Predicts the classes for classification problems and the output for
-        regression problems.
+        Predicts the class for each element of ``X`` in case of classification
+        problems or the estimated target value in case of regression problems.
 
-        :type X: pandas.DataFrame
-        :param X: The input for new predictions.
+        :type X: iterable
+        :param X: Data to predict on.
+
+        :rtype: numpy.ndarray
+        :returns: The set of predictions
         """
-        return self.__predict__(X, 'predict')
+        return self.pipeline.predict(X)
 
     def predict_proba(self, X):
         """
-        Predicts the probabilities for each class. Only available for classification
-        problems.
+        Returns the probabilities for each class. Available only if your end
+        estimator implements it.
 
-        :type X: pandas.DataFrame
-        :param X: The input for new predictions.
+        :type X: iterable
+        :param X: Data to predict on.
 
-        :raises: ``RuntimeError``
+        :rtype: numpy.ndarray
+        :returns: The probabilities for each class
         """
-        if self.problem_type == 'regression':
-            raise RuntimeError("Cannot compute predict_proba for regressions")
-        return self.__predict__(X, 'predict_proba')
+        return self.pipeline.predict_proba(X)

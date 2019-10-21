@@ -5,6 +5,5 @@ MiraiML.egg-info/*
 __pycache__
 MANIFEST
 docs/_*
-*.csv
 build
 dist

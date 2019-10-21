@@ -13,8 +13,7 @@ You can contribute with [issues][issues] by:
 
 - Proposing/requesting a `new feature`
 - Reporting a `bug`
-- Asking for `help`
-- Pointing out typos or errors on the `documentation`
+- Pointing out errors or lack of information on the `documentation`
 - Asking a `question`
 - Presenting a better way to do something with a `better code`
 - Giving tips for better project `management` practices
